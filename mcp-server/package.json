@@ -1,0 +1,124 @@
+{
+  "name": "jlceda-mcp-server",
+  "displayName": "嘉立创 EDA MCP",
+  "description": "通过 stdio 向 VS Code、Cursor 暴露嘉立创 EDA MCP 工具能力，并接收来自嘉立创 EDA 的桥接连接。",
+  "version": "1.0.0",
+  "publisher": "chengbin",
+  "license": "Apache-2.0",
+  "icon": "resources/jlc-mcp.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sengbin/JLCEDA-MCP.git",
+    "directory": "mcp-server"
+  },
+  "engines": {
+    "vscode": "^1.105.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "jlcMcpControl",
+          "title": "嘉立创 EDA MCP",
+          "icon": "resources/jlc-mcp.svg"
+        }
+      ]
+    },
+    "views": {
+      "jlcMcpControl": [
+        {
+          "id": "jlcMcpControl.view",
+          "name": "本地服务",
+          "type": "webview",
+          "icon": "resources/jlc-mcp.svg"
+        }
+      ]
+    },
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "jlcMcpControl.provider",
+        "label": "嘉立创 EDA MCP"
+      }
+    ],
+    "configuration": [
+      {
+        "title": "服务配置",
+        "properties": {
+          "jlcMcpServer.host": {
+            "type": "string",
+            "default": "127.0.0.1",
+            "description": "桥接 WebSocket 监听 IP。"
+          },
+          "jlcMcpServer.port": {
+            "type": "number",
+            "default": 8765,
+            "minimum": 1,
+            "maximum": 65535,
+            "description": "桥接 WebSocket 监听端口。"
+          }
+        }
+      },
+      {
+        "title": "开发者模式",
+        "properties": {
+          "jlcMcpServer.enableSystemLog": {
+            "type": "boolean",
+            "default": false,
+            "description": "启用系统日志选项卡。关闭后不再发送系统日志，并隐藏系统日志选项卡。"
+          },
+          "jlcMcpServer.enableConnectionList": {
+            "type": "boolean",
+            "default": false,
+            "description": "启用连接列表选项卡。关闭后不再发送连接信息日志，并隐藏连接列表选项卡。"
+          },
+          "jlcMcpServer.enableDebugControlCard": {
+            "type": "boolean",
+            "default": false,
+            "description": "启用调试控制卡片。关闭后隐藏手动启动 stdio 进程卡片。"
+          }
+        }
+      },
+      {
+        "title": "AI 指令设置",
+        "properties": {
+          "jlcMcpServer.agentInstructions": {
+            "type": "string",
+            "editPresentation": "multilineText",
+            "default": "",
+            "description": "自定义 AI 助手指令，留空时仅使用内置系统指令，保存后重连即生效。"
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "clean": "node -e \"const fs=require('fs'); fs.rmSync('out',{recursive:true,force:true});\"",
+    "build": "npm run clean && node ./config/esbuild.prod.mjs && npm run package",
+    "watch": "node ./config/esbuild.prod.mjs --watch",
+    "typecheck": "tsc -p ./ --noEmit",
+    "lint": "eslint src --ext .ts",
+    "package": "node -e \"const fs=require('fs'); const path=require('path'); const buildDir=path.resolve(process.cwd(),'../build'); fs.mkdirSync(buildDir,{recursive:true}); for (const name of fs.readdirSync(buildDir)) { if (name.startsWith('jlceda-mcp-server') && name.endsWith('.vsix')) { fs.rmSync(path.join(buildDir,name),{force:true}); } }\" && vsce package --allow-missing-repository --allow-star-activation --out ../build/jlceda-mcp-server.vsix"
+  },
+  "dependencies": {
+    "overlayscrollbars": "^2.14.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "@types/vscode": "^1.105.0",
+    "@types/ws": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^8.33.1",
+    "@typescript-eslint/parser": "^8.33.1",
+    "esbuild": "^0.27.3",
+    "eslint": "^9.28.0",
+    "typescript": "^5.8.3",
+    "vsce": "^2.15.0"
+  }
+}

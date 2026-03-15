@@ -1,0 +1,113 @@
+[
+  {
+    "name": "jlceda_api_search",
+    "description": "通过桥接在 EDA 侧离线 API 文档中检索嘉立创 EDA API。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "检索关键词，支持 API 名称、摘要、命名空间等。建议使用英文关键词（如 bom、getDrc、place 等），可组合多词（空格分隔）。"
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "all",
+            "callable",
+            "type"
+          ],
+          "default": "all",
+          "description": "检索范围：all=全部，callable=可调用 API，type=类型符号。查找可调用函数时优先使用 callable。"
+        },
+        "owner": {
+          "type": "string",
+          "description": "可选。按所属命名空间/类型过滤，能大幅缩小结果范围。当前文档为原理图时，使用 \"sch\" 过滤原理图专属 API；为 PCB 时，使用 \"pcb\" 过滤 PCB 专属 API。示例：owner=\"sch\" 可找到 eda.sch_ManufactureData 等原理图命名空间下的 API。"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 10,
+          "description": "最多返回条数，范围 1-50。"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "jlceda_api_invoke",
+    "description": "通过桥接队列请求 EDA 扩展进程执行指定 API。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "apiFullName": {
+          "type": "string",
+          "description": "要调用的 API 全名。"
+        },
+        "args": {
+          "type": "object",
+          "description": "API 调用参数对象。支持 positionalArgs/args/namedArgs 三种格式。",
+          "properties": {
+            "positionalArgs": {
+              "type": "array",
+              "items": {},
+              "description": "按位置传参，推荐格式。"
+            },
+            "args": {
+              "type": "array",
+              "items": {},
+              "description": "按位置传参的兼容字段。"
+            },
+            "namedArgs": {
+              "type": "object",
+              "description": "命名参数对象。"
+            },
+            "parameterOrder": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "当使用 namedArgs 时，指定参数顺序。"
+            }
+          },
+          "additionalProperties": true
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 120000,
+          "default": 15000,
+          "description": "桥接超时（毫秒）。"
+        }
+      },
+      "required": [
+        "apiFullName"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "jlceda_context_get",
+    "description": "获取 EDA 运行时上下文快照（工程、文档、选区等）。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "type": "string",
+          "description": "可选。上下文读取范围标识。"
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 120000,
+          "default": 15000,
+          "description": "桥接超时（毫秒）。"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+]

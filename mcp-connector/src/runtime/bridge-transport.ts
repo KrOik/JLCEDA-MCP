@@ -1,0 +1,434 @@
+/**
+ * ------------------------------------------------------------------------
+ * 名称：桥接 WebSocket 传输层
+ * 说明：负责桥接连接建立、心跳保活、协议消息收发。
+ * 作者：Lion
+ * 邮箱：chengbin@3578.cn
+ * 日期：2026-03-12
+ * 备注：只处理传输，不包含任务业务。
+ * ------------------------------------------------------------------------
+ */
+
+import type {
+	BridgeClientMessage,
+	BridgeDebugSwitch,
+	BridgeQueueTask,
+	BridgeServerMessage,
+	BridgeServerRoleMessage,
+} from '../bridge/protocol';
+import type { UnifiedLogEntry } from '../status-log.ts';
+import {
+	appendConnectorLog,
+	CONNECTOR_STATUS_TEXT,
+	createConnectorLogEntry,
+	formatUnifiedLogOutput,
+} from '../status-log.ts';
+import { isPlainObjectRecord, toSafeErrorMessage } from '../utils';
+
+// 底层 WebSocket 连接建立超时（从 register 到 onOpen 回调触发）。
+const OPEN_TIMEOUT_MS = 8_000;
+// 应用层握手超时（从 hello 发送到 welcome 收到）。
+const HANDSHAKE_TIMEOUT_MS = 5_000;
+const HEARTBEAT_INTERVAL_MS = 1000;
+const SERVER_IDLE_TIMEOUT_MS = 5000;
+const SERVER_IDLE_CHECK_INTERVAL_MS = 500;
+
+interface BridgeTransportCallbacks {
+	onRoleChanged: (message: BridgeServerRoleMessage) => void;
+	onDebugSwitchChanged: (debugSwitch: BridgeDebugSwitch) => void;
+	onTask: (task: BridgeQueueTask) => void | Promise<void>;
+	onLost: (message: string) => void;
+}
+
+interface BridgeTaskError {
+	message: string;
+	stack?: string;
+}
+
+type TimerHandle = ReturnType<typeof globalThis.setTimeout>;
+
+// 解析 WebSocket 消息载荷为字符串。
+async function decodeMessageData(data: unknown): Promise<string> {
+	if (typeof data === 'string') {
+		return data;
+	}
+
+	if (data instanceof Blob) {
+		return await data.text();
+	}
+
+	if (data instanceof ArrayBuffer) {
+		return new TextDecoder().decode(new Uint8Array(data));
+	}
+
+	if (ArrayBuffer.isView(data)) {
+		return new TextDecoder().decode(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+	}
+
+	throw new Error('收到无法识别的桥接消息格式。');
+}
+
+// 服务端允许发出的消息类型白名单。
+const VALID_SERVER_MESSAGE_TYPES = new Set([
+	'bridge/welcome',
+	'bridge/role',
+	'bridge/debug-switch',
+	'bridge/heartbeat-ack',
+	'bridge/task',
+	'bridge/error',
+]);
+
+// 将任意输入解析为服务端消息结构。
+async function parseServerMessage(data: unknown): Promise<BridgeServerMessage> {
+	const text = await decodeMessageData(data);
+	const parsed = JSON.parse(text) as unknown;
+	if (!isPlainObjectRecord(parsed)) {
+		throw new Error('桥接消息格式非法，根节点必须是对象。');
+	}
+
+	const messageType = String(parsed.type ?? '').trim();
+	if (messageType.length === 0) {
+		throw new Error('桥接消息缺少 type 字段。');
+	}
+
+	if (!VALID_SERVER_MESSAGE_TYPES.has(messageType)) {
+		throw new Error(`收到未知服务端消息类型: ${messageType}。`);
+	}
+
+	return parsed as unknown as BridgeServerMessage;
+}
+
+export class BridgeTransport {
+	private readonly readyPromise: Promise<void>;
+	private resolveReady: (() => void) | null = null;
+	private rejectReady: ((reason?: unknown) => void) | null = null;
+	// openTimer：等待 WebSocket 连接建立（onOpen）的超时定时器。
+	private openTimer: TimerHandle | undefined;
+	// connectTimer：等待应用层握手（welcome）的超时定时器。
+	private connectTimer: TimerHandle | undefined;
+	private heartbeatTimer: ReturnType<typeof globalThis.setInterval> | undefined;
+	private idleCheckTimer: ReturnType<typeof globalThis.setInterval> | undefined;
+	private closed = false;
+	private welcomed = false;
+	private lostNotified = false;
+	private lastServerActivityAt = 0;
+
+	public constructor(
+		private readonly bridgeWebSocketUrl: string,
+		private readonly socketId: string,
+		private readonly clientId: string,
+		private readonly callbacks: BridgeTransportCallbacks,
+	) {
+		this.readyPromise = new Promise<void>((resolve, reject) => {
+			this.resolveReady = resolve;
+			this.rejectReady = reject;
+		});
+	}
+
+	/**
+	 * 建立桥接连接并等待握手确认。
+	 */
+	public async connect(): Promise<void> {
+		if (this.closed) {
+			throw new Error('桥接连接已关闭。');
+		}
+
+		// 先启动连接建立超时；握手超时在 onOpen 触发后才开始计时。
+		this.startOpenTimer();
+		try {
+			eda.sys_WebSocket.register(
+				this.socketId,
+				this.bridgeWebSocketUrl,
+				async (event: MessageEvent<any>) => {
+					await this.handleMessage(event);
+				},
+				() => {
+					void this.handleConnected();
+				},
+			);
+		}
+		catch (error: unknown) {
+			this.fail(`桥接连接失败：${toSafeErrorMessage(error)}`, error);
+		}
+
+		await this.readyPromise;
+	}
+
+	/**
+	 * 回传任务执行结果。
+	 * @param requestId 任务标识。
+	 * @param leaseTerm 任务租约。
+	 * @param result 任务结果。
+	 * @param taskError 任务错误。
+	 */
+	public completeTask(requestId: string, leaseTerm: number, result: unknown, taskError?: BridgeTaskError): void {
+		this.sendMessage({
+			type: 'bridge/result',
+			clientId: this.clientId,
+			requestId,
+			leaseTerm,
+			result,
+			error: taskError,
+		});
+	}
+
+	/**
+	 * 上报客户端日志。
+	 * @param logEntry 日志记录。
+	 */
+	public reportLog(logEntry: UnifiedLogEntry): void {
+		this.sendMessage({
+			type: 'bridge/log',
+			clientId: this.clientId,
+			log: logEntry,
+		});
+	}
+
+	/**
+	 * 主动关闭桥接连接。
+	 */
+	public close(): void {
+		if (this.closed) {
+			return;
+		}
+
+		this.closed = true;
+		this.stopTimers();
+		this.rejectReadyOnce(new Error('桥接连接已关闭。'));
+		try {
+			eda.sys_WebSocket.close(this.socketId, 1000, '桥接连接已关闭');
+		}
+		catch {
+			// 主动关闭时忽略底层重复关闭异常。
+		}
+	}
+
+	// 建立底层连接后发送握手并启动心跳。
+	private async handleConnected(): Promise<void> {
+		// WebSocket 已建立，停止连接建立超时，启动应用层握手超时。
+		this.clearOpenTimer();
+		this.startConnectTimer();
+		this.startHeartbeat();
+		this.startIdleMonitor();
+		this.sendMessage({
+			type: 'bridge/hello',
+			clientId: this.clientId,
+		});
+	}
+
+	// 处理服务端消息。
+	private async handleMessage(event: MessageEvent<any>): Promise<void> {
+		try {
+			const message = await parseServerMessage(event.data);
+			this.lastServerActivityAt = Date.now();
+
+			if (message.type === 'bridge/welcome') {
+				if (message.clientId !== this.clientId) {
+					return;
+				}
+				if (!this.welcomed) {
+					this.welcomed = true;
+					this.clearConnectTimer();
+					this.resolveReadyOnce();
+				}
+				return;
+			}
+
+			if (message.type === 'bridge/heartbeat-ack') {
+				if (message.clientId !== this.clientId) {
+					return;
+				}
+				// 心跳确认仅用于保活，不需要额外处理。
+				return;
+			}
+
+			if (message.type === 'bridge/role') {
+				if (message.clientId !== this.clientId) {
+					return;
+				}
+				if (message.role !== 'active' && message.role !== 'standby') {
+					return;
+				}
+				this.callbacks.onRoleChanged(message);
+				return;
+			}
+
+			if (message.type === 'bridge/debug-switch') {
+				if (message.clientId !== this.clientId) {
+					return;
+				}
+				this.callbacks.onDebugSwitchChanged(message.debugSwitch);
+				return;
+			}
+
+			if (message.type === 'bridge/task') {
+				await this.callbacks.onTask({
+					requestId: message.requestId,
+					path: message.path,
+					payload: message.payload,
+					createdAt: message.createdAt,
+					leaseTerm: message.leaseTerm,
+				});
+				return;
+			}
+
+			if (message.type === 'bridge/error') {
+				const logEntry = appendConnectorLog(createConnectorLogEntry({
+					level: 'warning',
+					module: 'bridge-transport',
+					event: 'bridge.server.error',
+					summary: CONNECTOR_STATUS_TEXT.serverErrorSummary,
+					message: String(message.message ?? '').trim() || CONNECTOR_STATUS_TEXT.serverErrorSummary,
+					detail: String(message.message ?? '').trim(),
+					errorCode: 'bridge_server_error',
+				}));
+				console.warn(formatUnifiedLogOutput(logEntry));
+				return;
+			}
+		}
+		catch (error: unknown) {
+			this.fail(`桥接消息处理失败：${toSafeErrorMessage(error)}`, error);
+		}
+	}
+
+	// 向服务端发送协议消息。
+	private sendMessage(message: BridgeClientMessage): void {
+		if (this.closed) {
+			throw new Error('桥接连接已关闭。');
+		}
+		eda.sys_WebSocket.send(this.socketId, JSON.stringify(message));
+	}
+
+	// 启动连接建立超时保护，等待 WebSocket onOpen 回调。
+	private startOpenTimer(): void {
+		this.clearOpenTimer();
+		this.openTimer = globalThis.setTimeout(() => {
+			this.fail('桥接 WebSocket 连接建立超时。', new Error('桥接 WebSocket 连接建立超时。'));
+		}, OPEN_TIMEOUT_MS);
+	}
+
+	// 清理连接建立超时定时器。
+	private clearOpenTimer(): void {
+		if (this.openTimer !== undefined) {
+			globalThis.clearTimeout(this.openTimer);
+			this.openTimer = undefined;
+		}
+	}
+
+	// 启动应用层握手超时保护，等待服务端 welcome 消息。
+	private startConnectTimer(): void {
+		this.clearConnectTimer();
+		this.connectTimer = globalThis.setTimeout(() => {
+			this.fail('桥接连接握手超时。', new Error('桥接连接握手超时。'));
+		}, HANDSHAKE_TIMEOUT_MS);
+	}
+
+	// 清理握手超时定时器。
+	private clearConnectTimer(): void {
+		if (this.connectTimer !== undefined) {
+			globalThis.clearTimeout(this.connectTimer);
+			this.connectTimer = undefined;
+		}
+	}
+
+	// 启动心跳循环。
+	private startHeartbeat(): void {
+		this.stopHeartbeat();
+		this.heartbeatTimer = globalThis.setInterval(() => {
+			try {
+				this.sendMessage({
+					type: 'bridge/heartbeat',
+					clientId: this.clientId,
+					sentAt: Date.now(),
+				});
+			}
+			catch (error: unknown) {
+				this.fail(`桥接心跳发送失败：${toSafeErrorMessage(error)}`, error);
+			}
+		}, HEARTBEAT_INTERVAL_MS);
+	}
+
+	// 停止心跳循环。
+	private stopHeartbeat(): void {
+		if (this.heartbeatTimer !== undefined) {
+			globalThis.clearInterval(this.heartbeatTimer);
+			this.heartbeatTimer = undefined;
+		}
+	}
+
+	// 启动服务端活动超时检测。
+	private startIdleMonitor(): void {
+		this.stopIdleMonitor();
+		this.lastServerActivityAt = Date.now();
+		this.idleCheckTimer = globalThis.setInterval(() => {
+			if (this.closed) {
+				return;
+			}
+			if (Date.now() - this.lastServerActivityAt <= SERVER_IDLE_TIMEOUT_MS) {
+				return;
+			}
+
+			this.fail('桥接服务端长时间无响应。', new Error('桥接服务端长时间无响应。'));
+		}, SERVER_IDLE_CHECK_INTERVAL_MS);
+	}
+
+	// 停止服务端活动超时检测。
+	private stopIdleMonitor(): void {
+		if (this.idleCheckTimer !== undefined) {
+			globalThis.clearInterval(this.idleCheckTimer);
+			this.idleCheckTimer = undefined;
+		}
+	}
+
+	// 停止全部定时器。
+	private stopTimers(): void {
+		this.clearOpenTimer();
+		this.clearConnectTimer();
+		this.stopHeartbeat();
+		this.stopIdleMonitor();
+	}
+
+	// 统一处理传输失效。
+	private fail(message: string, reason?: unknown): void {
+		if (this.lostNotified) {
+			return;
+		}
+
+		this.lostNotified = true;
+		this.closed = true;
+		this.stopTimers();
+		try {
+			eda.sys_WebSocket.close(this.socketId, 1011, message);
+		}
+		catch {
+			// 失效回收时忽略重复关闭异常。
+		}
+
+		this.rejectReadyOnce(reason instanceof Error ? reason : new Error(message));
+		this.callbacks.onLost(message);
+	}
+
+	// 兑现握手 Promise。
+	private resolveReadyOnce(): void {
+		if (!this.resolveReady) {
+			return;
+		}
+
+		const resolve = this.resolveReady;
+		this.resolveReady = null;
+		this.rejectReady = null;
+		resolve();
+	}
+
+	// 拒绝握手 Promise。
+	private rejectReadyOnce(reason: unknown): void {
+		if (!this.rejectReady) {
+			return;
+		}
+
+		const reject = this.rejectReady;
+		this.resolveReady = null;
+		this.rejectReady = null;
+		reject(reason);
+	}
+}

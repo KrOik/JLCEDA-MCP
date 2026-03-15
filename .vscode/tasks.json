@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "build",
+      "path": "mcp-server",
+      "problemMatcher": "$tsc",
+      "presentation": {
+        "close": true,
+        "showReuseMessage": false
+      },
+      "label": "npm: build"
+    }
+  ]
+}

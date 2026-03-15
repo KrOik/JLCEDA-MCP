@@ -1,0 +1,183 @@
+/**
+ * ------------------------------------------------------------------------
+ * 名称：连接设置页面
+ * 说明：负责配置桥接 WebSocket 地址并实时展示桥接连接状态。
+ * 作者：Lion
+ * 邮箱：chengbin@3578.cn
+ * 日期：2026-03-10
+ * 备注：页面脚本入口。
+ * ------------------------------------------------------------------------
+ */
+
+import type { ConnectionStatusSnapshot } from '../bridge/status-store';
+import {
+	DEFAULT_MCP_WS_URL,
+	getConfiguredMcpUrl,
+	getMcpServerUrlChangedTopic,
+	normalizeMcpUrl,
+	saveConfiguredMcpUrl,
+} from '../bridge/config';
+import {
+	isConnectionStatusSnapshot,
+	readConnectionStatus,
+} from '../bridge/status-store';
+import {
+	appendConnectorLog,
+	CONNECTOR_STATUS_TEXT,
+	createConnectorLogEntry,
+	formatUnifiedLogOutput,
+} from '../status-log';
+import { toSafeErrorMessage } from '../utils';
+
+// 配置保存提示展示时长，单位秒。
+const CONFIG_TOAST_TIMER_SECONDS = 3;
+
+// 当前已保存的地址文本，用于判断按钮是否需要启用。
+let savedServerUrlValue = '';
+// 当前是否处于保存中，避免重复提交。
+let savingServerConfig = false;
+
+// 统一显示配置保存相关的弹层提示。
+function showConfigToast(message: string, messageType: ESYS_ToastMessageType): void {
+	eda.sys_Message.showToastMessage(message, messageType, CONFIG_TOAST_TIMER_SECONDS);
+}
+
+function writeSettingsWarningLog(event: string, summary: string, message: string, detail = '', errorCode = ''): void {
+	const logEntry = appendConnectorLog(createConnectorLogEntry({
+		level: 'warning',
+		module: 'settings-page',
+		event,
+		summary,
+		message,
+		bridgeWebSocketUrl: getConfiguredMcpUrl(),
+		detail,
+		errorCode,
+	}));
+	console.warn(formatUnifiedLogOutput(logEntry));
+}
+
+// 获取页面元素并进行类型校验。
+function getElement<T extends HTMLElement>(id: string, elementType: { new(): T }, elementLabel: string): T {
+	const element = document.getElementById(id);
+	if (!(element instanceof elementType)) {
+		throw new TypeError(`页面缺少${elementLabel}控件: ${id}`);
+	}
+	return element;
+}
+
+// 根据输入是否变化和当前保存状态刷新按钮可用性。
+function syncSaveButtonState(): void {
+	const input = getElement('serverUrl', HTMLInputElement, '输入');
+	const button = getElement('saveButton', HTMLButtonElement, '按钮');
+	button.disabled = savingServerConfig || input.value === savedServerUrlValue;
+}
+
+// 更新连接状态展示。
+function setStatus(
+	bridgeType: 'connecting' | 'connected' | 'error',
+	bridgeText: string,
+	websocketType: 'connecting' | 'connected' | 'error',
+	websocketText: string,
+): void {
+	const bridgeStatusText = getElement('bridgeStatusText', HTMLParagraphElement, '桥接状态展示');
+	const socketStatusText = getElement('socketStatusText', HTMLParagraphElement, 'WebSocket 状态展示');
+	bridgeStatusText.className = `status-text status-${bridgeType}`;
+	bridgeStatusText.textContent = bridgeType === 'connected' && bridgeText === CONNECTOR_STATUS_TEXT.connected ? `${CONNECTOR_STATUS_TEXT.connected}。` : bridgeText;
+	bridgeStatusText.classList.toggle('is-waiting-message', bridgeType === 'connecting' && bridgeText === CONNECTOR_STATUS_TEXT.connectingWaiting);
+
+	socketStatusText.className = `status-text status-${websocketType}`;
+	socketStatusText.textContent = websocketText;
+	socketStatusText.classList.toggle('is-waiting-message', websocketType === 'connecting' && websocketText === CONNECTOR_STATUS_TEXT.websocketConnecting);
+}
+
+// 将快照内容渲染到页面。
+function applyBridgeStatus(snapshot: ConnectionStatusSnapshot): void {
+	setStatus(snapshot.bridgeType, snapshot.bridgeText, snapshot.websocketType, snapshot.websocketText);
+}
+
+// 快照过期阈值：超过此时长未更新则视为历史遗留数据，不予展示。
+const STALE_STATUS_MS = 3000;
+
+// 启动连接状态实时刷新，每秒轮询固定存储键并展示状态。
+function startStatusMonitor(): void {
+	globalThis.setInterval(() => {
+		const snapshot = readConnectionStatus();
+		if (isConnectionStatusSnapshot(snapshot)) {
+			const age = Date.now() - new Date(snapshot.updatedAt).getTime();
+			if (age <= STALE_STATUS_MS) {
+				applyBridgeStatus(snapshot);
+			}
+		}
+	}, 1000);
+}
+
+// 保存服务端配置，并通知桥接进程应用新地址。
+async function saveServerConfig(): Promise<void> {
+	const input = getElement('serverUrl', HTMLInputElement, '输入');
+	const button = getElement('saveButton', HTMLButtonElement, '按钮');
+	if (button.disabled) {
+		return;
+	}
+
+	savingServerConfig = true;
+	syncSaveButtonState();
+
+	try {
+		const normalizedUrl = normalizeMcpUrl(input.value);
+		await saveConfiguredMcpUrl(normalizedUrl);
+		savedServerUrlValue = normalizedUrl;
+		input.value = normalizedUrl;
+		try {
+			eda.sys_MessageBus.publish(getMcpServerUrlChangedTopic(), normalizedUrl);
+		}
+		catch (error: unknown) {
+			const message = toSafeErrorMessage(error);
+			writeSettingsWarningLog('settings.config.publish.failed', CONNECTOR_STATUS_TEXT.settingsPublishFailedSummary, message, message, 'settings_publish_failed');
+		}
+		showConfigToast(CONNECTOR_STATUS_TEXT.configSaved, ESYS_ToastMessageType.SUCCESS);
+	}
+	catch (error: unknown) {
+		showConfigToast(`保存失败：${toSafeErrorMessage(error)}`, ESYS_ToastMessageType.ERROR);
+	}
+	finally {
+		savingServerConfig = false;
+		syncSaveButtonState();
+	}
+}
+
+// 初始化页面事件与默认值。
+function bootstrapPage(): void {
+	const button = getElement('saveButton', HTMLButtonElement, '按钮');
+	const input = getElement('serverUrl', HTMLInputElement, '输入');
+	savedServerUrlValue = getConfiguredMcpUrl() || DEFAULT_MCP_WS_URL;
+	input.value = savedServerUrlValue;
+	syncSaveButtonState();
+
+	button.addEventListener('click', () => {
+		void saveServerConfig();
+	});
+
+	input.addEventListener('input', () => {
+		syncSaveButtonState();
+	});
+
+	try {
+		normalizeMcpUrl(input.value);
+		setStatus('connecting', '–', 'connecting', '–');
+		try {
+			startStatusMonitor();
+		}
+		catch (error: unknown) {
+			const message = toSafeErrorMessage(error);
+			writeSettingsWarningLog('settings.status.init.failed', CONNECTOR_STATUS_TEXT.settingsInitFailedSummary, message, message, 'settings_init_failed');
+			setStatus('error', CONNECTOR_STATUS_TEXT.statusInitFailed, 'error', message);
+		}
+	}
+	catch (error: unknown) {
+		const message = toSafeErrorMessage(error);
+		writeSettingsWarningLog('settings.config.invalid', CONNECTOR_STATUS_TEXT.settingsConfigInvalidSummary, message, message, 'settings_config_invalid');
+		setStatus('error', CONNECTOR_STATUS_TEXT.configInvalid, 'error', message);
+	}
+}
+
+bootstrapPage();

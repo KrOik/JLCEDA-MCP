@@ -283,7 +283,6 @@ export class BridgeTransport {
 					errorCode: 'bridge_server_error',
 				}));
 				console.warn(formatUnifiedLogOutput(logEntry));
-				return;
 			}
 		}
 		catch (error: unknown) {

@@ -34,33 +34,15 @@ function normalizeInvokeArgs(rawArgs: unknown): unknown[] {
 		return [];
 	}
 
-	if (Array.isArray(rawArgs.positionalArgs)) {
-		return rawArgs.positionalArgs;
-	}
-
-	if (Array.isArray(rawArgs.args)) {
-		return rawArgs.args;
-	}
-
-	if (isPlainObjectRecord(rawArgs.namedArgs)) {
-		if (Array.isArray(rawArgs.parameterOrder)) {
-			const ordered: unknown[] = [];
-			for (const key of rawArgs.parameterOrder) {
-				if (typeof key !== 'string' || key.trim().length === 0) {
-					continue;
-				}
-				ordered.push(rawArgs.namedArgs[key]);
-			}
-			return ordered;
-		}
-		return [rawArgs.namedArgs];
-	}
-
 	if (Object.keys(rawArgs).length === 0) {
 		return [];
 	}
 
-	return [rawArgs];
+	if (!Array.isArray(rawArgs.positionalArgs)) {
+		throw new Error('args 必须包含 positionalArgs 数组。');
+	}
+
+	return rawArgs.positionalArgs;
 }
 
 // 禁止访问的 JS 内置属性名，防止 prototype pollution。

@@ -49,31 +49,15 @@
         },
         "args": {
           "type": "object",
-          "description": "API 调用参数对象。支持 positionalArgs/args/namedArgs 三种格式。",
+          "description": "API 调用参数。有入参时使用 positionalArgs 按 signatureText 中的参数顺序传递；无入参时传空对象 {}。",
           "properties": {
             "positionalArgs": {
               "type": "array",
               "items": {},
-              "description": "按位置传参，推荐格式。"
-            },
-            "args": {
-              "type": "array",
-              "items": {},
-              "description": "按位置传参的兼容字段。"
-            },
-            "namedArgs": {
-              "type": "object",
-              "description": "命名参数对象。"
-            },
-            "parameterOrder": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "description": "当使用 namedArgs 时，指定参数顺序。"
+              "description": "按位置顺序传递的参数数组，严格按 signatureText 中的参数顺序填写。"
             }
           },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "timeoutMs": {
           "type": "integer",

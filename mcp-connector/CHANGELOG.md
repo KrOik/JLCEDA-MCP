@@ -1,6 +1,11 @@
-# Changelog
+## [1.0.1] - 2026-03-18
 
-本文件记录 MCP 连接器的版本变更。
+### 变更
+
+- `jlceda_api_invoke` 的 `args` 参数格式由对象（`{ positionalArgs: [...] }`）改为数组，调用时直接传参数列表；无入参时传空数组 `[]`。
+- 移除 `positionalArgs`、`namedArgs`、`parameterOrder` 三种兼容格式，统一为单一数组格式。
+
+---
 
 ## [1.0.0] - 2026-03-16
 

@@ -1126,6 +1126,8 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     const aiInstructionsContentElement = document.getElementById('aiInstructionsContent');
     const agentInstructionsTextarea = document.getElementById('agentInstructions');
     const saveInstructionsButton = document.getElementById('saveInstructions');
+    const debugControlToggleElement = document.getElementById('debugControlToggle');
+    const debugControlContentElement = document.getElementById('debugControlContent');
 
     let savedConfig = null;
     let previousSavedConfig = null;
@@ -1142,6 +1144,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     let isConnectionListCollapsed = false;
     let savedInstructions = '';
     let isAiInstructionsCollapsed = false;
+    let isDebugControlCollapsed = false;
     let copyBridgeAddressButtonResetTimer = null;
     let statusLogScrollFrameId = 0;
     let logFieldSchema = {
@@ -1645,6 +1648,18 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       aiInstructionsToggleElement.setAttribute('aria-expanded', String(!isAiInstructionsCollapsed));
     }
 
+    // 切换调试控制卡片的折叠状态。
+    function setDebugControlCollapsed(collapsed) {
+      isDebugControlCollapsed = Boolean(collapsed);
+      if (!debugControlToggleElement || !debugControlContentElement) {
+        return;
+      }
+
+      debugControlToggleElement.classList.toggle('collapsed', isDebugControlCollapsed);
+      debugControlContentElement.classList.toggle('collapsed', isDebugControlCollapsed);
+      debugControlToggleElement.setAttribute('aria-expanded', String(!isDebugControlCollapsed));
+    }
+
     function isInstructionsChanged() {
       if (!agentInstructionsTextarea) {
         return false;
@@ -2080,6 +2095,18 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       });
     }
 
+    if (debugControlToggleElement) {
+      debugControlToggleElement.addEventListener('click', () => {
+        setDebugControlCollapsed(!isDebugControlCollapsed);
+      });
+      debugControlToggleElement.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          setDebugControlCollapsed(!isDebugControlCollapsed);
+        }
+      });
+    }
+
     if (bridgeConfigToggleElement) {
       bridgeConfigToggleElement.addEventListener('click', () => {
         setBridgeConfigCollapsed(!isBridgeConfigCollapsed);
@@ -2297,6 +2324,9 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     refreshBridgeAddressPreview();
     setBridgeConfigCollapsed(true);
     setAiInstructionsCollapsed(true);
+    if (debugSwitch.enableDebugControlCard) {
+      setDebugControlCollapsed(true);
+    }
     if (debugSwitch.enableSystemLog) {
       setStatusLogCollapsed(true);
     }

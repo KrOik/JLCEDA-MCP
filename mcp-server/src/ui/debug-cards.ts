@@ -109,14 +109,23 @@ export function buildDebugCardsHtml(): string {
       <div class="card log-card">
         <div class="card-inner status-panel">
           <div class="status-inner">
-            <div class="section-header">
-              <div class="section-title">调试控制[开发者]</div>
+            <div id="debugControlToggle" class="section-header status-log-toggle" role="button" tabindex="0" aria-expanded="false" aria-controls="debugControlContent">
+              <div class="section-title-row">
+                <div class="section-title">调试控制[开发者]</div>
+                <div class="status-log-toggle-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <use href="#icon-chevron-down"></use>
+                  </svg>
+                </div>
+              </div>
               <div class="section-description">手动启动 stdio 运行时进程，便于排查连接状态。</div>
             </div>
-            <div class="section-divider"></div>
-            <div class="buttons buttons-column">
-              <button id="startStdioRuntime" class="secondary" type="button">手动启动 stdio 进程</button>
-              <button id="stopStdioRuntime" class="secondary" type="button">停止手动 stdio 进程</button>
+            <div id="debugControlContent" class="status-log-content">
+              <div class="section-divider"></div>
+              <div class="buttons buttons-column">
+                <button id="startStdioRuntime" class="secondary" type="button">手动启动 stdio 进程</button>
+                <button id="stopStdioRuntime" class="secondary" type="button">停止手动 stdio 进程</button>
+              </div>
             </div>
           </div>
         </div>

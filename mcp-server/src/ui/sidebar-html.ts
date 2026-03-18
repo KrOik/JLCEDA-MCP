@@ -1203,6 +1203,12 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         statusLogSourceFilter: normalizeStatusLogSourceFilterValue(options.statusLogSourceFilter),
         visibleStatusLogFields: visibleFields,
         hasInitializedVisibleStatusLogFields: hasInitialized,
+        // 折叠状态：未持久化（undefined）时默认 true（折叠），持久化了 false 则展开。
+        isBridgeConfigCollapsed: options.isBridgeConfigCollapsed !== false,
+        isAiInstructionsCollapsed: options.isAiInstructionsCollapsed !== false,
+        isDebugControlCollapsed: options.isDebugControlCollapsed !== false,
+        isStatusLogCollapsed: options.isStatusLogCollapsed !== false,
+        isConnectionListCollapsed: options.isConnectionListCollapsed !== false,
       };
     }
 
@@ -1216,6 +1222,11 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         statusLogSourceFilter,
         visibleStatusLogFields: Array.from(visibleStatusLogFields),
         hasInitializedVisibleStatusLogFields,
+        isBridgeConfigCollapsed,
+        isAiInstructionsCollapsed,
+        isDebugControlCollapsed,
+        isStatusLogCollapsed,
+        isConnectionListCollapsed,
       });
     }
 
@@ -1592,6 +1603,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       bridgeConfigToggleElement.classList.toggle('collapsed', isBridgeConfigCollapsed);
       bridgeConfigContentElement.classList.toggle('collapsed', isBridgeConfigCollapsed);
       bridgeConfigToggleElement.setAttribute('aria-expanded', String(!isBridgeConfigCollapsed));
+      persistStatusLogOptions();
     }
 
     // 切换连接日志区域的折叠状态。
@@ -1604,6 +1616,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       statusLogToggleElement.classList.toggle('collapsed', isStatusLogCollapsed);
       statusLogContentElement.classList.toggle('collapsed', isStatusLogCollapsed);
       statusLogToggleElement.setAttribute('aria-expanded', String(!isStatusLogCollapsed));
+      persistStatusLogOptions();
 
       if (isStatusLogCollapsed) {
         hideStatusLogContextMenu();
@@ -1626,6 +1639,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       connectionListToggleElement.classList.toggle('collapsed', isConnectionListCollapsed);
       connectionListContentElement.classList.toggle('collapsed', isConnectionListCollapsed);
       connectionListToggleElement.setAttribute('aria-expanded', String(!isConnectionListCollapsed));
+      persistStatusLogOptions();
 
       if (isConnectionListCollapsed) {
         return;
@@ -1647,6 +1661,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       aiInstructionsToggleElement.classList.toggle('collapsed', isAiInstructionsCollapsed);
       aiInstructionsContentElement.classList.toggle('collapsed', isAiInstructionsCollapsed);
       aiInstructionsToggleElement.setAttribute('aria-expanded', String(!isAiInstructionsCollapsed));
+      persistStatusLogOptions();
     }
 
     // 切换调试控制卡片的折叠状态。
@@ -1659,6 +1674,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       debugControlToggleElement.classList.toggle('collapsed', isDebugControlCollapsed);
       debugControlContentElement.classList.toggle('collapsed', isDebugControlCollapsed);
       debugControlToggleElement.setAttribute('aria-expanded', String(!isDebugControlCollapsed));
+      persistStatusLogOptions();
     }
 
     function isInstructionsChanged() {
@@ -2323,16 +2339,17 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
     refreshBridgeAddressPreview();
-    setBridgeConfigCollapsed(true);
-    setAiInstructionsCollapsed(true);
+    const persistedCollapsed = persistedStatusLogOptions || {};
+    setBridgeConfigCollapsed(persistedCollapsed.isBridgeConfigCollapsed !== false);
+    setAiInstructionsCollapsed(persistedCollapsed.isAiInstructionsCollapsed !== false);
     if (debugSwitch.enableDebugControlCard) {
-      setDebugControlCollapsed(true);
+      setDebugControlCollapsed(persistedCollapsed.isDebugControlCollapsed !== false);
     }
     if (debugSwitch.enableSystemLog) {
-      setStatusLogCollapsed(true);
+      setStatusLogCollapsed(persistedCollapsed.isStatusLogCollapsed !== false);
     }
     if (debugSwitch.enableConnectionList) {
-      setConnectionListCollapsed(true);
+      setConnectionListCollapsed(persistedCollapsed.isConnectionListCollapsed !== false);
     }
     ensurePageScrollbar();
     if (debugSwitch.enableSystemLog) {

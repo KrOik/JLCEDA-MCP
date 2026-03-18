@@ -142,17 +142,18 @@ export class SidebarDebugState {
   /**
    * 当状态签名发生变化时追加一条连接状态日志。
    * @param state 当前运行状态。
-   * @param bridgeClientCount 当前桥接客户端数量。
+   * @param clients 当前已连接的客户端列表（首位为活动客户端）。
    * @returns 是否产生了新日志。
    */
-  public appendStatusLogIfChanged(state: ServerStatus, bridgeClientCount: number): boolean {
-    const signature = createServerStatusLogSignature(state, bridgeClientCount);
+  public appendStatusLogIfChanged(state: ServerStatus, clients: SidebarConnectedClientEntry[]): boolean {
+    const bridgeClientIds = clients.map((client) => client.clientId);
+    const signature = createServerStatusLogSignature(state, bridgeClientIds);
     if (signature === this.lastStatusLogSignature) {
       return false;
     }
 
     this.lastStatusLogSignature = signature;
-    const logEntry = createServerStatusLogEntry(state, bridgeClientCount);
+    const logEntry = createServerStatusLogEntry(state, bridgeClientIds);
     const logId = String(logEntry.id ?? '').trim();
     if (logId.length > 0 && this.knownLogIds.has(logId)) {
       return false;

@@ -361,17 +361,17 @@ export function getUnifiedLogFieldSchema(): UnifiedLogFieldSchema {
 /**
  * 生成状态签名，用于去重连续相同状态日志。
  * @param state 当前服务端状态。
- * @param bridgeClientCount 当前桥接客户端数量。
+ * @param bridgeClientIds 当前已连接的客户端 ID 列表（首位为活动客户端）。
  * @returns 状态签名字符串。
  */
-export function createServerStatusLogSignature(state: ServerStatus, bridgeClientCount: number): string {
+export function createServerStatusLogSignature(state: ServerStatus, bridgeClientIds: string[]): string {
   const disconnectSnapshot = getCurrentDisconnectSnapshot(state);
   return [
     state.runtimeStatus,
     state.runtimeMessage,
     state.bridgeStatus,
     state.bridgeMessage,
-    String(bridgeClientCount),
+    bridgeClientIds.join(','),
     disconnectSnapshot ? disconnectSnapshot.eventId : '',
   ].join('\n');
 }
@@ -379,10 +379,10 @@ export function createServerStatusLogSignature(state: ServerStatus, bridgeClient
 /**
  * 生成侧边栏状态日志记录。
  * @param state 当前服务端状态。
- * @param bridgeClientCount 当前桥接客户端数量。
+ * @param bridgeClientIds 当前已连接的客户端 ID 列表（首位为活动客户端）。
  * @returns 统一日志记录。
  */
-export function createServerStatusLogEntry(state: ServerStatus, bridgeClientCount: number): UnifiedLogEntry {
+export function createServerStatusLogEntry(state: ServerStatus, bridgeClientIds: string[]): UnifiedLogEntry {
   const timestamp = normalizeText(state.updatedAt) || new Date().toISOString();
   const displayTime = formatDisplayTime(timestamp);
   const disconnectSnapshot = getCurrentDisconnectSnapshot(state);
@@ -401,8 +401,8 @@ export function createServerStatusLogEntry(state: ServerStatus, bridgeClientCoun
   const message = disconnectSnapshot
     ? detail
     : (normalizeText(state.runtimeMessage) || normalizeText(state.bridgeMessage) || SERVER_STATUS_TEXT.summaryUpdated);
-  const clientId = disconnectSnapshot ? normalizeText(disconnectSnapshot.clientId) : '';
-  const activeClientId = '';
+  const clientId = disconnectSnapshot ? normalizeText(disconnectSnapshot.clientId) : (bridgeClientIds[0] ?? '');
+  const activeClientId = disconnectSnapshot ? '' : (bridgeClientIds[0] ?? '');
   const fields = compactFields({
     timestamp: displayTime,
     level,
@@ -417,7 +417,7 @@ export function createServerStatusLogEntry(state: ServerStatus, bridgeClientCoun
     host: state.host,
     port: String(state.port),
     contextKey: 'global',
-    bridgeClientCount: String(bridgeClientCount),
+    bridgeClientCount: String(bridgeClientIds.length),
     clientId,
     activeClientId,
     leaseTerm: disconnectSnapshot ? String(disconnectSnapshot.leaseTerm) : '',

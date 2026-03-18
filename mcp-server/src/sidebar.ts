@@ -365,7 +365,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     // 状态变化时先更新日志，再同步当前展示状态与连接列表。
     if (DEBUG_SWITCH.enableSystemLog) {
       const hasExternalLogChanged = this.debugState.appendExternalLogs(runtimeSnapshot.logs);
-      const hasStatusLogChanged = this.debugState.appendStatusLogIfChanged(runtimeSnapshot.state, runtimeSnapshot.clients.length);
+      const hasStatusLogChanged = this.debugState.appendStatusLogIfChanged(runtimeSnapshot.state, runtimeSnapshot.clients);
       if (hasExternalLogChanged || hasStatusLogChanged) {
         this.postLogs();
       }

@@ -723,11 +723,38 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       cursor: default;
     }
     .status-log-field-switches {
-      display: flex;
+      display: none;
       flex-wrap: wrap;
       gap: 4px 8px;
       margin-bottom: 8px;
       padding: 0 2px;
+    }
+    .status-log-field-switches.expanded {
+      display: flex;
+    }
+    .status-log-field-toggle-btn {
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 4px;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      color: var(--muted);
+      font-size: 11px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      user-select: none;
+      margin-left: auto;
+    }
+    .status-log-field-toggle-btn:hover {
+      background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.1));
+      color: var(--text);
+    }
+    .status-log-field-toggle-btn.active {
+      color: var(--vscode-button-background, var(--text));
+      border-color: var(--vscode-button-background, var(--input-border));
+      background: color-mix(in srgb, var(--vscode-button-background, var(--text)) 15%, var(--input-bg));
     }
     .status-log-filters {
       display: flex;
@@ -1082,6 +1109,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     const statusLogLevelFilterElement = document.getElementById('statusLogLevelFilter');
     const statusLogSourceFilterElement = document.getElementById('statusLogSourceFilter');
     const statusLogFieldSwitchesElement = document.getElementById('statusLogFieldSwitches');
+    const statusLogFieldToggleBtnElement = document.getElementById('statusLogFieldToggle');
     const connectionListToggleElement = document.getElementById('connectionListToggle');
     const connectionListContentElement = document.getElementById('connectionListContent');
     const statusLogViewportElement = document.getElementById('statusLogViewport');
@@ -2105,6 +2133,13 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         statusLogSourceFilter = normalizeStatusLogSourceFilterValue(statusLogSourceFilterElement.value);
         persistStatusLogOptions();
         renderStatusLogs(statusLogEntries);
+      });
+    }
+
+    if (statusLogFieldToggleBtnElement && statusLogFieldSwitchesElement) {
+      statusLogFieldToggleBtnElement.addEventListener('click', () => {
+        const isExpanded = statusLogFieldSwitchesElement.classList.toggle('expanded');
+        statusLogFieldToggleBtnElement.classList.toggle('active', isExpanded);
       });
     }
 

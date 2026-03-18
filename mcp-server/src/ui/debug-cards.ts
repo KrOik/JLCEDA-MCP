@@ -54,6 +54,10 @@ export function buildDebugCardsHtml(): string {
                   <option value="server">服务端</option>
                   <option value="client">客户端</option>
                 </select>
+                <button id="statusLogFieldToggle" class="status-log-field-toggle-btn" type="button" title="显示 / 隐藏字段开关">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 3h14v1.5H1V3zm2 4h10v1.5H3V7zm2 4h6v1.5H5V11z"/></svg>
+                  <span>字段</span>
+                </button>
               </div>
               <div id="statusLogFieldSwitches" class="status-log-field-switches"></div>
               <div class="status-log-box">

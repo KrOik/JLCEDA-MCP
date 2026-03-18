@@ -400,7 +400,7 @@ async function cleanupExpiredPeers(): Promise<void> {
 			continue;
 		}
 
-		await removeSocket(peer.socket, `桥接客户端心跳超时：${peer.clientId}`, {
+		await removeSocket(peer.socket, '桥接客户端心跳超时。', {
 			disconnectType: 'heartbeat_timeout',
 			disconnectActor: 'timeout',
 			closeReason: '心跳超时',

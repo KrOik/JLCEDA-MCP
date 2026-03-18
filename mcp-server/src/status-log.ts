@@ -382,7 +382,7 @@ export function createServerStatusLogSignature(state: ServerStatus, bridgeClient
  * @param bridgeClientIds 当前已连接的客户端 ID 列表（首位为活动客户端）。
  * @returns 统一日志记录。
  */
-export function createServerStatusLogEntry(state: ServerStatus, bridgeClientIds: string[]): UnifiedLogEntry {
+export function createServerStatusLogEntry(state: ServerStatus, bridgeClientIds: string[], changedClientId = ''): UnifiedLogEntry {
   const timestamp = normalizeText(state.updatedAt) || new Date().toISOString();
   const displayTime = formatDisplayTime(timestamp);
   const disconnectSnapshot = getCurrentDisconnectSnapshot(state);
@@ -401,7 +401,8 @@ export function createServerStatusLogEntry(state: ServerStatus, bridgeClientIds:
   const message = disconnectSnapshot
     ? detail
     : (normalizeText(state.runtimeMessage) || normalizeText(state.bridgeMessage) || SERVER_STATUS_TEXT.summaryUpdated);
-  const clientId = disconnectSnapshot ? normalizeText(disconnectSnapshot.clientId) : (bridgeClientIds[0] ?? '');
+  // 断开事件使用断开快照里的客户端 ID；其他事件使用触发本次状态变更的具体客户端 ID。
+  const clientId = disconnectSnapshot ? normalizeText(disconnectSnapshot.clientId) : changedClientId;
   const activeClientId = disconnectSnapshot ? '' : (bridgeClientIds[0] ?? '');
   const fields = compactFields({
     timestamp: displayTime,

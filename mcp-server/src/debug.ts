@@ -69,6 +69,8 @@ export class SidebarDebugState {
   private readonly logReportAtByKey = new Map<string, number>();
   private lastStatusLogSignature = '';
   private lastConnectedClientsSignature = '';
+  // 上一次轮询时的客户端 ID 列表，用于 diff 出本次新增或移除的客户端。
+  private lastBridgeClientIds: string[] = [];
 
   // 统一维护日志上限与索引。
   private trimLogsToLimit(): void {
@@ -152,8 +154,16 @@ export class SidebarDebugState {
       return false;
     }
 
+    // 通过对比前后客户端列表，找出触发本次状态变更的具体客户端（新连入或刚断开的那个）。
+    const prevIdSet = new Set(this.lastBridgeClientIds);
+    const newIdSet = new Set(bridgeClientIds);
+    const addedId = bridgeClientIds.find((id) => !prevIdSet.has(id));
+    const removedId = this.lastBridgeClientIds.find((id) => !newIdSet.has(id));
+    const changedClientId = addedId ?? removedId ?? bridgeClientIds[0] ?? '';
+
     this.lastStatusLogSignature = signature;
-    const logEntry = createServerStatusLogEntry(state, bridgeClientIds);
+    this.lastBridgeClientIds = bridgeClientIds;
+    const logEntry = createServerStatusLogEntry(state, bridgeClientIds, changedClientId);
     const logId = String(logEntry.id ?? '').trim();
     if (logId.length > 0 && this.knownLogIds.has(logId)) {
       return false;

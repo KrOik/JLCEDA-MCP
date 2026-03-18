@@ -9,10 +9,9 @@
  * ------------------------------------------------------------------------
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
 import { enqueueBridgeRequest } from '../bridge/broker';
-import { getExtensionRootPathFromRuntime, isPlainObjectRecord, parseBoundedIntegerValue } from '../../utils';
+import { isPlainObjectRecord, parseBoundedIntegerValue } from '../../utils';
+import _rawToolDefinitions from '../../data/jlceda-mcp-tool-definitions.json';
 
 export interface ToolCallParams {
 	name: string;
@@ -27,14 +26,11 @@ export interface ToolDefinition {
 
 const DEFAULT_BRIDGE_TIMEOUT_MS = 15_000;
 
-const TOOL_DEFINITIONS_FILE = path.join(getExtensionRootPathFromRuntime(), 'resources', 'jlceda-mcp-tool-definitions.json');
-
 const TOOL_DEFINITIONS = loadToolDefinitions();
 
 // 加载并校验工具定义。
 function loadToolDefinitions(): readonly ToolDefinition[] {
-	const raw = fs.readFileSync(TOOL_DEFINITIONS_FILE, 'utf8');
-	const parsed = JSON.parse(raw) as unknown;
+	const parsed: unknown = _rawToolDefinitions;
 	if (!Array.isArray(parsed)) {
 		throw new Error('工具定义文件格式非法：根节点必须是数组。');
 	}

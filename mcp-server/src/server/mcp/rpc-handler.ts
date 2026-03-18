@@ -11,7 +11,7 @@
 
 import type { ToolDispatcher } from './tool-dispatcher';
 import { isPlainObjectRecord, toSafeErrorMessage } from '../../utils';
-import _defaultInstructions from '../../../resources/agent-instructions.md';
+import _defaultInstructions from '../../data/agent-instructions.md';
 import { waitForBridgeReady } from '../bridge/broker';
 
 const DEFAULT_AGENT_INSTRUCTIONS = _defaultInstructions.trimEnd();

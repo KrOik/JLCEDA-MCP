@@ -48,16 +48,9 @@
           "description": "要调用的 API 全名。"
         },
         "args": {
-          "type": "object",
-          "description": "API 调用参数。有入参时使用 positionalArgs 按 signatureText 中的参数顺序传递；无入参时传空对象 {}。",
-          "properties": {
-            "positionalArgs": {
-              "type": "array",
-              "items": {},
-              "description": "按位置顺序传递的参数数组，严格按 signatureText 中的参数顺序填写。"
-            }
-          },
-          "additionalProperties": false
+          "type": "array",
+          "items": {},
+          "description": "API 调用参数列表，严格按 signatureText 中的参数顺序填写。无入参时传空数组 []。"
         },
         "timeoutMs": {
           "type": "integer",

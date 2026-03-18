@@ -129,7 +129,7 @@ export class ToolDispatcher {
 		}
 
 		const timeoutMs = parseBoundedIntegerValue(argumentsObject.timeoutMs, DEFAULT_BRIDGE_TIMEOUT_MS, 1000, 120000);
-		const invokeArgs = isPlainObjectRecord(argumentsObject.args) ? argumentsObject.args : {};
+		const invokeArgs = Array.isArray(argumentsObject.args) ? argumentsObject.args : [];
 		// invoke-handler 返回的结构已包含 apiFullName、argsCount、result，无需再次包装。
 		return await enqueueBridgeRequest('/bridge/jlceda/api/invoke', {
 			apiFullName,

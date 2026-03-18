@@ -28,23 +28,6 @@ function resolveSegmentKey(target: Record<string, unknown>, segment: string): st
 	throw new Error(`调用路径不存在: ${segment}`);
 }
 
-// 归一化调用参数格式。
-function normalizeInvokeArgs(rawArgs: unknown): unknown[] {
-	if (!isPlainObjectRecord(rawArgs)) {
-		return [];
-	}
-
-	if (Object.keys(rawArgs).length === 0) {
-		return [];
-	}
-
-	if (!Array.isArray(rawArgs.positionalArgs)) {
-		throw new Error('args 必须包含 positionalArgs 数组。');
-	}
-
-	return rawArgs.positionalArgs;
-}
-
 // 禁止访问的 JS 内置属性名，防止 prototype pollution。
 const FORBIDDEN_SEGMENT_NAMES = new Set(['__proto__', 'prototype', 'constructor']);
 
@@ -108,12 +91,11 @@ export async function handleInvokeTask(payload: unknown): Promise<unknown> {
 
 	const apiFullName = String(payload.apiFullName ?? '').trim();
 	const { callable, thisArg, resolvedPath } = resolveApiCallable(apiFullName);
-	const invokeArgs = normalizeInvokeArgs(payload.args);
+	const invokeArgs = Array.isArray(payload.args) ? payload.args : [];
 	const invokeResult = await Promise.resolve(callable.apply(thisArg, invokeArgs));
 
 	return {
 		apiFullName: resolvedPath,
-		argsCount: invokeArgs.length,
 		result: await toSerializableAsync(invokeResult),
 	};
 }

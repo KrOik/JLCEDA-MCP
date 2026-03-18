@@ -2,7 +2,7 @@
   "name": "jlceda-mcp-server",
   "displayName": "嘉立创 EDA MCP",
   "description": "通过 stdio 向 VS Code、Cursor 暴露嘉立创 EDA MCP 工具能力，并接收来自嘉立创 EDA 的桥接连接。",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "publisher": "chengbin",
   "license": "Apache-2.0",
   "icon": "resources/jlc-mcp.png",

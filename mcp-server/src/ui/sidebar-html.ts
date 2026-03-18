@@ -1087,7 +1087,8 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     const vscode = acquireVsCodeApi();
     const debugSwitch = {
       enableSystemLog: ${DEBUG_SWITCH.enableSystemLog ? 'true' : 'false'},
-      enableConnectionList: ${DEBUG_SWITCH.enableConnectionList ? 'true' : 'false'}
+      enableConnectionList: ${DEBUG_SWITCH.enableConnectionList ? 'true' : 'false'},
+      enableDebugControlCard: ${DEBUG_SWITCH.enableDebugControlCard ? 'true' : 'false'}
     };
     const hostInput = document.getElementById('host');
     const portInput = document.getElementById('port');

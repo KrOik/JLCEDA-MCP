@@ -883,6 +883,66 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
       margin: 10px 0 8px 0;
     }
+    /* 底部开关行 */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 8px 6px 8px;
+      margin-top: 6px;
+      gap: 8px;
+    }
+    .toggle-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+      user-select: none;
+      line-height: 1.4;
+    }
+    .toggle-switch {
+      flex: none;
+      position: relative;
+      width: 36px;
+      height: 20px;
+      min-width: 36px;
+      border-radius: 10px;
+      border: none;
+      background: color-mix(in srgb, var(--text) 20%, transparent);
+      cursor: pointer;
+      padding: 0;
+      transition: background-color .18s ease;
+    }
+    .toggle-switch:hover {
+      background: color-mix(in srgb, var(--text) 28%, transparent);
+    }
+    .toggle-switch[aria-checked="true"] {
+      background: var(--btn-primary-bg);
+    }
+    .toggle-switch[aria-checked="true"]:hover {
+      background: var(--btn-primary-hover);
+    }
+    .toggle-switch[aria-checked="true"]:active {
+      background: var(--btn-primary-active);
+    }
+    .toggle-switch:focus-visible {
+      outline: 1px solid var(--vscode-focusBorder);
+      outline-offset: 2px;
+    }
+    .toggle-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #ffffff;
+      transition: transform .18s ease;
+      pointer-events: none;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+    }
+    .toggle-switch[aria-checked="true"] .toggle-thumb {
+      transform: translateX(16px);
+    }
   </style>
 </head>
 <body>
@@ -983,6 +1043,12 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         </div>
       </div>
       ${buildDebugCardsHtml()}
+      <div class="toggle-row">
+        <span class="toggle-label">打开 EDA 时关闭侧边栏</span>
+        <button id="closeSidebarToggle" class="toggle-switch" role="switch" aria-checked="false" type="button" title="打开 EDA 编辑器时自动关闭侧边栏">
+          <span class="toggle-thumb"></span>
+        </button>
+      </div>
     </div>
   </div>
   <div id="statusLogContextMenu" class="status-log-context-menu" role="menu" aria-label="日志右键菜单">
@@ -2161,7 +2227,30 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         }
         refreshInstructionsSaveButton();
       }
+      if (message.type === 'closeSidebarOnOpenEditor') {
+        setCloseSidebarToggleState(message.payload);
+      }
     });
+
+    const closeSidebarToggleButton = document.getElementById('closeSidebarToggle');
+
+    let closeSidebarOnOpenEditor = false;
+
+    // 更新底部开关按钮的视觉状态。
+    function setCloseSidebarToggleState(enabled) {
+      closeSidebarOnOpenEditor = Boolean(enabled);
+      if (closeSidebarToggleButton) {
+        closeSidebarToggleButton.setAttribute('aria-checked', closeSidebarOnOpenEditor ? 'true' : 'false');
+      }
+    }
+
+    if (closeSidebarToggleButton) {
+      closeSidebarToggleButton.addEventListener('click', () => {
+        const newValue = !closeSidebarOnOpenEditor;
+        setCloseSidebarToggleState(newValue);
+        vscode.postMessage({ command: 'setCloseSidebarOnOpenEditor', payload: newValue });
+      });
+    }
 
     new MutationObserver(() => {
       statusLogMeasureCache.clear();

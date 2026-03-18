@@ -238,6 +238,9 @@ export function activate(context: vscode.ExtensionContext): void {
         updateDebugSwitch(readDebugSwitchFromConfig());
         sidebarProvider.refreshWebview();
       }
+      if (event.affectsConfiguration('jlcMcpServer.closeSidebarOnOpenEditor')) {
+        sidebarProvider.notifyCloseSidebarSettingChanged();
+      }
     })
   );
 

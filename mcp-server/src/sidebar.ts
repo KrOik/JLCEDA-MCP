@@ -183,6 +183,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
         this.debugState.resetClientsSignature();
         this.postConfig(currentConfig);
         this.postInstructions();
+        this.postCloseSidebarOnOpenEditor();
         if (DEBUG_SWITCH.enableSystemLog) {
           this.postLogSchema();
           this.postLogs();
@@ -234,6 +235,16 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
 
       if (message.command === 'stopStdioRuntime') {
         await this.stopStdioRuntime();
+        return;
+      }
+
+      if (message.command === 'setCloseSidebarOnOpenEditor') {
+        await vscode.workspace.getConfiguration('jlcMcpServer').update(
+          'closeSidebarOnOpenEditor',
+          message.payload,
+          vscode.ConfigurationTarget.Global
+        );
+        return;
       }
     } catch (error) {
       const messageText = error instanceof Error ? error.message : String(error);
@@ -366,6 +377,22 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  private postCloseSidebarOnOpenEditor(): void {
+    // 将「打开 EDA 时关闭侧边栏」设置值同步到前端开关。
+    const config = vscode.workspace.getConfiguration('jlcMcpServer');
+    this.postMessage({
+      type: 'closeSidebarOnOpenEditor',
+      payload: config.get<boolean>('closeSidebarOnOpenEditor', false)
+    });
+  }
+
+  /**
+   * 外部通知：「打开 EDA 时关闭侧边栏」设置已变更，同步到侧边栏开关。
+   */
+  public notifyCloseSidebarSettingChanged(): void {
+    this.postCloseSidebarOnOpenEditor();
+  }
+
   private postMessage(message: SidebarWebviewMessage): void {
     // 统一封装宿主到 Webview 的消息发送。
     void this.view?.webview.postMessage(message);
@@ -375,8 +402,11 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     // 打开 VS Code 内置简易浏览器并跳转到嘉立创编辑器地址。
     await vscode.commands.executeCommand('simpleBrowser.show', McpSidebarViewProvider.editorUrl);
 
-    // 收起主侧边栏。
-    // await vscode.commands.executeCommand('workbench.action.closeSidebar');
+    // 若设置项开启，则关闭主侧边栏。
+    const config = vscode.workspace.getConfiguration('jlcMcpServer');
+    if (config.get<boolean>('closeSidebarOnOpenEditor', false)) {
+      await vscode.commands.executeCommand('workbench.action.closeSidebar');
+    }
   }
 
   /**

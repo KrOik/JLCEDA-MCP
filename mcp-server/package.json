@@ -49,6 +49,16 @@
     ],
     "configuration": [
       {
+        "title": "常规",
+        "properties": {
+          "jlcMcpServer.closeSidebarOnOpenEditor": {
+            "type": "boolean",
+            "default": false,
+            "description": "打开嘉立创 EDA 编辑器时自动关闭侧边栏。"
+          }
+        }
+      },
+      {
         "title": "服务配置",
         "properties": {
           "jlcMcpServer.host": {

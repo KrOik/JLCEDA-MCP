@@ -35,7 +35,8 @@ export type SidebarCommand =
   | { command: 'clearLogs' }
   | { command: 'openEditor' }
   | { command: 'startStdioRuntime' }
-  | { command: 'stopStdioRuntime' };
+  | { command: 'stopStdioRuntime' }
+  | { command: 'setCloseSidebarOnOpenEditor'; payload: boolean };
 
 /**
  * 扩展宿主发送到侧边栏的消息结构。
@@ -46,4 +47,5 @@ export type SidebarWebviewMessage =
   | { type: 'instructions'; payload: string }
   | { type: 'logSchema'; payload: UnifiedLogFieldSchema }
   | { type: 'logs'; payload: SidebarStatusLogEntry[] }
-  | { type: 'clients'; payload: SidebarConnectedClientEntry[] };
+  | { type: 'clients'; payload: SidebarConnectedClientEntry[] }
+  | { type: 'closeSidebarOnOpenEditor'; payload: boolean };

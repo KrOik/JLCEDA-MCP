@@ -40,6 +40,15 @@ export interface BridgeDisconnectSnapshot {
 }
 
 /**
+ * 连接器与服务端版本不一致快照。
+ */
+export interface ConnectorVersionMismatch {
+  connectorVersion: string;
+  serverVersion: string;
+  lowerSide: 'connector' | 'server';
+}
+
+/**
  * stdio 运行时写入磁盘的状态快照。
  */
 export interface RuntimeStatusSnapshot {
@@ -50,6 +59,7 @@ export interface RuntimeStatusSnapshot {
   bridgeClientCount: number;
   bridgeClientIds: string[];
   connectorLogs?: UnifiedLogEntry[];
+  connectorVersionMismatch?: ConnectorVersionMismatch | null;
   lastErrorMessage: string;
   lastDisconnect: BridgeDisconnectSnapshot | null;
   updatedAt: string;

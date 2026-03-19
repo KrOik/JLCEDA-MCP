@@ -24,6 +24,7 @@ export interface BridgeDebugSwitch {
 export interface BridgeClientHelloMessage {
 	type: 'bridge/hello';
 	clientId: string;
+	connectorVersion: string;
 }
 
 // 客户端上报心跳消息。

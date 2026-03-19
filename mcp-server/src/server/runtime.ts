@@ -16,11 +16,14 @@ import {
 	notifyBridgeClientsDisconnect,
 	pumpBridgeBroker,
 	setBridgeDisconnectHandler,
+	setServerVersion,
+	setVersionMismatchHandler,
 	type BridgeDisconnectEvent,
+	type BridgeVersionMismatchEvent,
 } from './bridge/broker';
 import { DEBUG_SWITCH, updateDebugSwitch } from '../debug';
 import { STATUS_FILE_FLAG, writeRuntimeStatusSnapshot } from './core/runtime-status';
-import type { BridgeDisconnectSnapshot, RuntimeStatus, RuntimeStatusSnapshot } from './core/status';
+import type { BridgeDisconnectSnapshot, ConnectorVersionMismatch, RuntimeStatus, RuntimeStatusSnapshot } from './core/status';
 import { createRuntimeLogEntry, formatUnifiedLogOutput, SERVER_STATUS_TEXT, type UnifiedLogLevel } from '../status-log';
 import { RpcHandler } from './mcp/rpc-handler';
 import { ToolDispatcher } from './mcp/tool-dispatcher';
@@ -60,6 +63,7 @@ class McpRuntimeServer {
 	private runtimeMessage: string = SERVER_STATUS_TEXT.runtimeStarting;
 	private lastErrorMessage = '';
 	private lastDisconnect: BridgeDisconnectSnapshot | null = null;
+	private lastVersionMismatch: ConnectorVersionMismatch | null = null;
 
 	public constructor(
 		private readonly host: string,
@@ -74,6 +78,14 @@ class McpRuntimeServer {
 	public start(): void {
 		let shuttingDown = false;
 		this.writeRuntimeStatus('starting', SERVER_STATUS_TEXT.runtimeStarting);
+		setVersionMismatchHandler((event: BridgeVersionMismatchEvent) => {
+			this.lastVersionMismatch = {
+				connectorVersion: event.connectorVersion,
+				serverVersion: event.serverVersion,
+				lowerSide: event.lowerSide,
+			};
+			this.writeRuntimeStatus(this.runtimeStatus, this.runtimeMessage, this.lastErrorMessage);
+		});
 		setBridgeDisconnectHandler((event: BridgeDisconnectEvent) => {
 			const bridgeStatus = getBridgeStatus();
 			const activeClientId = bridgeStatus.clientIds.length > 0 ? bridgeStatus.clientIds[0] : '';
@@ -148,6 +160,7 @@ class McpRuntimeServer {
 			}
 			await bridgeWebSocketServer.close();
 			setBridgeDisconnectHandler(undefined);
+			setVersionMismatchHandler(undefined);
 			this.writeLog('info', 'runtime.stopped', '服务已停止', SERVER_STATUS_TEXT.runtimeStopped, {
 				runtimeStatus: '停止',
 				bridgeStatus: '等待',
@@ -211,6 +224,7 @@ class McpRuntimeServer {
 			bridgeClientCount: bridgeStatus.connectedClients,
 			bridgeClientIds: bridgeStatus.clientIds,
 			connectorLogs: DEBUG_SWITCH.enableSystemLog ? flushConnectorLogs() : [],
+			connectorVersionMismatch: this.lastVersionMismatch,
 			lastErrorMessage,
 			lastDisconnect: this.lastDisconnect,
 			updatedAt,
@@ -347,6 +361,7 @@ function startRuntimeServer(): void {
 		: '';
 	const toolDispatcher = new ToolDispatcher();
 	const rpcHandler = new RpcHandler(toolDispatcher, extensionVersion, agentInstructions);
+	setServerVersion(extensionVersion);
 	const runtimeServer = new McpRuntimeServer(host, port, rpcHandler, statusFilePath);
 	runtimeServer.start();
 }

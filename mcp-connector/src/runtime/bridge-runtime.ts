@@ -11,6 +11,7 @@
 
 import type { BridgeDebugSwitch, BridgeRole, BridgeServerRoleMessage } from '../bridge/protocol.ts';
 import type { UnifiedLogEntry } from '../status-log.ts';
+import extensionConfig from '../../extension.json';
 import { getConfiguredMcpUrl, getMcpServerUrlChangedTopic } from '../bridge/config.ts';
 import { BridgeStatusReporter } from '../bridge/status-reporter.ts';
 import { handleApiSearchTask } from '../mcp/api-search-handler.ts';
@@ -325,7 +326,7 @@ async function ensureConnected(): Promise<void> {
 	connecting = true;
 	statusReporter.markConnecting();
 	const activeClientId = getClientId();
-	const instance = new BridgeTransport(getConfiguredMcpUrl(), getSocketId(), activeClientId, {
+	const instance = new BridgeTransport(getConfiguredMcpUrl(), getSocketId(), activeClientId, String(extensionConfig.version), {
 		onRoleChanged: (message) => {
 			applyRole(message);
 		},

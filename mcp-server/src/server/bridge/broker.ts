@@ -97,6 +97,8 @@ const pendingActiveWaiters = new Set<PendingActiveWaiter>();
 // 增量日志缓冲：每次 flush 后清空，只保留当前心跳周期产生的新日志。
 const pendingConnectorLogs: UnifiedLogEntry[] = [];
 let disconnectEventHandler: ((event: BridgeDisconnectEvent) => void) | undefined;
+let versionMismatchHandler: ((event: BridgeVersionMismatchEvent) => void) | undefined;
+let serverVersion = '';
 let isServerShuttingDown = false;
 let lastCleanupAt = 0;
 
@@ -334,6 +336,29 @@ async function electActivePeer(reason: string): Promise<void> {
 	await broadcastRoles(reason);
 }
 
+/**
+ * 设置服务端版本号，在 broker 初始化时调用。
+ * @param version 服务端扩展版本号。
+ */
+export function setServerVersion(version: string): void {
+	serverVersion = String(version ?? '').trim();
+}
+
+// 连接器与服务端版本不一致事件。
+export interface BridgeVersionMismatchEvent {
+	connectorVersion: string;
+	serverVersion: string;
+	lowerSide: 'connector' | 'server';
+}
+
+/**
+ * 设置版本不一致事件回调，由 runtime.ts 注册。
+ * @param handler 版本不一致时的回调函数。
+ */
+export function setVersionMismatchHandler(handler: ((event: BridgeVersionMismatchEvent) => void) | undefined): void {
+	versionMismatchHandler = handler;
+}
+
 // 设置断开事件回调。
 export function setBridgeDisconnectHandler(handler: ((event: BridgeDisconnectEvent) => void) | undefined): void {
 	disconnectEventHandler = handler;
@@ -406,6 +431,34 @@ async function cleanupExpiredPeers(): Promise<void> {
 			closeReason: '心跳超时',
 		});
 	}
+}
+
+// 比较两个语义化版本字符串，返回负数表示 a < b，正数表示 a > b，0 表示相等。
+function compareSemver(a: string, b: string): number {
+	const parsePart = (v: string) => v.split('.').map(s => Number.parseInt(s, 10) || 0);
+	const aParts = parsePart(a);
+	const bParts = parsePart(b);
+	for (let i = 0; i < 3; i++) {
+		const diff = (aParts[i] ?? 0) - (bParts[i] ?? 0);
+		if (diff !== 0) return diff;
+	}
+	return 0;
+}
+
+// 检查连接器版本与服务端是否一致，不一致时触发回调。
+function checkVersionMismatch(connectorVer: string): void {
+	if (!serverVersion || !connectorVer || !versionMismatchHandler) {
+		return;
+	}
+	const cmp = compareSemver(connectorVer, serverVersion);
+	if (cmp === 0) {
+		return;
+	}
+	versionMismatchHandler({
+		connectorVersion: connectorVer,
+		serverVersion,
+		lowerSide: cmp < 0 ? 'connector' : 'server',
+	});
 }
 
 // 注册或刷新客户端连接。
@@ -507,6 +560,10 @@ async function handleClientMessage(socket: WebSocket, data: RawData): Promise<vo
 	const message = parseClientMessage(data);
 	if (message.type === 'bridge/hello') {
 		const peer = await registerClient(message.clientId, socket);
+		const connectorVer = String(message.connectorVersion ?? '').trim();
+		if (connectorVer.length > 0) {
+			checkVersionMismatch(connectorVer);
+		}
 		await sendBridgeMessage(peer.socket, {
 			type: 'bridge/welcome',
 			clientId: peer.clientId,

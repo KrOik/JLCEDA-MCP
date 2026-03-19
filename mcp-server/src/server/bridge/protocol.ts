@@ -21,6 +21,7 @@ export interface BridgeDebugSwitch {
 export interface BridgeClientHelloMessage {
 	type: 'bridge/hello';
 	clientId: string;
+	connectorVersion?: string;
 }
 
 export interface BridgeClientHeartbeatMessage {

@@ -117,6 +117,7 @@ export class BridgeTransport {
 		private readonly bridgeWebSocketUrl: string,
 		private readonly socketId: string,
 		private readonly clientId: string,
+		private readonly connectorVersion: string,
 		private readonly callbacks: BridgeTransportCallbacks,
 	) {
 		this.readyPromise = new Promise<void>((resolve, reject) => {
@@ -213,6 +214,7 @@ export class BridgeTransport {
 		this.sendMessage({
 			type: 'bridge/hello',
 			clientId: this.clientId,
+			connectorVersion: this.connectorVersion,
 		});
 	}
 

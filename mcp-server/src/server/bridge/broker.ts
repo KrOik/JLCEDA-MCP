@@ -561,9 +561,7 @@ async function handleClientMessage(socket: WebSocket, data: RawData): Promise<vo
 	if (message.type === 'bridge/hello') {
 		const peer = await registerClient(message.clientId, socket);
 		const connectorVer = String(message.connectorVersion ?? '').trim();
-		if (connectorVer.length > 0) {
-			checkVersionMismatch(connectorVer);
-		}
+		checkVersionMismatch(connectorVer.length > 0 ? connectorVer : '旧版客户端（未上报版本）');
 		await sendBridgeMessage(peer.socket, {
 			type: 'bridge/welcome',
 			clientId: peer.clientId,

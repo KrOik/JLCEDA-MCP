@@ -366,6 +366,11 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
   }
 
   private syncState(runtimeSnapshot: SidebarRuntimeSnapshot): void {
+    // 客户端断开时 connectorVersionMismatch 将变为 null，重置去重键使下次重连后可再次弹出。
+    if (!runtimeSnapshot.connectorVersionMismatch) {
+      this.lastNotifiedVersionMismatch = '';
+    }
+
     // 版本不一致时弹出 VS Code 右下角错误气泡，每个不一致组合只弹一次。
     if (runtimeSnapshot.connectorVersionMismatch) {
       const mismatch = runtimeSnapshot.connectorVersionMismatch;

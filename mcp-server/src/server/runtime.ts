@@ -87,6 +87,8 @@ class McpRuntimeServer {
 			this.writeRuntimeStatus(this.runtimeStatus, this.runtimeMessage, this.lastErrorMessage);
 		});
 		setBridgeDisconnectHandler((event: BridgeDisconnectEvent) => {
+			// 客户端断开时清除版本不一致状态，使下次重连时不一致依然得到提醒。
+			this.lastVersionMismatch = null;
 			const bridgeStatus = getBridgeStatus();
 			const activeClientId = bridgeStatus.clientIds.length > 0 ? bridgeStatus.clientIds[0] : '';
 			const level: UnifiedLogLevel = event.disconnectType === 'socket_error' || event.disconnectType === 'send_failure'

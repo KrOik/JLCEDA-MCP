@@ -71,7 +71,7 @@ export class RpcHandler {
 			}
 			const customPart = this.agentInstructions ? this.agentInstructions.trim() : '';
 			const instructions = customPart.length > 0
-				? customPart
+				? `${DEFAULT_AGENT_INSTRUCTIONS}\n\n${customPart}`
 				: DEFAULT_AGENT_INSTRUCTIONS;
 			return this.createSuccessResponse(requestId, {
 				protocolVersion: '2024-11-05',

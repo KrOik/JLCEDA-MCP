@@ -45,6 +45,18 @@ export class ConnectorStateManager {
 		taskRejectedStandby: '当前客户端处于待命状态，拒绝执行任务。',
 		taskLeaseExpired: '任务租约已过期。',
 		taskPathUnsupportedPrefix: '不支持的任务路径：',
+		transportUnknownMessageFormat: '收到无法识别的桥接消息格式。',
+		transportInvalidMessageRoot: '桥接消息格式非法，根节点必须是对象。',
+		transportMissingType: '桥接消息缺少 type 字段。',
+		transportUnknownTypePrefix: '收到未知服务端消息类型: ',
+		transportClosed: '桥接连接已关闭。',
+		transportCloseReason: '桥接连接已关闭',
+		transportConnectFailedPrefix: '桥接连接失败：',
+		transportMessageHandleFailedPrefix: '桥接消息处理失败：',
+		transportWaitingStdio: '正在等待 stdio 启动，服务启动后将自动连接。',
+		transportHandshakeTimeout: '桥接连接握手超时。',
+		transportHeartbeatSendFailedPrefix: '桥接心跳发送失败：',
+		transportServerIdleTimeout: '桥接服务端长时间无响应。',
 	} as const;
 
 	/**

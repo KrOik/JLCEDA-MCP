@@ -62,7 +62,7 @@ async function decodeMessageData(data: unknown): Promise<string> {
 		return new TextDecoder().decode(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
 	}
 
-	throw new Error('收到无法识别的桥接消息格式。');
+	throw new Error(CONNECTOR_STATUS_TEXT.transportUnknownMessageFormat);
 }
 
 // 服务端允许发出的消息类型白名单。
@@ -80,16 +80,16 @@ async function parseServerMessage(data: unknown): Promise<BridgeServerMessage> {
 	const text = await decodeMessageData(data);
 	const parsed = JSON.parse(text) as unknown;
 	if (!isPlainObjectRecord(parsed)) {
-		throw new Error('桥接消息格式非法，根节点必须是对象。');
+		throw new Error(CONNECTOR_STATUS_TEXT.transportInvalidMessageRoot);
 	}
 
 	const messageType = String(parsed.type ?? '').trim();
 	if (messageType.length === 0) {
-		throw new Error('桥接消息缺少 type 字段。');
+		throw new Error(CONNECTOR_STATUS_TEXT.transportMissingType);
 	}
 
 	if (!VALID_SERVER_MESSAGE_TYPES.has(messageType)) {
-		throw new Error(`收到未知服务端消息类型: ${messageType}。`);
+		throw new Error(`${CONNECTOR_STATUS_TEXT.transportUnknownTypePrefix}${messageType}。`);
 	}
 
 	return parsed as unknown as BridgeServerMessage;
@@ -128,7 +128,7 @@ export class BridgeTransport {
 	 */
 	public async connect(): Promise<void> {
 		if (this.closed) {
-			throw new Error('桥接连接已关闭。');
+			throw new Error(CONNECTOR_STATUS_TEXT.transportClosed);
 		}
 
 		// 先启动连接建立超时；握手超时在 onOpen 触发后才开始计时。
@@ -146,7 +146,7 @@ export class BridgeTransport {
 			);
 		}
 		catch (error: unknown) {
-			this.fail(`桥接连接失败：${toSafeErrorMessage(error)}`, error);
+			this.fail(`${CONNECTOR_STATUS_TEXT.transportConnectFailedPrefix}${toSafeErrorMessage(error)}`, error);
 		}
 
 		await this.readyPromise;
@@ -192,9 +192,9 @@ export class BridgeTransport {
 
 		this.closed = true;
 		this.stopTimers();
-		this.rejectReadyOnce(new Error('桥接连接已关闭。'));
+		this.rejectReadyOnce(new Error(CONNECTOR_STATUS_TEXT.transportClosed));
 		try {
-			eda.sys_WebSocket.close(this.socketId, 1000, '桥接连接已关闭');
+			eda.sys_WebSocket.close(this.socketId, 1000, CONNECTOR_STATUS_TEXT.transportCloseReason);
 		}
 		catch {
 			// 主动关闭时忽略底层重复关闭异常。
@@ -285,14 +285,14 @@ export class BridgeTransport {
 			}
 		}
 		catch (error: unknown) {
-			this.fail(`桥接消息处理失败：${toSafeErrorMessage(error)}`, error);
+			this.fail(`${CONNECTOR_STATUS_TEXT.transportMessageHandleFailedPrefix}${toSafeErrorMessage(error)}`, error);
 		}
 	}
 
 	// 向服务端发送协议消息。
 	private sendMessage(message: BridgeClientMessage): void {
 		if (this.closed) {
-			throw new Error('桥接连接已关闭。');
+			throw new Error(CONNECTOR_STATUS_TEXT.transportClosed);
 		}
 		eda.sys_WebSocket.send(this.socketId, JSON.stringify(message));
 	}
@@ -301,7 +301,7 @@ export class BridgeTransport {
 	private startOpenTimer(): void {
 		this.clearOpenTimer();
 		this.openTimer = globalThis.setTimeout(() => {
-			this.fail('正在等待 stdio 启动，服务启动后将自动连接。', new Error('正在等待 stdio 启动，服务启动后将自动连接。'));
+			this.fail(CONNECTOR_STATUS_TEXT.transportWaitingStdio, new Error(CONNECTOR_STATUS_TEXT.transportWaitingStdio));
 		}, OPEN_TIMEOUT_MS);
 	}
 
@@ -317,7 +317,7 @@ export class BridgeTransport {
 	private startConnectTimer(): void {
 		this.clearConnectTimer();
 		this.connectTimer = globalThis.setTimeout(() => {
-			this.fail('桥接连接握手超时。', new Error('桥接连接握手超时。'));
+			this.fail(CONNECTOR_STATUS_TEXT.transportHandshakeTimeout, new Error(CONNECTOR_STATUS_TEXT.transportHandshakeTimeout));
 		}, HANDSHAKE_TIMEOUT_MS);
 	}
 
@@ -341,7 +341,7 @@ export class BridgeTransport {
 				});
 			}
 			catch (error: unknown) {
-				this.fail(`桥接心跳发送失败：${toSafeErrorMessage(error)}`, error);
+				this.fail(`${CONNECTOR_STATUS_TEXT.transportHeartbeatSendFailedPrefix}${toSafeErrorMessage(error)}`, error);
 			}
 		}, HEARTBEAT_INTERVAL_MS);
 	}
@@ -366,7 +366,7 @@ export class BridgeTransport {
 				return;
 			}
 
-			this.fail('桥接服务端长时间无响应。', new Error('桥接服务端长时间无响应。'));
+			this.fail(CONNECTOR_STATUS_TEXT.transportServerIdleTimeout, new Error(CONNECTOR_STATUS_TEXT.transportServerIdleTimeout));
 		}, SERVER_IDLE_CHECK_INTERVAL_MS);
 	}
 

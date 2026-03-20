@@ -9,7 +9,7 @@
  * ------------------------------------------------------------------------
  */
 
-import type { ConnectionStatusSnapshot } from '../bridge/status-store';
+import type { ConnectionStatusSnapshot } from '../state/status-store';
 import {
 	DEFAULT_MCP_WS_URL,
 	getConfiguredMcpUrl,
@@ -17,16 +17,12 @@ import {
 	normalizeMcpUrl,
 	saveConfiguredMcpUrl,
 } from '../bridge/config';
+import { connectorLogPipeline } from '../logging/log.ts';
+import { ConnectorStateManager } from '../state/state-manager.ts';
 import {
 	isConnectionStatusSnapshot,
 	readConnectionStatus,
-} from '../bridge/status-store';
-import {
-	appendConnectorLog,
-	CONNECTOR_STATUS_TEXT,
-	createConnectorLogEntry,
-	formatUnifiedLogOutput,
-} from '../status-log';
+} from '../state/status-store';
 import { toSafeErrorMessage } from '../utils';
 
 // 配置保存提示展示时长，单位秒。
@@ -36,6 +32,8 @@ const CONFIG_TOAST_TIMER_SECONDS = 3;
 let savedServerUrlValue = '';
 // 当前是否处于保存中，避免重复提交。
 let savingServerConfig = false;
+const connectorStateManager = new ConnectorStateManager();
+const CONNECTOR_STATUS_TEXT = ConnectorStateManager.text;
 
 // 统一显示配置保存相关的弹层提示。
 function showConfigToast(message: string, messageType: ESYS_ToastMessageType): void {
@@ -43,7 +41,7 @@ function showConfigToast(message: string, messageType: ESYS_ToastMessageType): v
 }
 
 function writeSettingsWarningLog(event: string, summary: string, message: string, detail = '', errorCode = ''): void {
-	const logEntry = appendConnectorLog(createConnectorLogEntry({
+	const logEntry = connectorLogPipeline.append(connectorLogPipeline.createEntry({
 		level: 'warning',
 		module: 'settings-page',
 		event,
@@ -53,7 +51,7 @@ function writeSettingsWarningLog(event: string, summary: string, message: string
 		detail,
 		errorCode,
 	}));
-	console.warn(formatUnifiedLogOutput(logEntry));
+	console.warn(connectorLogPipeline.format(logEntry));
 }
 
 // 获取页面元素并进行类型校验。
@@ -82,12 +80,12 @@ function setStatus(
 	const bridgeStatusText = getElement('bridgeStatusText', HTMLParagraphElement, '桥接状态展示');
 	const socketStatusText = getElement('socketStatusText', HTMLParagraphElement, 'WebSocket 状态展示');
 	bridgeStatusText.className = `status-text status-${bridgeType}`;
-	bridgeStatusText.textContent = bridgeType === 'connected' && bridgeText === CONNECTOR_STATUS_TEXT.connected ? `${CONNECTOR_STATUS_TEXT.connected}。` : bridgeText;
-	bridgeStatusText.classList.toggle('is-waiting-message', bridgeType === 'connecting' && bridgeText === CONNECTOR_STATUS_TEXT.connectingWaiting);
+	bridgeStatusText.textContent = connectorStateManager.getBridgeDisplayText(bridgeType, bridgeText);
+	bridgeStatusText.classList.toggle('is-waiting-message', connectorStateManager.isBridgeWaitingMessage(bridgeType, bridgeText));
 
 	socketStatusText.className = `status-text status-${websocketType}`;
 	socketStatusText.textContent = websocketText;
-	socketStatusText.classList.toggle('is-waiting-message', websocketType === 'connecting' && websocketText === CONNECTOR_STATUS_TEXT.websocketConnecting);
+	socketStatusText.classList.toggle('is-waiting-message', connectorStateManager.isSocketWaitingMessage(websocketType, websocketText));
 }
 
 // 将快照内容渲染到页面。

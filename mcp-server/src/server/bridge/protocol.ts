@@ -9,7 +9,7 @@
  * ------------------------------------------------------------------------
  */
 
-import type { UnifiedLogEntry } from '../../status-log';
+import type { UnifiedLogEntry } from '../../logging/server-log';
 
 export type BridgeRole = 'active' | 'standby';
 

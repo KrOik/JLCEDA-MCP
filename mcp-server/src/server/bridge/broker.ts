@@ -17,8 +17,9 @@ import {
 	type BridgeServerMessage,
 } from './protocol';
 import { DEBUG_SWITCH } from '../../debug';
-import type { UnifiedLogEntry } from '../../status-log';
-import { isConnectionInfoLog, isUnifiedLogEntry } from '../../status-log';
+import { ConnectorLogPipeline } from '../../logging/connector-log';
+import type { UnifiedLogEntry } from '../../logging/server-log';
+import { isUnifiedLogEntry } from '../../logging/server-log';
 import { isPlainObjectRecord } from '../../utils';
 
 interface BridgePeerState {
@@ -76,7 +77,6 @@ interface BridgeRequestTimeoutResult {
 }
 
 const BRIDGE_CLIENT_TTL_MS = 8_000;
-const BRIDGE_CONNECTOR_LOG_LIMIT = 200;
 
 // 活动客户端等待超时专用错误，用于在 enqueueBridgeRequest 中精确识别等待超时。
 class BridgePeerWaitTimeoutError extends Error {
@@ -94,8 +94,7 @@ const peersByClientId = new Map<string, BridgePeerState>();
 const clientIdBySocket = new Map<WebSocket, string>();
 const pendingRequests = new Map<string, PendingRequest>();
 const pendingActiveWaiters = new Set<PendingActiveWaiter>();
-// 增量日志缓冲：每次 flush 后清空，只保留当前心跳周期产生的新日志。
-const pendingConnectorLogs: UnifiedLogEntry[] = [];
+const connectorLogPipeline = new ConnectorLogPipeline();
 let disconnectEventHandler: ((event: BridgeDisconnectEvent) => void) | undefined;
 let versionMismatchHandler: ((event: BridgeVersionMismatchEvent) => void) | undefined;
 let serverVersion = '';
@@ -199,14 +198,6 @@ function parseClientMessage(data: RawData): BridgeClientMessage {
 	}
 
 	return parsed as unknown as BridgeClientMessage;
-}
-
-// 追加连接器日志到增量缓冲区，限制上限防止连接器日志暴涨。
-function appendConnectorLog(logEntry: UnifiedLogEntry): void {
-	pendingConnectorLogs.push(logEntry);
-	if (pendingConnectorLogs.length > BRIDGE_CONNECTOR_LOG_LIMIT) {
-		pendingConnectorLogs.splice(0, pendingConnectorLogs.length - BRIDGE_CONNECTOR_LOG_LIMIT);
-	}
 }
 
 // 向客户端发送服务端消息。
@@ -599,17 +590,11 @@ async function handleClientMessage(socket: WebSocket, data: RawData): Promise<vo
 	if (message.type === 'bridge/log') {
 		const peer = await registerClient(message.clientId, socket);
 		peer.lastSeenAt = nowMs();
-		if (!DEBUG_SWITCH.enableSystemLog) {
-			return;
-		}
 		if (!isUnifiedLogEntry(message.log)) {
 			throw new Error('客户端日志结构非法。');
 		}
-		if (!DEBUG_SWITCH.enableConnectionList && isConnectionInfoLog(message.log)) {
-			return;
-		}
 
-		appendConnectorLog(message.log);
+		connectorLogPipeline.appendFromClient(message.log, getBridgeDebugSwitch());
 		return;
 	}
 
@@ -756,9 +741,7 @@ export function getBridgeStatus(): { connectedClients: number; pendingRequests: 
  * @returns 本周期产生的日志数组。
  */
 export function flushConnectorLogs(): UnifiedLogEntry[] {
-	const flushed = pendingConnectorLogs.slice();
-	pendingConnectorLogs.splice(0, pendingConnectorLogs.length);
-	return flushed;
+	return connectorLogPipeline.flush();
 }
 
 /**

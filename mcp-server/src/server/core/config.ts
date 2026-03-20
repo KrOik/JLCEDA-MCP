@@ -10,7 +10,7 @@
  */
 
 import * as vscode from 'vscode';
-import type { ServerConfig } from './status';
+import type { ServerConfig } from '../../state/status';
 
 export class ServerConfigStore implements vscode.Disposable {
   // 扩展配置节名称。

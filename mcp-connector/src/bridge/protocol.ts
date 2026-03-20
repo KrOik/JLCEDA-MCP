@@ -9,7 +9,7 @@
  * ------------------------------------------------------------------------
  */
 
-import type { UnifiedLogEntry } from '../status-log';
+import type { UnifiedLogEntry } from '../logging/log.ts';
 
 // 桥接角色，仅允许活动与待命两种。
 export type BridgeRole = 'active' | 'standby';

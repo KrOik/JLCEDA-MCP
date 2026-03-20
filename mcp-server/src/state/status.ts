@@ -9,7 +9,7 @@
  * ------------------------------------------------------------------------
  */
 
-import type { UnifiedLogEntry } from '../../status-log';
+import type { UnifiedLogEntry } from '../logging/server-log';
 
 /**
  * 服务运行状态枚举。

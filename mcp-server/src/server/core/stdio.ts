@@ -12,8 +12,8 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { DEBUG_SWITCH } from '../../debug';
-import { getRuntimeStatusFilePath, STATUS_FILE_FLAG } from './runtime-status';
-import type { ServerConfig } from './status';
+import { getRuntimeStatusFilePath, STATUS_FILE_FLAG } from '../../state/runtime-status';
+import type { ServerConfig } from '../../state/status';
 
 const EXTENSION_VERSION_FLAG = '--extension-version';
 const AGENT_INSTRUCTIONS_FLAG = '--agent-instructions';

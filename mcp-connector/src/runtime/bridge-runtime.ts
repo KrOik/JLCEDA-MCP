@@ -10,46 +10,21 @@
  */
 
 import type { BridgeDebugSwitch, BridgeRole, BridgeServerRoleMessage } from '../bridge/protocol.ts';
-import type { UnifiedLogEntry } from '../status-log.ts';
+import type { UnifiedLogEntry } from '../logging/log.ts';
 import extensionConfig from '../../extension.json';
 import { getConfiguredMcpUrl, getMcpServerUrlChangedTopic } from '../bridge/config.ts';
-import { BridgeStatusReporter } from '../bridge/status-reporter.ts';
+import { ConnectorLogDispatchPipeline } from '../logging/log-dispatch.ts';
+import { connectorLogPipeline } from '../logging/log.ts';
 import { handleApiSearchTask } from '../mcp/api-search-handler.ts';
 import { handleContextTask } from '../mcp/context-handler.ts';
 import { handleInvokeTask } from '../mcp/invoke-handler.ts';
-import {
-	appendConnectorLog,
-	CONNECTOR_STATUS_TEXT,
-	createConnectorLogEntry,
-	formatUnifiedLogOutput,
-	isConnectionInfoLog,
-	setConnectorLogListener,
-} from '../status-log.ts';
+import { ConnectorStateManager } from '../state/state-manager.ts';
+import { BridgeStatusReporter } from '../state/status-reporter.ts';
 import { safeCall, toSafeErrorMessage, toSerializableAsync } from '../utils';
 import { BridgeTransport } from './bridge-transport.ts';
 
 const RECONNECT_INTERVAL_MS = 1200;
 const CONTEXT_SYNC_INTERVAL_MS = 1000;
-const CONNECTOR_LOG_QUEUE_LIMIT = 200;
-const CONNECTOR_LOG_DUP_WINDOW_MS = 1500;
-const CONNECTOR_LOG_NOISE_WINDOW_MS = 8000;
-const DEFAULT_DEBUG_SWITCH: BridgeDebugSwitch = {
-	enableSystemLog: true,
-	enableConnectionList: true,
-};
-
-const NOISE_LOG_EVENTS = new Set([
-	'status.connecting',
-	'status.failed',
-	'status.bridge.waiting',
-]);
-
-const NOISE_LOG_MESSAGE_TOKENS = [
-	'心跳',
-	'重连',
-	'无响应',
-	'连接失败，系统将自动重试',
-];
 
 const BRIDGE_TASK_HANDLERS: Record<string, (payload: unknown) => Promise<unknown>> = {
 	'/bridge/jlceda/api/search': handleApiSearchTask,
@@ -68,18 +43,15 @@ let taskChain: Promise<void> = Promise.resolve();
 let currentRole: BridgeRole = 'standby';
 let currentLeaseTerm = 0;
 let currentActiveClientId = '';
-let currentDebugSwitch: BridgeDebugSwitch = { ...DEFAULT_DEBUG_SWITCH };
-let hasReceivedDebugSwitch = false;
-const pendingConnectorLogs: UnifiedLogEntry[] = [];
-const connectorLogReportAtByKey = new Map<string, number>();
-let flushingConnectorLogs = false;
 // 每次建立新连接时递增，确保每次调用 eda.sys_WebSocket.register 使用唯一 socketId。
 let socketSequence = 0;
 
 const statusReporter = new BridgeStatusReporter();
+const connectorLogDispatchPipeline = new ConnectorLogDispatchPipeline();
+const CONNECTOR_STATUS_TEXT = ConnectorStateManager.text;
 
 function writeRuntimeWarningLog(event: string, summary: string, message: string, detail = '', errorCode = ''): void {
-	const logEntry = appendConnectorLog(createConnectorLogEntry({
+	const logEntry = connectorLogPipeline.append(connectorLogPipeline.createEntry({
 		level: 'warning',
 		module: 'bridge-runtime',
 		event,
@@ -91,136 +63,19 @@ function writeRuntimeWarningLog(event: string, summary: string, message: string,
 		detail,
 		errorCode,
 	}));
-	console.warn(formatUnifiedLogOutput(logEntry));
-}
-
-// 生成日志去重键，避免高频重复上报。
-function createConnectorLogKey(logEntry: UnifiedLogEntry): string {
-	const fields = logEntry.fields;
-	return [
-		String(fields.module ?? '').trim(),
-		String(fields.event ?? '').trim(),
-		String(fields.summary ?? '').trim(),
-		String(fields.message ?? '').trim(),
-		String(fields.detail ?? '').trim(),
-		String(fields.errorCode ?? '').trim(),
-	].join('|');
-}
-
-// 判断当前日志是否属于高频噪音日志。
-function isNoiseConnectorLog(logEntry: UnifiedLogEntry): boolean {
-	const fields = logEntry.fields;
-	const event = String(fields.event ?? '').trim();
-	if (NOISE_LOG_EVENTS.has(event)) {
-		return true;
-	}
-
-	const mergedText = [fields.summary, fields.message, fields.detail]
-		.map(value => String(value ?? '').trim())
-		.filter(value => value.length > 0)
-		.join(' ');
-
-	return NOISE_LOG_MESSAGE_TOKENS.some(token => mergedText.includes(token));
-}
-
-// 规范化服务端下发的调试开关。
-function normalizeDebugSwitch(debugSwitch: BridgeDebugSwitch): BridgeDebugSwitch {
-	return {
-		enableSystemLog: debugSwitch.enableSystemLog !== false,
-		enableConnectionList: debugSwitch.enableConnectionList !== false,
-	};
+	console.warn(connectorLogPipeline.format(logEntry));
 }
 
 // 应用服务端下发的调试开关。
 function applyDebugSwitch(debugSwitch: BridgeDebugSwitch): void {
-	hasReceivedDebugSwitch = true;
-	currentDebugSwitch = normalizeDebugSwitch(debugSwitch);
-
-	if (!currentDebugSwitch.enableSystemLog) {
-		pendingConnectorLogs.splice(0, pendingConnectorLogs.length);
-		connectorLogReportAtByKey.clear();
-		return;
-	}
-
-	if (!currentDebugSwitch.enableConnectionList && pendingConnectorLogs.length > 0) {
-		const filteredLogs = pendingConnectorLogs.filter(logEntry => !isConnectionInfoLog(logEntry));
-		pendingConnectorLogs.splice(0, pendingConnectorLogs.length, ...filteredLogs);
-	}
-
-	flushConnectorLogs();
+	connectorLogDispatchPipeline.setDebugSwitch(debugSwitch);
+	connectorLogDispatchPipeline.flushToTransport(transport);
 }
 
-// 判断日志是否应被抑制，避免重复和噪音刷屏。
-function shouldSuppressConnectorLog(logEntry: UnifiedLogEntry): boolean {
-	const logKey = createConnectorLogKey(logEntry);
-	if (logKey.length === 0) {
-		return false;
-	}
-
-	const now = Date.now();
-	const lastReportAt = connectorLogReportAtByKey.get(logKey) ?? 0;
-	const throttleWindow = isNoiseConnectorLog(logEntry) ? CONNECTOR_LOG_NOISE_WINDOW_MS : CONNECTOR_LOG_DUP_WINDOW_MS;
-	if (lastReportAt > 0 && now - lastReportAt < throttleWindow) {
-		return true;
-	}
-
-	connectorLogReportAtByKey.set(logKey, now);
-	if (connectorLogReportAtByKey.size > 800) {
-		for (const [key, timestamp] of connectorLogReportAtByKey.entries()) {
-			if (now - timestamp > CONNECTOR_LOG_NOISE_WINDOW_MS * 2) {
-				connectorLogReportAtByKey.delete(key);
-			}
-		}
-	}
-
-	return false;
-}
-
-// 追加客户端日志到发送队列。
+// 追加客户端日志并尝试派发到服务端。
 function enqueueConnectorLog(logEntry: UnifiedLogEntry): void {
-	if (!currentDebugSwitch.enableSystemLog) {
-		return;
-	}
-
-	if (!currentDebugSwitch.enableConnectionList && isConnectionInfoLog(logEntry)) {
-		return;
-	}
-
-	if (shouldSuppressConnectorLog(logEntry)) {
-		return;
-	}
-
-	pendingConnectorLogs.push(logEntry);
-	if (pendingConnectorLogs.length > CONNECTOR_LOG_QUEUE_LIMIT) {
-		pendingConnectorLogs.splice(0, pendingConnectorLogs.length - CONNECTOR_LOG_QUEUE_LIMIT);
-	}
-
-	flushConnectorLogs();
-}
-
-// 尝试将队列日志发送到服务端。
-function flushConnectorLogs(): void {
-	if (!hasReceivedDebugSwitch || flushingConnectorLogs || !transport || pendingConnectorLogs.length === 0) {
-		return;
-	}
-
-	flushingConnectorLogs = true;
-	try {
-		while (pendingConnectorLogs.length > 0) {
-			if (!transport) {
-				break;
-			}
-			const nextLog = pendingConnectorLogs[0];
-			transport.reportLog(nextLog);
-			pendingConnectorLogs.shift();
-		}
-	}
-	catch {
-		// 发送失败时保留队列，等待后续重连再补发。
-	}
-	finally {
-		flushingConnectorLogs = false;
-	}
+	connectorLogDispatchPipeline.enqueue(logEntry);
+	connectorLogDispatchPipeline.flushToTransport(transport);
 }
 
 // 生成稳定的客户端标识。
@@ -350,8 +205,7 @@ async function ensureConnected(): Promise<void> {
 	});
 
 	try {
-		hasReceivedDebugSwitch = false;
-		currentDebugSwitch = { ...DEFAULT_DEBUG_SWITCH };
+		connectorLogDispatchPipeline.resetHandshakeState();
 		await instance.connect();
 		if (!started) {
 			instance.close();
@@ -359,7 +213,7 @@ async function ensureConnected(): Promise<void> {
 		}
 
 		transport = instance;
-		flushConnectorLogs();
+		connectorLogDispatchPipeline.flushToTransport(transport);
 	}
 	catch (error: unknown) {
 		instance.close();
@@ -460,7 +314,7 @@ export function startBridgeRuntime(): void {
 	}
 
 	started = true;
-	setConnectorLogListener((logEntry) => {
+	connectorLogPipeline.setListener((logEntry) => {
 		enqueueConnectorLog(logEntry);
 	});
 	subscribeConfigChange();

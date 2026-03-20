@@ -16,9 +16,9 @@ import * as vscode from 'vscode';
 import { ServerConfigStore } from './server/core/config';
 import { updateDebugSwitch, type DebugSwitchValues } from './debug';
 import { JlcMcpDefinitionProvider } from './server/core/provider';
-import { getRuntimeStatusFilePath, isRuntimeStatusSnapshotStale, readRuntimeStatusSnapshot } from './server/core/runtime-status';
 import { createCursorStdioServerConfig, JLC_MCP_SERVER_NAME, type CursorStdioServerConfig } from './server/core/stdio';
-import { McpSidebarViewProvider } from './sidebar';
+import { McpSidebarViewProvider } from './sidebar/sidebar';
+import { getRuntimeStatusFilePath, isRuntimeStatusSnapshotStale, readRuntimeStatusSnapshot } from './state/runtime-status';
 
 interface CursorMcpApi {
   registerServer(config: CursorStdioServerConfig): void;

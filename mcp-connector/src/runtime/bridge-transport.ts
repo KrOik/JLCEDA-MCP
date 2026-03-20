@@ -16,13 +16,9 @@ import type {
 	BridgeServerMessage,
 	BridgeServerRoleMessage,
 } from '../bridge/protocol';
-import type { UnifiedLogEntry } from '../status-log.ts';
-import {
-	appendConnectorLog,
-	CONNECTOR_STATUS_TEXT,
-	createConnectorLogEntry,
-	formatUnifiedLogOutput,
-} from '../status-log.ts';
+import type { UnifiedLogEntry } from '../logging/log.ts';
+import { connectorLogPipeline } from '../logging/log.ts';
+import { ConnectorStateManager } from '../state/state-manager.ts';
 import { isPlainObjectRecord, toSafeErrorMessage } from '../utils';
 
 // 底层 WebSocket 连接建立超时（从 register 到 onOpen 回调触发）。
@@ -32,6 +28,7 @@ const HANDSHAKE_TIMEOUT_MS = 5_000;
 const HEARTBEAT_INTERVAL_MS = 1000;
 const SERVER_IDLE_TIMEOUT_MS = 5000;
 const SERVER_IDLE_CHECK_INTERVAL_MS = 500;
+const CONNECTOR_STATUS_TEXT = ConnectorStateManager.text;
 
 interface BridgeTransportCallbacks {
 	onRoleChanged: (message: BridgeServerRoleMessage) => void;
@@ -275,7 +272,7 @@ export class BridgeTransport {
 			}
 
 			if (message.type === 'bridge/error') {
-				const logEntry = appendConnectorLog(createConnectorLogEntry({
+				const logEntry = connectorLogPipeline.append(connectorLogPipeline.createEntry({
 					level: 'warning',
 					module: 'bridge-transport',
 					event: 'bridge.server.error',
@@ -284,7 +281,7 @@ export class BridgeTransport {
 					detail: String(message.message ?? '').trim(),
 					errorCode: 'bridge_server_error',
 				}));
-				console.warn(formatUnifiedLogOutput(logEntry));
+				console.warn(connectorLogPipeline.format(logEntry));
 			}
 		}
 		catch (error: unknown) {

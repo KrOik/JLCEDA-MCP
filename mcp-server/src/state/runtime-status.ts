@@ -11,8 +11,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { isUnifiedLogEntry } from '../logging/server-log';
 import type { BridgeDisconnectSnapshot, RuntimeStatusSnapshot, ServerConfig } from './status';
-import { isUnifiedLogEntry } from '../../status-log';
 
 // stdio 运行时状态文件命令行参数名。
 export const STATUS_FILE_FLAG = '--status-file';

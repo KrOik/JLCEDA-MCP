@@ -9,8 +9,8 @@
  * ------------------------------------------------------------------------
  */
 
-import type { ServerConfig, ServerStatus } from '../server/core/status';
-import type { UnifiedLogEntry, UnifiedLogFieldSchema } from '../status-log';
+import type { ServerConfig, ServerStatus } from '../state/status';
+import type { UnifiedLogEntry, UnifiedLogFieldSchema } from '../logging/server-log';
 
 export type SidebarStatusLogEntry = UnifiedLogEntry;
 

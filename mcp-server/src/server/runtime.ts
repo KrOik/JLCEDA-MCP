@@ -22,14 +22,16 @@ import {
 	type BridgeVersionMismatchEvent,
 } from './bridge/broker';
 import { DEBUG_SWITCH, updateDebugSwitch } from '../debug';
-import { STATUS_FILE_FLAG, writeRuntimeStatusSnapshot } from './core/runtime-status';
-import type { BridgeDisconnectSnapshot, ConnectorVersionMismatch, RuntimeStatus, RuntimeStatusSnapshot } from './core/status';
-import { createRuntimeLogEntry, formatUnifiedLogOutput, SERVER_STATUS_TEXT, type UnifiedLogLevel } from '../status-log';
+import type { UnifiedLogLevel } from '../logging/server-log';
+import { RuntimeLogPipeline, type RuntimeLogExtra } from '../logging/runtime-log';
+import { STATUS_FILE_FLAG, writeRuntimeStatusSnapshot } from '../state/runtime-status';
+import { ServerStateManager } from '../state/server-state-manager';
+import type { BridgeDisconnectSnapshot, ConnectorVersionMismatch, RuntimeStatus, RuntimeStatusSnapshot } from '../state/status';
 import { RpcHandler } from './mcp/rpc-handler';
 import { ToolDispatcher } from './mcp/tool-dispatcher';
-import { createStdioLineTransport } from './stdio/line-transport';
+import { createStdioLineTransport } from './core/transports/line-transport';
 import { toSafeErrorMessage } from '../utils';
-import { startBridgeWebSocketServer } from './websocket/bridge-server';
+import { startBridgeWebSocketServer } from './core/transports/bridge-server';
 
 const HOST_FLAG = '--host';
 const PORT_FLAG = '--port';
@@ -40,6 +42,7 @@ const DEBUG_ENABLE_SYSTEM_LOG_FLAG = '--enable-system-log';
 const DEBUG_ENABLE_CONNECTION_LIST_FLAG = '--enable-connection-list';
 const BRIDGE_WS_PATH = '/bridge/ws';
 const RUNTIME_STATUS_HEARTBEAT_INTERVAL_MS = 1000;
+const SERVER_STATUS_TEXT = ServerStateManager.text;
 
 // 转换运行时异常为可展示文本。
 function toRuntimeErrorMessage(error: unknown, host: string, port: number): string {
@@ -64,13 +67,16 @@ class McpRuntimeServer {
 	private lastErrorMessage = '';
 	private lastDisconnect: BridgeDisconnectSnapshot | null = null;
 	private lastVersionMismatch: ConnectorVersionMismatch | null = null;
+	private readonly runtimeLogPipeline: RuntimeLogPipeline;
 
 	public constructor(
 		private readonly host: string,
 		private readonly port: number,
 		private readonly rpcHandler: RpcHandler,
 		private readonly statusFilePath: string,
-	) {}
+	) {
+		this.runtimeLogPipeline = new RuntimeLogPipeline(host, port);
+	}
 
 	/**
 	 * 启动运行时服务。
@@ -259,50 +265,9 @@ class McpRuntimeServer {
 		event: string,
 		summary: string,
 		message: string,
-		extra: {
-			runtimeStatus?: string;
-			bridgeStatus?: string;
-			contextKey?: string;
-			leaseTerm?: string;
-			bridgeClientCount?: string;
-			detail?: string;
-			errorCode?: string;
-			clientId?: string;
-			activeClientId?: string;
-			disconnectType?: string;
-			disconnectActor?: string;
-			disconnectClientRole?: string;
-			disconnectCloseCode?: string;
-			disconnectCloseReason?: string;
-			disconnectDurationMs?: string;
-			disconnectOccurredAt?: string;
-		} = {},
+		extra: RuntimeLogExtra = {},
 	): void {
-		const entry = createRuntimeLogEntry({
-			level,
-			event,
-			summary,
-			message,
-			host: this.host,
-			port: this.port,
-			runtimeStatus: extra.runtimeStatus,
-			bridgeStatus: extra.bridgeStatus,
-			contextKey: extra.contextKey,
-			leaseTerm: extra.leaseTerm,
-			bridgeClientCount: extra.bridgeClientCount,
-			detail: extra.detail,
-			errorCode: extra.errorCode,
-			clientId: extra.clientId,
-			activeClientId: extra.activeClientId,
-			disconnectType: extra.disconnectType,
-			disconnectActor: extra.disconnectActor,
-			disconnectClientRole: extra.disconnectClientRole,
-			disconnectCloseCode: extra.disconnectCloseCode,
-			disconnectCloseReason: extra.disconnectCloseReason,
-			disconnectDurationMs: extra.disconnectDurationMs,
-			disconnectOccurredAt: extra.disconnectOccurredAt,
-		});
-		process.stderr.write(`${formatUnifiedLogOutput(entry)}\n`);
+		this.runtimeLogPipeline.write(level, event, summary, message, extra);
 	}
 }
 

@@ -10,37 +10,30 @@
  */
 
 import * as vscode from 'vscode';
-import { DEBUG_SWITCH, SidebarDebugState } from './debug';
-import { getRuntimeStatusFilePath, isRuntimeStatusSnapshotStale, readRuntimeStatusSnapshot } from './server/core/runtime-status';
-import type { ConnectorVersionMismatch, ServerConfig, ServerStatus } from './server/core/status';
-import type { ServerConfigStore } from './server/core/config';
+import { DEBUG_SWITCH } from '../debug';
+import { SidebarLogPipeline } from '../logging/sidebar-log';
+import type { ServerConfigStore } from '../server/core/config';
+import { getRuntimeStatusFilePath, isRuntimeStatusSnapshotStale, readRuntimeStatusSnapshot } from '../state/runtime-status';
+import { ServerStateManager } from '../state/server-state-manager';
+import type { ConnectorVersionMismatch, ServerConfig, ServerStatus } from '../state/status';
 import {
   getUnifiedLogFieldSchema,
-  SERVER_STATUS_TEXT,
-} from './status-log';
-import { buildSidebarHtml } from './ui/sidebar-html';
+} from '../logging/server-log';
+import { buildSidebarHtml } from './sidebar-html';
 import type {
   SidebarCommand,
   SidebarConnectedClientEntry,
   SidebarStatusLogEntry,
   SidebarWebviewMessage
-} from './ui/sidebar-protocol';
+} from './sidebar-protocol';
 
 // 侧边栏状态轮询间隔，单位毫秒。
 const SIDEBAR_STATUS_REFRESH_INTERVAL_MS = 1000;
+const serverStateManager = new ServerStateManager();
 
 // 根据当前配置生成默认接入状态文案。
 function createIdleState(config: ServerConfig): ServerStatus {
-  return {
-    host: config.host,
-    port: config.port,
-    runtimeStatus: 'idle',
-    runtimeMessage: SERVER_STATUS_TEXT.runtimeReady,
-    bridgeStatus: 'waiting',
-    bridgeMessage: SERVER_STATUS_TEXT.bridgeWaiting,
-    lastDisconnect: null,
-    updatedAt: new Date().toISOString()
-  };
+  return serverStateManager.createIdleState(config);
 }
 
 interface SidebarRuntimeSnapshot {
@@ -64,39 +57,14 @@ function createSidebarRuntimeSnapshot(storageDirectoryPath: string, sessionId: s
 
   if (isRuntimeStatusSnapshotStale(snapshot) && (snapshot.runtimeStatus === 'running' || snapshot.runtimeStatus === 'starting')) {
     return {
-      state: {
-        host: config.host,
-        port: config.port,
-        runtimeStatus: 'stopped',
-        runtimeMessage: SERVER_STATUS_TEXT.runtimeReady,
-        bridgeStatus: 'waiting',
-        bridgeMessage: SERVER_STATUS_TEXT.bridgeWaiting,
-        lastDisconnect: snapshot.lastDisconnect,
-        updatedAt: snapshot.updatedAt
-      },
+      state: serverStateManager.createStaleRuntimeState(config, snapshot),
       clients: [],
       logs: []
     };
   }
 
-  const connectedClientIds = snapshot.bridgeClientIds
-    .map((clientId) => String(clientId ?? '').trim())
-    .filter((clientId, index, allClientIds) => clientId.length > 0 && allClientIds.indexOf(clientId) === index);
-  const clients: SidebarConnectedClientEntry[] = connectedClientIds.map((clientId, index) => ({
-    clientId,
-    role: index === 0 ? 'active' : 'standby'
-  }));
-
-  const bridgeStatus = snapshot.runtimeStatus === 'error'
-    ? 'error'
-    : clients.length > 0
-      ? 'connected'
-      : 'waiting';
-  const bridgeMessage = snapshot.runtimeStatus === 'error'
-    ? SERVER_STATUS_TEXT.bridgeUnavailable
-    : clients.length > 0
-      ? SERVER_STATUS_TEXT.bridgeConnected
-      : SERVER_STATUS_TEXT.bridgeWaiting;
+  const clients: SidebarConnectedClientEntry[] = serverStateManager.createSidebarClients(snapshot.bridgeClientIds);
+  const bridgeState = serverStateManager.resolveBridgeStatus(snapshot.runtimeStatus, clients.length);
 
   return {
     state: {
@@ -104,8 +72,8 @@ function createSidebarRuntimeSnapshot(storageDirectoryPath: string, sessionId: s
       port: config.port,
       runtimeStatus: snapshot.runtimeStatus,
       runtimeMessage: snapshot.runtimeMessage,
-      bridgeStatus,
-      bridgeMessage,
+      bridgeStatus: bridgeState.bridgeStatus,
+      bridgeMessage: bridgeState.bridgeMessage,
       lastDisconnect: snapshot.lastDisconnect,
       updatedAt: snapshot.updatedAt
     },
@@ -125,7 +93,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
   // 侧边栏状态轮询定时器。
   private statusRefreshTimer: NodeJS.Timeout | undefined;
   // 调试卡片状态缓存与去重逻辑。
-  private readonly debugState = new SidebarDebugState();
+  private readonly logPipeline = new SidebarLogPipeline();
   // 已弹出过版本不一致提示的去重键，格式为 "connectorVersion|serverVersion"。
   private lastNotifiedVersionMismatch = '';
 
@@ -184,7 +152,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     try {
       if (message.command === 'load') {
         const currentConfig = this.configStore.getConfig();
-        this.debugState.resetClientsSignature();
+        this.logPipeline.resetClientsSignature();
         this.postConfig(currentConfig);
         this.postInstructions();
         this.postCloseSidebarOnOpenEditor();
@@ -222,7 +190,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
       }
 
       if (message.command === 'clearLogs') {
-        this.debugState.clearStatusLogs();
+        this.logPipeline.clearStatusLogs();
         this.postLogs();
         return;
       }
@@ -261,15 +229,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
       if (isRuntimeCommand) {
         const current = this.configStore.getConfig();
         this.syncState({
-          state: {
-            ...current,
-            runtimeStatus: 'error',
-            runtimeMessage: SERVER_STATUS_TEXT.sidebarRefreshError,
-            bridgeStatus: 'error',
-            bridgeMessage: SERVER_STATUS_TEXT.sidebarBridgeReadError,
-            lastDisconnect: null,
-            updatedAt: new Date().toISOString()
-          },
+          state: serverStateManager.createSidebarRefreshErrorState(current),
           clients: [],
           logs: []
         });
@@ -345,7 +305,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     // 将当前会话内的状态日志同步到前端列表。
     this.postMessage({
       type: 'logs',
-      payload: this.debugState.getStatusLogs()
+      payload: this.logPipeline.getStatusLogs()
     });
   }
 
@@ -355,7 +315,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     }
 
     // 仅在列表变化时推送，减少无效渲染。
-    if (!this.debugState.shouldPostClients(clients)) {
+    if (!this.logPipeline.shouldPostClients(clients)) {
       return;
     }
 
@@ -386,8 +346,8 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
 
     // 状态变化时先更新日志，再同步当前展示状态与连接列表。
     if (DEBUG_SWITCH.enableSystemLog) {
-      const hasExternalLogChanged = this.debugState.appendExternalLogs(runtimeSnapshot.logs);
-      const hasStatusLogChanged = this.debugState.appendStatusLogIfChanged(runtimeSnapshot.state, runtimeSnapshot.clients);
+      const hasExternalLogChanged = this.logPipeline.appendExternalLogs(runtimeSnapshot.logs);
+      const hasStatusLogChanged = this.logPipeline.appendStatusLogIfChanged(runtimeSnapshot.state, runtimeSnapshot.clients);
       if (hasExternalLogChanged || hasStatusLogChanged) {
         this.postLogs();
       }

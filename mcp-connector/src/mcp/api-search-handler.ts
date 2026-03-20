@@ -47,11 +47,7 @@ interface EdaFileSystem {
 }
 
 const API_SEARCH_MAX_LIMIT = 50;
-const API_DOCUMENT_URI_CANDIDATES = [
-	'/resources/jlceda-pro-api-doc.json',
-	'resources/jlceda-pro-api-doc.json',
-	'./resources/jlceda-pro-api-doc.json',
-] as const;
+const API_DOCUMENT_URI = '/resources/jlceda-pro-api-doc.json';
 
 let apiCache: ApiCache | null = null;
 
@@ -68,15 +64,12 @@ function getEdaFileSystem(): EdaFileSystem {
 // 读取扩展内离线文档文本。
 async function readApiDocumentText(): Promise<string> {
 	const fileSystem = getEdaFileSystem();
-	for (const uri of API_DOCUMENT_URI_CANDIDATES) {
-		const extensionFile = await fileSystem.getExtensionFile(uri);
-		if (!extensionFile) {
-			continue;
-		}
-		return await extensionFile.text();
+	const extensionFile = await fileSystem.getExtensionFile(API_DOCUMENT_URI);
+	if (!extensionFile) {
+		throw new Error(`未找到离线 API 文档文件: ${API_DOCUMENT_URI}`);
 	}
 
-	throw new Error(`未找到离线 API 文档文件，候选路径: ${API_DOCUMENT_URI_CANDIDATES.join(', ')}`);
+	return await extensionFile.text();
 }
 
 // 拆分检索关键词。

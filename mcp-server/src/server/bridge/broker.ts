@@ -20,6 +20,7 @@ import { DEBUG_SWITCH } from '../../debug';
 import { ConnectorLogPipeline } from '../../logging/connector-log';
 import type { UnifiedLogEntry } from '../../logging/server-log';
 import { isUnifiedLogEntry } from '../../logging/server-log';
+import { ServerStateManager } from '../../state/server-state-manager';
 import { isPlainObjectRecord } from '../../utils';
 
 interface BridgePeerState {
@@ -77,11 +78,12 @@ interface BridgeRequestTimeoutResult {
 }
 
 const BRIDGE_CLIENT_TTL_MS = 8_000;
+const BRIDGE_BROKER_TEXT = ServerStateManager.text.broker;
 
 // 活动客户端等待超时专用错误，用于在 enqueueBridgeRequest 中精确识别等待超时。
 class BridgePeerWaitTimeoutError extends Error {
 	public constructor() {
-		super('EDA 桥接客户端未就绪。');
+		super(BRIDGE_BROKER_TEXT.wait.peerNotReadyError);
 		this.name = 'BridgePeerWaitTimeoutError';
 	}
 }
@@ -120,10 +122,12 @@ function createBridgeRequestTimeoutResult(
 	timeoutMs: number,
 	startedAt: number,
 ): BridgeRequestTimeoutResult {
-	const timeoutReason = timeoutType === 'wait_active_peer' ? '等待活动客户端超时' : '等待桥接回包超时';
+	const timeoutReason = timeoutType === 'wait_active_peer'
+		? BRIDGE_BROKER_TEXT.wait.waitActivePeerTimeoutReason
+		: BRIDGE_BROKER_TEXT.wait.waitResultTimeoutReason;
 	const message = timeoutType === 'wait_active_peer'
-		? `桥接请求超时（等待活动客户端）: ${path}`
-		: `桥接请求超时（等待桥接回包）: ${path}`;
+		? `${BRIDGE_BROKER_TEXT.wait.waitActivePeerTimeoutMessagePrefix}: ${path}`
+		: `${BRIDGE_BROKER_TEXT.wait.waitResultTimeoutMessagePrefix}: ${path}`;
 
 	return {
 		timeout: true,
@@ -149,14 +153,14 @@ function createDisconnectEventId(clientId: string, disconnectType: string): stri
 }
 
 // 规范化断开相关文本。
-function normalizeDisconnectText(value: unknown, fallback = '无'): string {
+function normalizeDisconnectText(value: unknown, fallback = BRIDGE_BROKER_TEXT.connection.emptyFallback): string {
 	const text = String(value ?? '').trim();
 	return text.length > 0 ? text : fallback;
 }
 
 // 解析 close 回调中的原始原因。
 function decodeCloseReason(reason: Buffer): string {
-	return normalizeDisconnectText(reason.toString('utf8'), '无');
+	return normalizeDisconnectText(reason.toString('utf8'), BRIDGE_BROKER_TEXT.connection.emptyFallback);
 }
 
 // 解析 websocket 原始消息。
@@ -185,16 +189,16 @@ const VALID_CLIENT_MESSAGE_TYPES = new Set([
 function parseClientMessage(data: RawData): BridgeClientMessage {
 	const parsed = JSON.parse(decodeWebSocketData(data)) as unknown;
 	if (!isPlainObjectRecord(parsed)) {
-		throw new Error('桥接消息格式非法，根节点必须是对象。');
+		throw new Error(BRIDGE_BROKER_TEXT.protocol.invalidMessageRoot);
 	}
 
 	const messageType = String(parsed.type ?? '').trim();
 	if (messageType.length === 0) {
-		throw new Error('桥接消息缺少 type 字段。');
+		throw new Error(BRIDGE_BROKER_TEXT.protocol.missingMessageType);
 	}
 
 	if (!VALID_CLIENT_MESSAGE_TYPES.has(messageType)) {
-		throw new Error(`收到未知客户端消息类型: ${messageType}。`);
+		throw new Error(`${BRIDGE_BROKER_TEXT.protocol.unknownClientMessageTypePrefix}: ${messageType}。`);
 	}
 
 	return parsed as unknown as BridgeClientMessage;
@@ -204,7 +208,7 @@ function parseClientMessage(data: RawData): BridgeClientMessage {
 function sendBridgeMessage(socket: WebSocket, message: BridgeServerMessage): Promise<void> {
 	return new Promise<void>((resolve, reject) => {
 		if (socket.readyState !== WebSocket.OPEN) {
-			reject(new Error('桥接连接未打开。'));
+			reject(new Error(BRIDGE_BROKER_TEXT.connection.socketNotOpen));
 			return;
 		}
 
@@ -398,7 +402,9 @@ async function removeSocket(socket: WebSocket, reason: string, context: RemoveSo
 		clientRole,
 		disconnectType: context.disconnectType,
 		disconnectActor: context.disconnectActor,
-		closeCode: Number.isInteger(context.closeCode) && Number(context.closeCode) > 0 ? String(context.closeCode) : '无',
+		closeCode: Number.isInteger(context.closeCode) && Number(context.closeCode) > 0
+			? String(context.closeCode)
+			: BRIDGE_BROKER_TEXT.connection.emptyFallback,
 		closeReason: normalizeDisconnectText(context.closeReason),
 		detail: normalizeDisconnectText(reason),
 		leaseTerm,
@@ -416,10 +422,10 @@ async function cleanupExpiredPeers(): Promise<void> {
 			continue;
 		}
 
-		await removeSocket(peer.socket, '桥接客户端心跳超时。', {
+		await removeSocket(peer.socket, BRIDGE_BROKER_TEXT.connection.heartbeatTimeoutDetail, {
 			disconnectType: 'heartbeat_timeout',
 			disconnectActor: 'timeout',
-			closeReason: '心跳超时',
+			closeReason: BRIDGE_BROKER_TEXT.connection.heartbeatTimeoutReason,
 		});
 	}
 }
@@ -456,7 +462,7 @@ function checkVersionMismatch(connectorVer: string): void {
 async function registerClient(clientId: string, socket: WebSocket): Promise<BridgePeerState> {
 	const normalizedClientId = String(clientId ?? '').trim();
 	if (normalizedClientId.length === 0) {
-		throw new Error('桥接客户端缺少 clientId。');
+		throw new Error(BRIDGE_BROKER_TEXT.connection.missingClientId);
 	}
 
 	const current = nowMs();
@@ -484,10 +490,15 @@ async function registerClient(clientId: string, socket: WebSocket): Promise<Brid
 		activeClientId = normalizedClientId;
 		leaseTerm += 1;
 		resolveActiveWaiters();
-		await broadcastRoles('首个连接已成为活动客户端。');
+		await broadcastRoles(BRIDGE_BROKER_TEXT.role.firstClientBecameActive);
 	}
 	else if (!isExistingSocketBinding) {
-		await sendRoleToPeer(peer, peer.clientId === activeClientId ? '活动客户端状态已确认。' : '当前客户端进入待命状态。');
+		await sendRoleToPeer(
+			peer,
+			peer.clientId === activeClientId
+				? BRIDGE_BROKER_TEXT.role.activeRoleConfirmed
+				: BRIDGE_BROKER_TEXT.role.enterStandbyRole,
+		);
 	}
 
 	return peer;
@@ -552,7 +563,7 @@ async function handleClientMessage(socket: WebSocket, data: RawData): Promise<vo
 	if (message.type === 'bridge/hello') {
 		const peer = await registerClient(message.clientId, socket);
 		const connectorVer = String(message.connectorVersion ?? '').trim();
-		checkVersionMismatch(connectorVer.length > 0 ? connectorVer : '旧版客户端（未上报版本）');
+		checkVersionMismatch(connectorVer.length > 0 ? connectorVer : BRIDGE_BROKER_TEXT.version.legacyClientWithoutVersion);
 		await sendBridgeMessage(peer.socket, {
 			type: 'bridge/welcome',
 			clientId: peer.clientId,
@@ -591,14 +602,14 @@ async function handleClientMessage(socket: WebSocket, data: RawData): Promise<vo
 		const peer = await registerClient(message.clientId, socket);
 		peer.lastSeenAt = nowMs();
 		if (!isUnifiedLogEntry(message.log)) {
-			throw new Error('客户端日志结构非法。');
+			throw new Error(BRIDGE_BROKER_TEXT.protocol.invalidClientLogEntry);
 		}
 
 		connectorLogPipeline.appendFromClient(message.log, getBridgeDebugSwitch());
 		return;
 	}
 
-	throw new Error('不支持的桥接消息类型。');
+	throw new Error(BRIDGE_BROKER_TEXT.protocol.unsupportedBridgeMessageType);
 }
 
 /**
@@ -614,7 +625,7 @@ export function attachBridgeClientSocket(socket: WebSocket): void {
 
 	socket.on('close', (code: number, reason: Buffer) => {
 		const closeReason = decodeCloseReason(reason);
-		void removeSocket(socket, '桥接客户端连接已关闭。', {
+		void removeSocket(socket, BRIDGE_BROKER_TEXT.connection.clientConnectionClosed, {
 			disconnectType: isServerShuttingDown ? 'server_shutdown' : 'client_close',
 			disconnectActor: isServerShuttingDown ? 'server' : 'client',
 			closeCode: code,
@@ -623,7 +634,7 @@ export function attachBridgeClientSocket(socket: WebSocket): void {
 	});
 
 	socket.on('error', () => {
-		void removeSocket(socket, '桥接客户端连接异常中断。', {
+		void removeSocket(socket, BRIDGE_BROKER_TEXT.connection.clientConnectionInterrupted, {
 			disconnectType: 'socket_error',
 			disconnectActor: 'network',
 			closeReason: 'socket_error',
@@ -703,7 +714,7 @@ export async function enqueueBridgeRequest(path: string, payload: unknown, timeo
 				clearTimeout(pending.timer);
 				pendingRequests.delete(requestId);
 			}
-			await removeSocket(activePeer.socket, '桥接任务发送失败，活动客户端已下线。', {
+			await removeSocket(activePeer.socket, BRIDGE_BROKER_TEXT.connection.taskSendFailure, {
 				disconnectType: 'send_failure',
 				disconnectActor: 'runtime',
 				closeReason: 'bridge_task_send_failed',
@@ -749,7 +760,7 @@ export function flushConnectorLogs(): UnifiedLogEntry[] {
  */
 export async function pumpBridgeBroker(): Promise<void> {
 	await cleanupExpiredPeers();
-	await electActivePeer('活动客户端离线，已从待命客户端自动接管。');
+	await electActivePeer(BRIDGE_BROKER_TEXT.role.autoTakeoverAfterActiveOffline);
 }
 
 /**
@@ -778,7 +789,7 @@ export async function waitForBridgeReady(timeoutMs: number): Promise<void> {
 	}
 	catch (error: unknown) {
 		if (error instanceof BridgePeerWaitTimeoutError) {
-			throw new Error(`EDA 连接器未连接，等待 ${timeoutMs} ms 超时。请在嘉立创 EDA 专业版中打开任意工程后重试。`);
+			throw new Error(BRIDGE_BROKER_TEXT.wait.buildBridgeReadyTimeoutMessage(timeoutMs));
 		}
 		throw error;
 	}

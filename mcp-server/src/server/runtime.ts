@@ -63,7 +63,7 @@ function toRuntimeErrorMessage(error: unknown, host: string, port: number): stri
 class McpRuntimeServer {
 	private runtimeStatusTimer: NodeJS.Timeout | undefined;
 	private runtimeStatus: Exclude<RuntimeStatus, 'idle'> = 'starting';
-	private runtimeMessage: string = SERVER_STATUS_TEXT.runtimeStarting;
+	private runtimeMessage: string = SERVER_STATUS_TEXT.runtime.starting;
 	private lastErrorMessage = '';
 	private lastDisconnect: BridgeDisconnectSnapshot | null = null;
 	private lastVersionMismatch: ConnectorVersionMismatch | null = null;
@@ -83,7 +83,7 @@ class McpRuntimeServer {
 	 */
 	public start(): void {
 		let shuttingDown = false;
-		this.writeRuntimeStatus('starting', SERVER_STATUS_TEXT.runtimeStarting);
+		this.writeRuntimeStatus('starting', SERVER_STATUS_TEXT.runtime.starting);
 		setVersionMismatchHandler((event: BridgeVersionMismatchEvent) => {
 			this.lastVersionMismatch = {
 				connectorVersion: event.connectorVersion,
@@ -129,14 +129,14 @@ class McpRuntimeServer {
 				attachBridgeClientSocket(socket);
 			},
 			onListening: () => {
-				this.writeRuntimeStatus('running', SERVER_STATUS_TEXT.runtimeRunning);
+				this.writeRuntimeStatus('running', SERVER_STATUS_TEXT.runtime.running);
 				this.startRuntimeStatusHeartbeat();
 				this.writeLog('success', 'runtime.bridge.listening', '桥接监听已就绪', `桥接已监听 ws://${this.host}:${this.port}${BRIDGE_WS_PATH}`);
 			},
 			onError: (error) => {
 				const detailMessage = toRuntimeErrorMessage(error, this.host, this.port);
 				this.stopRuntimeStatusHeartbeat();
-				this.writeRuntimeStatus('error', SERVER_STATUS_TEXT.runtimeError, detailMessage);
+				this.writeRuntimeStatus('error', SERVER_STATUS_TEXT.runtime.error, detailMessage);
 				this.writeLog('error', 'runtime.bridge.error', '桥接服务异常', detailMessage, {
 					runtimeStatus: '异常',
 					bridgeStatus: '桥错',
@@ -159,17 +159,17 @@ class McpRuntimeServer {
 			shuttingDown = true;
 			this.stopRuntimeStatusHeartbeat();
 			if (writeStoppedStatus) {
-				this.writeRuntimeStatus('stopped', SERVER_STATUS_TEXT.runtimeStopped);
+				this.writeRuntimeStatus('stopped', SERVER_STATUS_TEXT.runtime.stopped);
 			}
 
-			await notifyBridgeClientsDisconnect(SERVER_STATUS_TEXT.bridgeDisconnectNotice);
+			await notifyBridgeClientsDisconnect(SERVER_STATUS_TEXT.bridge.disconnectNotice);
 			for (const client of bridgeWebSocketServer.server.clients) {
-				client.close(1001, SERVER_STATUS_TEXT.serverClosingReason);
+				client.close(1001, SERVER_STATUS_TEXT.bridge.serverClosingReason);
 			}
 			await bridgeWebSocketServer.close();
 			setBridgeDisconnectHandler(undefined);
 			setVersionMismatchHandler(undefined);
-			this.writeLog('info', 'runtime.stopped', '服务已停止', SERVER_STATUS_TEXT.runtimeStopped, {
+			this.writeLog('info', 'runtime.stopped', '服务已停止', SERVER_STATUS_TEXT.runtime.stopped, {
 				runtimeStatus: '停止',
 				bridgeStatus: '等待',
 			});

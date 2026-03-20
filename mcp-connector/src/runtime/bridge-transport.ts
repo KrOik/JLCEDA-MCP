@@ -62,7 +62,7 @@ async function decodeMessageData(data: unknown): Promise<string> {
 		return new TextDecoder().decode(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
 	}
 
-	throw new Error(CONNECTOR_STATUS_TEXT.transportUnknownMessageFormat);
+	throw new Error(CONNECTOR_STATUS_TEXT.transport.unknownMessageFormat);
 }
 
 // 服务端允许发出的消息类型白名单。
@@ -80,16 +80,16 @@ async function parseServerMessage(data: unknown): Promise<BridgeServerMessage> {
 	const text = await decodeMessageData(data);
 	const parsed = JSON.parse(text) as unknown;
 	if (!isPlainObjectRecord(parsed)) {
-		throw new Error(CONNECTOR_STATUS_TEXT.transportInvalidMessageRoot);
+		throw new Error(CONNECTOR_STATUS_TEXT.transport.invalidMessageRoot);
 	}
 
 	const messageType = String(parsed.type ?? '').trim();
 	if (messageType.length === 0) {
-		throw new Error(CONNECTOR_STATUS_TEXT.transportMissingType);
+		throw new Error(CONNECTOR_STATUS_TEXT.transport.missingType);
 	}
 
 	if (!VALID_SERVER_MESSAGE_TYPES.has(messageType)) {
-		throw new Error(`${CONNECTOR_STATUS_TEXT.transportUnknownTypePrefix}${messageType}。`);
+		throw new Error(`${CONNECTOR_STATUS_TEXT.transport.unknownTypePrefix}${messageType}。`);
 	}
 
 	return parsed as unknown as BridgeServerMessage;
@@ -128,7 +128,7 @@ export class BridgeTransport {
 	 */
 	public async connect(): Promise<void> {
 		if (this.closed) {
-			throw new Error(CONNECTOR_STATUS_TEXT.transportClosed);
+			throw new Error(CONNECTOR_STATUS_TEXT.transport.closed);
 		}
 
 		// 先启动连接建立超时；握手超时在 onOpen 触发后才开始计时。
@@ -146,7 +146,7 @@ export class BridgeTransport {
 			);
 		}
 		catch (error: unknown) {
-			this.fail(`${CONNECTOR_STATUS_TEXT.transportConnectFailedPrefix}${toSafeErrorMessage(error)}`, error);
+			this.fail(`${CONNECTOR_STATUS_TEXT.transport.connectFailedPrefix}${toSafeErrorMessage(error)}`, error);
 		}
 
 		await this.readyPromise;
@@ -192,9 +192,9 @@ export class BridgeTransport {
 
 		this.closed = true;
 		this.stopTimers();
-		this.rejectReadyOnce(new Error(CONNECTOR_STATUS_TEXT.transportClosed));
+		this.rejectReadyOnce(new Error(CONNECTOR_STATUS_TEXT.transport.closed));
 		try {
-			eda.sys_WebSocket.close(this.socketId, 1000, CONNECTOR_STATUS_TEXT.transportCloseReason);
+			eda.sys_WebSocket.close(this.socketId, 1000, CONNECTOR_STATUS_TEXT.transport.closeReason);
 		}
 		catch {
 			// 主动关闭时忽略底层重复关闭异常。
@@ -276,8 +276,8 @@ export class BridgeTransport {
 					level: 'warning',
 					module: 'bridge-transport',
 					event: 'bridge.server.error',
-					summary: CONNECTOR_STATUS_TEXT.serverErrorSummary,
-					message: String(message.message ?? '').trim() || CONNECTOR_STATUS_TEXT.serverErrorSummary,
+					summary: CONNECTOR_STATUS_TEXT.runtime.serverErrorSummary,
+					message: String(message.message ?? '').trim() || CONNECTOR_STATUS_TEXT.runtime.serverErrorSummary,
 					detail: String(message.message ?? '').trim(),
 					errorCode: 'bridge_server_error',
 				}));
@@ -285,14 +285,14 @@ export class BridgeTransport {
 			}
 		}
 		catch (error: unknown) {
-			this.fail(`${CONNECTOR_STATUS_TEXT.transportMessageHandleFailedPrefix}${toSafeErrorMessage(error)}`, error);
+			this.fail(`${CONNECTOR_STATUS_TEXT.transport.messageHandleFailedPrefix}${toSafeErrorMessage(error)}`, error);
 		}
 	}
 
 	// 向服务端发送协议消息。
 	private sendMessage(message: BridgeClientMessage): void {
 		if (this.closed) {
-			throw new Error(CONNECTOR_STATUS_TEXT.transportClosed);
+			throw new Error(CONNECTOR_STATUS_TEXT.transport.closed);
 		}
 		eda.sys_WebSocket.send(this.socketId, JSON.stringify(message));
 	}
@@ -301,7 +301,7 @@ export class BridgeTransport {
 	private startOpenTimer(): void {
 		this.clearOpenTimer();
 		this.openTimer = globalThis.setTimeout(() => {
-			this.fail(CONNECTOR_STATUS_TEXT.transportWaitingStdio, new Error(CONNECTOR_STATUS_TEXT.transportWaitingStdio));
+			this.fail(CONNECTOR_STATUS_TEXT.transport.waitingStdio, new Error(CONNECTOR_STATUS_TEXT.transport.waitingStdio));
 		}, OPEN_TIMEOUT_MS);
 	}
 
@@ -317,7 +317,7 @@ export class BridgeTransport {
 	private startConnectTimer(): void {
 		this.clearConnectTimer();
 		this.connectTimer = globalThis.setTimeout(() => {
-			this.fail(CONNECTOR_STATUS_TEXT.transportHandshakeTimeout, new Error(CONNECTOR_STATUS_TEXT.transportHandshakeTimeout));
+			this.fail(CONNECTOR_STATUS_TEXT.transport.handshakeTimeout, new Error(CONNECTOR_STATUS_TEXT.transport.handshakeTimeout));
 		}, HANDSHAKE_TIMEOUT_MS);
 	}
 
@@ -341,7 +341,7 @@ export class BridgeTransport {
 				});
 			}
 			catch (error: unknown) {
-				this.fail(`${CONNECTOR_STATUS_TEXT.transportHeartbeatSendFailedPrefix}${toSafeErrorMessage(error)}`, error);
+				this.fail(`${CONNECTOR_STATUS_TEXT.transport.heartbeatSendFailedPrefix}${toSafeErrorMessage(error)}`, error);
 			}
 		}, HEARTBEAT_INTERVAL_MS);
 	}
@@ -366,7 +366,7 @@ export class BridgeTransport {
 				return;
 			}
 
-			this.fail(CONNECTOR_STATUS_TEXT.transportServerIdleTimeout, new Error(CONNECTOR_STATUS_TEXT.transportServerIdleTimeout));
+			this.fail(CONNECTOR_STATUS_TEXT.transport.serverIdleTimeout, new Error(CONNECTOR_STATUS_TEXT.transport.serverIdleTimeout));
 		}, SERVER_IDLE_CHECK_INTERVAL_MS);
 	}
 

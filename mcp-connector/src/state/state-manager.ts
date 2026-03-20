@@ -17,46 +17,58 @@ import type { ConnectionStatusSnapshot } from './status-store.ts';
  */
 export class ConnectorStateManager {
 	public static readonly text = {
-		connectingWaiting: '连接器正在等待 VS Code 侧服务就绪...',
-		connectingService: '正在连接桥接服务',
-		connected: '已连接',
-		disconnected: '未连接',
-		websocketConnecting: '连接中',
-		connectFailed: '连接失败，stdio 未启动。',
-		connectFailedRetryDetail: '连接失败，系统将自动重试',
-		standby: '当前页面待命中',
-		statusInitFailed: '状态初始化失败',
-		configInvalid: '配置无效',
-		configSaved: '配置已保存。',
-		currentClientPrefix: '当前客户端：',
-		activeClientPrefix: '当前活动客户端：',
-		standbyDetailFallback: '其他页面正在持有桥接连接。',
-		roleReasonSummary: '桥接角色变更',
-		statusSaveFailedSummary: '桥接状态保存失败',
-		statusPublishFailedSummary: '桥接状态广播失败',
-		activePublishFailedSummary: '活动状态广播失败',
-		taskFailedSummary: '桥接任务执行失败',
-		contextSyncFailedSummary: '桥接上下文同步失败',
-		serverErrorSummary: '桥接服务端返回错误',
-		settingsInitFailedSummary: '状态初始化失败',
-		settingsConfigInvalidSummary: '页面配置无效',
-		settingsPublishFailedSummary: '配置更新消息发送失败',
-		contextNotInitialized: '桥接上下文尚未初始化。',
-		taskRejectedStandby: '当前客户端处于待命状态，拒绝执行任务。',
-		taskLeaseExpired: '任务租约已过期。',
-		taskPathUnsupportedPrefix: '不支持的任务路径：',
-		transportUnknownMessageFormat: '收到无法识别的桥接消息格式。',
-		transportInvalidMessageRoot: '桥接消息格式非法，根节点必须是对象。',
-		transportMissingType: '桥接消息缺少 type 字段。',
-		transportUnknownTypePrefix: '收到未知服务端消息类型: ',
-		transportClosed: '桥接连接已关闭。',
-		transportCloseReason: '桥接连接已关闭',
-		transportConnectFailedPrefix: '桥接连接失败：',
-		transportMessageHandleFailedPrefix: '桥接消息处理失败：',
-		transportWaitingStdio: '正在等待 stdio 启动，服务启动后将自动连接。',
-		transportHandshakeTimeout: '桥接连接握手超时。',
-		transportHeartbeatSendFailedPrefix: '桥接心跳发送失败：',
-		transportServerIdleTimeout: '桥接服务端长时间无响应。',
+		// 连接状态文案：用于连接过程、角色显示与失败提示。
+		connection: {
+			connectingWaiting: '连接器正在等待 VS Code 侧服务就绪...',
+			connectingService: '正在连接桥接服务',
+			connected: '已连接',
+			disconnected: '未连接',
+			websocketConnecting: '连接中',
+			connectFailed: '连接失败，stdio 未启动。',
+			connectFailedRetryDetail: '连接失败，系统将自动重试',
+			standby: '当前页面待命中',
+			currentClientPrefix: '当前客户端：',
+			activeClientPrefix: '当前活动客户端：',
+			standbyDetailFallback: '其他页面正在持有桥接连接。',
+		},
+		// 页面设置文案：用于设置页初始化、校验与保存反馈。
+		settings: {
+			statusInitFailed: '状态初始化失败',
+			configInvalid: '配置无效',
+			configSaved: '配置已保存。',
+			settingsInitFailedSummary: '状态初始化失败',
+			settingsConfigInvalidSummary: '页面配置无效',
+			settingsPublishFailedSummary: '配置更新消息发送失败',
+		},
+		// 运行时业务文案：用于任务执行、角色变更与状态同步日志。
+		runtime: {
+			roleReasonSummary: '桥接角色变更',
+			statusSaveFailedSummary: '桥接状态保存失败',
+			statusPublishFailedSummary: '桥接状态广播失败',
+			activePublishFailedSummary: '活动状态广播失败',
+			taskFailedSummary: '桥接任务执行失败',
+			contextSyncFailedSummary: '桥接上下文同步失败',
+			serverErrorSummary: '桥接服务端返回错误',
+			contextNotInitialized: '桥接上下文尚未初始化。',
+			taskRejectedStandby: '当前客户端处于待命状态，拒绝执行任务。',
+			taskLeaseExpired: '任务租约已过期。',
+			taskPathUnsupportedPrefix: '不支持的任务路径：',
+		},
+		// 传输层文案：用于 WebSocket 协议解析、连接生命周期与保活异常。
+		transport: {
+			unknownMessageFormat: '收到无法识别的桥接消息格式。',
+			invalidMessageRoot: '桥接消息格式非法，根节点必须是对象。',
+			missingType: '桥接消息缺少 type 字段。',
+			unknownTypePrefix: '收到未知服务端消息类型: ',
+			closed: '桥接连接已关闭。',
+			closeReason: '桥接连接已关闭',
+			connectFailedPrefix: '桥接连接失败：',
+			messageHandleFailedPrefix: '桥接消息处理失败：',
+			waitingStdio: '正在等待 stdio 启动，服务启动后将自动连接。',
+			handshakeTimeout: '桥接连接握手超时。',
+			heartbeatSendFailedPrefix: '桥接心跳发送失败：',
+			serverIdleTimeout: '桥接服务端长时间无响应。',
+		},
 	} as const;
 
 	/**
@@ -66,9 +78,9 @@ export class ConnectorStateManager {
 	public createConnectingSnapshot(): ConnectionStatusSnapshot {
 		return {
 			bridgeType: 'connecting',
-			bridgeText: ConnectorStateManager.text.connectingWaiting,
+			bridgeText: ConnectorStateManager.text.connection.connectingWaiting,
 			websocketType: 'connecting',
-			websocketText: ConnectorStateManager.text.websocketConnecting,
+			websocketText: ConnectorStateManager.text.connection.websocketConnecting,
 			updatedAt: new Date().toISOString(),
 		};
 	}
@@ -82,13 +94,13 @@ export class ConnectorStateManager {
 	 */
 	public createRoleSnapshot(role: BridgeRole, displayClientId: string, displayActiveClientId: string): ConnectionStatusSnapshot {
 		const websocketText = displayClientId.length > 0
-			? `${ConnectorStateManager.text.currentClientPrefix}${displayClientId}`
-			: ConnectorStateManager.text.connected;
+			? `${ConnectorStateManager.text.connection.currentClientPrefix}${displayClientId}`
+			: ConnectorStateManager.text.connection.connected;
 
 		if (role === 'active') {
 			return {
 				bridgeType: 'connected',
-				bridgeText: ConnectorStateManager.text.connected,
+				bridgeText: ConnectorStateManager.text.connection.connected,
 				websocketType: 'connected',
 				websocketText,
 				updatedAt: new Date().toISOString(),
@@ -96,8 +108,8 @@ export class ConnectorStateManager {
 		}
 
 		const activeLabel = displayActiveClientId.length > 0
-			? `${ConnectorStateManager.text.activeClientPrefix}${displayActiveClientId}`
-			: ConnectorStateManager.text.standby;
+			? `${ConnectorStateManager.text.connection.activeClientPrefix}${displayActiveClientId}`
+			: ConnectorStateManager.text.connection.standby;
 		return {
 			bridgeType: 'connecting',
 			bridgeText: activeLabel,
@@ -113,10 +125,10 @@ export class ConnectorStateManager {
 	 * @returns 连接状态快照。
 	 */
 	public createFailedSnapshot(detail: string): ConnectionStatusSnapshot {
-		const normalizedDetail = String(detail ?? '').trim() || ConnectorStateManager.text.connectFailedRetryDetail;
+		const normalizedDetail = String(detail ?? '').trim() || ConnectorStateManager.text.connection.connectFailedRetryDetail;
 		return {
 			bridgeType: 'error',
-			bridgeText: ConnectorStateManager.text.connectFailed,
+			bridgeText: ConnectorStateManager.text.connection.connectFailed,
 			websocketType: 'error',
 			websocketText: normalizedDetail,
 			updatedAt: new Date().toISOString(),
@@ -130,9 +142,9 @@ export class ConnectorStateManager {
 	public createNotEditablePageSnapshot(): ConnectionStatusSnapshot {
 		return {
 			bridgeType: 'connecting',
-			bridgeText: ConnectorStateManager.text.disconnected,
+			bridgeText: ConnectorStateManager.text.connection.disconnected,
 			websocketType: 'connecting',
-			websocketText: ConnectorStateManager.text.disconnected,
+			websocketText: ConnectorStateManager.text.connection.disconnected,
 			updatedAt: new Date().toISOString(),
 		};
 	}
@@ -144,8 +156,8 @@ export class ConnectorStateManager {
 	 * @returns 展示文本。
 	 */
 	public getBridgeDisplayText(bridgeType: ConnectionStatusSnapshot['bridgeType'], bridgeText: string): string {
-		if (bridgeType === 'connected' && bridgeText === ConnectorStateManager.text.connected) {
-			return `${ConnectorStateManager.text.connected}。`;
+		if (bridgeType === 'connected' && bridgeText === ConnectorStateManager.text.connection.connected) {
+			return `${ConnectorStateManager.text.connection.connected}。`;
 		}
 
 		return bridgeText;
@@ -158,7 +170,7 @@ export class ConnectorStateManager {
 	 * @returns 是否为等待文案。
 	 */
 	public isBridgeWaitingMessage(bridgeType: ConnectionStatusSnapshot['bridgeType'], bridgeText: string): boolean {
-		return bridgeType === 'connecting' && bridgeText === ConnectorStateManager.text.connectingWaiting;
+		return bridgeType === 'connecting' && bridgeText === ConnectorStateManager.text.connection.connectingWaiting;
 	}
 
 	/**
@@ -168,6 +180,6 @@ export class ConnectorStateManager {
 	 * @returns 是否为等待文案。
 	 */
 	public isSocketWaitingMessage(websocketType: ConnectionStatusSnapshot['websocketType'], websocketText: string): boolean {
-		return websocketType === 'connecting' && websocketText === ConnectorStateManager.text.websocketConnecting;
+		return websocketType === 'connecting' && websocketText === ConnectorStateManager.text.connection.websocketConnecting;
 	}
 }

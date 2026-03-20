@@ -117,26 +117,26 @@ function createStatusSummary(state: ServerStatus): string {
 	const runtimeMessage = normalizeText(state.runtimeMessage);
 
 	if (state.runtimeStatus === 'error' || state.bridgeStatus === 'error') {
-		return truncateSummary(runtimeMessage.length > 0 ? runtimeMessage : ServerStateManager.text.summaryErrorFallback);
+		return truncateSummary(runtimeMessage.length > 0 ? runtimeMessage : ServerStateManager.text.summary.errorFallback);
 	}
 
 	if (state.bridgeStatus === 'connected') {
-		return ServerStateManager.text.summaryConnected;
+		return ServerStateManager.text.summary.connected;
 	}
 
 	if (state.runtimeStatus === 'starting') {
-		return ServerStateManager.text.summaryStarting;
+		return ServerStateManager.text.summary.starting;
 	}
 
 	if (state.runtimeStatus === 'stopped') {
-		return ServerStateManager.text.summaryStopped;
+		return ServerStateManager.text.summary.stopped;
 	}
 
 	if (state.bridgeStatus === 'waiting') {
-		return ServerStateManager.text.summaryWaiting;
+		return ServerStateManager.text.summary.waiting;
 	}
 
-	return truncateSummary(runtimeMessage.length > 0 ? runtimeMessage : ServerStateManager.text.summaryUpdated);
+	return truncateSummary(runtimeMessage.length > 0 ? runtimeMessage : ServerStateManager.text.summary.updated);
 }
 
 // 按状态优先级生成事件字段。
@@ -223,7 +223,7 @@ export function createServerStatusLogEntry(state: ServerStatus, bridgeClientIds:
 		: '';
 	const message = disconnectSnapshot
 		? detail
-		: (normalizeText(state.runtimeMessage) || normalizeText(state.bridgeMessage) || ServerStateManager.text.summaryUpdated);
+		: (normalizeText(state.runtimeMessage) || normalizeText(state.bridgeMessage) || ServerStateManager.text.summary.updated);
 	const clientId = disconnectSnapshot ? normalizeText(disconnectSnapshot.clientId) : changedClientId;
 	const activeClientId = disconnectSnapshot ? '' : (bridgeClientIds[0] ?? '');
 	const fields = compactFields({

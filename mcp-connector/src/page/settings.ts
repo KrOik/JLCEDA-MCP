@@ -130,9 +130,9 @@ async function saveServerConfig(): Promise<void> {
 		}
 		catch (error: unknown) {
 			const message = toSafeErrorMessage(error);
-			writeSettingsWarningLog('settings.config.publish.failed', CONNECTOR_STATUS_TEXT.settingsPublishFailedSummary, message, message, 'settings_publish_failed');
+			writeSettingsWarningLog('settings.config.publish.failed', CONNECTOR_STATUS_TEXT.settings.settingsPublishFailedSummary, message, message, 'settings_publish_failed');
 		}
-		showConfigToast(CONNECTOR_STATUS_TEXT.configSaved, ESYS_ToastMessageType.SUCCESS);
+		showConfigToast(CONNECTOR_STATUS_TEXT.settings.configSaved, ESYS_ToastMessageType.SUCCESS);
 	}
 	catch (error: unknown) {
 		showConfigToast(`保存失败：${toSafeErrorMessage(error)}`, ESYS_ToastMessageType.ERROR);
@@ -167,14 +167,14 @@ function bootstrapPage(): void {
 		}
 		catch (error: unknown) {
 			const message = toSafeErrorMessage(error);
-			writeSettingsWarningLog('settings.status.init.failed', CONNECTOR_STATUS_TEXT.settingsInitFailedSummary, message, message, 'settings_init_failed');
-			setStatus('error', CONNECTOR_STATUS_TEXT.statusInitFailed, 'error', message);
+			writeSettingsWarningLog('settings.status.init.failed', CONNECTOR_STATUS_TEXT.settings.settingsInitFailedSummary, message, message, 'settings_init_failed');
+			setStatus('error', CONNECTOR_STATUS_TEXT.settings.statusInitFailed, 'error', message);
 		}
 	}
 	catch (error: unknown) {
 		const message = toSafeErrorMessage(error);
-		writeSettingsWarningLog('settings.config.invalid', CONNECTOR_STATUS_TEXT.settingsConfigInvalidSummary, message, message, 'settings_config_invalid');
-		setStatus('error', CONNECTOR_STATUS_TEXT.configInvalid, 'error', message);
+		writeSettingsWarningLog('settings.config.invalid', CONNECTOR_STATUS_TEXT.settings.settingsConfigInvalidSummary, message, message, 'settings_config_invalid');
+		setStatus('error', CONNECTOR_STATUS_TEXT.settings.configInvalid, 'error', message);
 	}
 }
 

@@ -133,14 +133,14 @@ function enqueueTask(task: { requestId: string; path: string; payload: unknown; 
 	taskChain = taskChain.then(async () => {
 		if (currentRole !== 'active') {
 			currentTransport.completeTask(task.requestId, task.leaseTerm, undefined, {
-				message: CONNECTOR_STATUS_TEXT.taskRejectedStandby,
+				message: CONNECTOR_STATUS_TEXT.runtime.taskRejectedStandby,
 			});
 			return;
 		}
 
 		if (task.leaseTerm !== currentLeaseTerm) {
 			currentTransport.completeTask(task.requestId, task.leaseTerm, undefined, {
-				message: CONNECTOR_STATUS_TEXT.taskLeaseExpired,
+				message: CONNECTOR_STATUS_TEXT.runtime.taskLeaseExpired,
 			});
 			return;
 		}
@@ -148,7 +148,7 @@ function enqueueTask(task: { requestId: string; path: string; payload: unknown; 
 		const handler = BRIDGE_TASK_HANDLERS[task.path];
 		if (!handler) {
 			currentTransport.completeTask(task.requestId, task.leaseTerm, undefined, {
-				message: `${CONNECTOR_STATUS_TEXT.taskPathUnsupportedPrefix}${task.path}`,
+				message: `${CONNECTOR_STATUS_TEXT.runtime.taskPathUnsupportedPrefix}${task.path}`,
 			});
 			return;
 		}
@@ -168,7 +168,7 @@ function enqueueTask(task: { requestId: string; path: string; payload: unknown; 
 		currentTransport.completeTask(task.requestId, task.leaseTerm, result, taskError);
 	}).catch((error: unknown) => {
 		const message = toSafeErrorMessage(error);
-		writeRuntimeWarningLog('bridge.task.failed', CONNECTOR_STATUS_TEXT.taskFailedSummary, message, message, 'bridge_task_failed');
+		writeRuntimeWarningLog('bridge.task.failed', CONNECTOR_STATUS_TEXT.runtime.taskFailedSummary, message, message, 'bridge_task_failed');
 	});
 }
 

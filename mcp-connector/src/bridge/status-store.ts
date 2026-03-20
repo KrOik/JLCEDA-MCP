@@ -45,7 +45,7 @@ export function isConnectionStatusSnapshot(value: unknown): value is ConnectionS
 }
 
 /**
- * 写入连接状态快照到固定存储键，火忘即发。
+ * 写入连接状态快照到固定存储键。
  * @param snapshot 状态快照。
  */
 export function saveConnectionStatus(snapshot: ConnectionStatusSnapshot): void {

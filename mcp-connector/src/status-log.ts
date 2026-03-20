@@ -32,7 +32,7 @@ export const CONNECTOR_STATUS_TEXT = {
 	connected: '已连接',
 	disconnected: '未连接',
 	websocketConnecting: '连接中',
-	connectFailed: '连接失败',
+	connectFailed: '连接失败，stdio 未启动。',
 	connectFailedRetryDetail: '连接失败，系统将自动重试',
 	standby: '当前页面待命中',
 	statusInitFailed: '状态初始化失败',

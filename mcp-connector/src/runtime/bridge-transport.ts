@@ -304,7 +304,7 @@ export class BridgeTransport {
 	private startOpenTimer(): void {
 		this.clearOpenTimer();
 		this.openTimer = globalThis.setTimeout(() => {
-			this.fail('桥接 WebSocket 连接建立超时。', new Error('桥接 WebSocket 连接建立超时。'));
+			this.fail('正在等待 stdio 启动，服务启动后将自动连接。', new Error('桥接 WebSocket 连接建立超时。'));
 		}, OPEN_TIMEOUT_MS);
 	}
 

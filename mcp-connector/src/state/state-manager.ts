@@ -19,12 +19,12 @@ export class ConnectorStateManager {
 	public static readonly text = {
 		// 连接状态文案：用于连接过程、角色显示与失败提示。
 		connection: {
-			connectingWaiting: '连接器正在等待 VS Code 侧服务就绪...',
+			connectingWaiting: '等待服务端 stdio 启动',
 			connectingService: '正在连接桥接服务',
 			connected: '已连接',
 			disconnected: '未连接',
 			websocketConnecting: '连接中',
-			connectFailed: '连接失败，stdio 未启动。',
+			connectFailed: '继续等待服务端 stdio 启动',
 			connectFailedRetryDetail: '连接失败，系统将自动重试',
 			standby: '当前页面待命中',
 			currentClientPrefix: '当前客户端：',

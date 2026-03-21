@@ -347,6 +347,41 @@
 				display: none;
 			}
 
+			.status-note {
+				margin: 10px 0 0;
+				padding: 8px 10px;
+				border-radius: 6px;
+				border: 1px solid color-mix(in srgb, var(--warn) 34%, transparent);
+				border-left: 3px solid var(--warn);
+				background: color-mix(in srgb, var(--warn) 12%, transparent);
+				font-size: 11px;
+				line-height: 1.55;
+				color: var(--text);
+			}
+
+			.status-note strong {
+				color: var(--warn);
+				font-weight: 700;
+			}
+
+			.status-note-title {
+				margin: 0 0 4px;
+				color: var(--warn);
+				font-weight: 700;
+				font-size: 11px;
+				line-height: 1.4;
+			}
+
+			.status-note-list {
+				margin: 0;
+				padding-left: 14px;
+			}
+
+			.status-note-list li {
+				margin: 0;
+				line-height: 1.5;
+			}
+
 			.status-connecting {
 				color: var(--warn);
 				font-size: 12px;
@@ -398,6 +433,15 @@
 					<div class="status-line">
 						<p class="status-title">WebSocket</p>
 						<p id="socketStatusText" class="status-text status-connecting">检测中</p>
+					</div>
+					<div class="status-note">
+						<p class="status-note-title">说明</p>
+						<ul class="status-note-list">
+							<li>首次发起聊天才会启动服务；仅在原理图或 PCB 页面可连接。</li>
+							<li>若当前客户端与活动客户端不一致，请关闭其他 EDA 页面并刷新本页。</li>
+							<li>初次安装先确认 VS Code/Cursor 与 EDA 都已安装扩展，再检查聊天工具是否已正确配置 MCP 服务。</li>
+							<li>VS Code Copilot、Cursor Chat 会自动配置，Claude Code 等第三方一般需手动配置 MCP 服务。</li>
+						</ul>
 					</div>
 				</div>
 			</section>

@@ -29,7 +29,7 @@ export function activate(status?: 'onStartupFinished', arg?: string): void {
  * 页面用于配置 MCP 服务器地址并查看连接状态。
  */
 export function openSettingsPage(): void {
-	void eda.sys_IFrame.openIFrame('/iframe/settings.html', 500, 310, 'jlc-mcp-settings-dialog', { minimizeButton: true, minimizeStyle: 'collapsed' });
+	void eda.sys_IFrame.openIFrame('/iframe/settings.html', 600, 420, 'jlc-mcp-settings-dialog', { minimizeButton: true, minimizeStyle: 'collapsed' });
 }
 
 /**

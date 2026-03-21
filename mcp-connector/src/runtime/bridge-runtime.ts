@@ -18,6 +18,7 @@ import { connectorLogPipeline } from '../logging/log.ts';
 import { handleApiSearchTask } from '../mcp/api-search-handler.ts';
 import { handleContextTask } from '../mcp/context-handler.ts';
 import { handleInvokeTask } from '../mcp/invoke-handler.ts';
+import { handleSchematicCheckTask } from '../mcp/schematic-check-handler.ts';
 import { ConnectorStateManager } from '../state/state-manager.ts';
 import { BridgeStatusReporter } from '../state/status-reporter.ts';
 import { safeCall, toSafeErrorMessage, toSerializableAsync } from '../utils';
@@ -30,6 +31,7 @@ const BRIDGE_TASK_HANDLERS: Record<string, (payload: unknown) => Promise<unknown
 	'/bridge/jlceda/api/search': handleApiSearchTask,
 	'/bridge/jlceda/api/invoke': handleInvokeTask,
 	'/bridge/jlceda/context/get': handleContextTask,
+	'/bridge/jlceda/schematic/check': handleSchematicCheckTask,
 };
 
 let started = false;

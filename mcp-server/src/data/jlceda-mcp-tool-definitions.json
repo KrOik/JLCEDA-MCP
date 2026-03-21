@@ -86,5 +86,14 @@
       },
       "additionalProperties": false
     }
+  },
+  {
+    "name": "jlceda_schematic_check",
+    "description": "对当前原理图执行完整检查：ERC 电气规则检查 + 网表获取 + 精简提取，返回 ERC 结果与压缩后的网表供 AI 分析。无需传入任何参数。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
   }
 ]

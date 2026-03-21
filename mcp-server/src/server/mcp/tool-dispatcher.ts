@@ -84,6 +84,9 @@ export class ToolDispatcher {
 		if (toolCallParams.name === 'jlceda_context_get') {
 			return this.toToolContent(await this.handleContextGet(args));
 		}
+		if (toolCallParams.name === 'jlceda_schematic_check') {
+			return this.toToolContent(await this.handleSchematicCheck());
+		}
 
 		throw new Error(`未知工具: ${toolCallParams.name}`);
 	}
@@ -143,5 +146,10 @@ export class ToolDispatcher {
 		const scope = String(argumentsObject.scope ?? '').trim();
 		// context-handler 返回的结构已包含 scope 字段，无需再次包装。
 		return await enqueueBridgeRequest('/bridge/jlceda/context/get', { scope }, timeoutMs);
+	}
+
+	// 桥接执行原理图完整检查（ERC + 网表提取）。
+	private async handleSchematicCheck(): Promise<unknown> {
+		return await enqueueBridgeRequest('/bridge/jlceda/schematic/check', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
 	}
 }

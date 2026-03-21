@@ -23,7 +23,7 @@ import { isPlainObjectRecord, toSafeErrorMessage } from '../utils';
 
 // 底层 WebSocket 连接建立超时（从 register 到 onOpen 回调触发）。
 // 用于等待 stdio 进程与桥接通道启动就绪，再进入后续工具调用流程。
-const OPEN_TIMEOUT_MS = 30000;
+const OPEN_TIMEOUT_MS = 5000;
 // 应用层握手超时（从 hello 发送到 welcome 收到）。
 const HANDSHAKE_TIMEOUT_MS = 5000;
 // 客户端发送心跳包的时间间隔。

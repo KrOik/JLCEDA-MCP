@@ -22,11 +22,15 @@ import { ConnectorStateManager } from '../state/state-manager.ts';
 import { isPlainObjectRecord, toSafeErrorMessage } from '../utils';
 
 // 底层 WebSocket 连接建立超时（从 register 到 onOpen 回调触发）。
-const OPEN_TIMEOUT_MS = 8_000;
+// 用于等待 stdio 进程与桥接通道启动就绪，再进入后续工具调用流程。
+const OPEN_TIMEOUT_MS = 30000;
 // 应用层握手超时（从 hello 发送到 welcome 收到）。
-const HANDSHAKE_TIMEOUT_MS = 5_000;
+const HANDSHAKE_TIMEOUT_MS = 5000;
+// 客户端发送心跳包的时间间隔。
 const HEARTBEAT_INTERVAL_MS = 1000;
+// 服务端无活动超时阈值。
 const SERVER_IDLE_TIMEOUT_MS = 5000;
+// 检查服务端无活动状态的轮询间隔。
 const SERVER_IDLE_CHECK_INTERVAL_MS = 500;
 const CONNECTOR_STATUS_TEXT = ConnectorStateManager.text;
 

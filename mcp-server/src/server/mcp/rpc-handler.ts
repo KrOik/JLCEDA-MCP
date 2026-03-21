@@ -17,7 +17,7 @@ import { waitForBridgeReady } from '../bridge/broker';
 const DEFAULT_AGENT_INSTRUCTIONS = _defaultInstructions.trimEnd();
 
 // 工具调用等待桥接就绪的最长时间（毫秒）。
-const BRIDGE_READY_TIMEOUT_MS = 10000;
+const BRIDGE_READY_TIMEOUT_MS = 30000;
 
 interface RpcRequest {
 	jsonrpc: '2.0';

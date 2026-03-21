@@ -216,6 +216,8 @@ async function ensureConnected(): Promise<void> {
 
 		transport = instance;
 		connectorLogDispatchPipeline.flushToTransport(transport);
+		// 只有运行时确认握手完成并接管实例后，才通知服务端允许调度任务。
+		transport.reportReady();
 	}
 	catch (error: unknown) {
 		instance.close();

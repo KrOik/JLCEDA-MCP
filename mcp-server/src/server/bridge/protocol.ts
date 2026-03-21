@@ -45,6 +45,12 @@ export interface BridgeClientLogMessage {
 	log: UnifiedLogEntry;
 }
 
+export interface BridgeClientReadyMessage {
+	type: 'bridge/ready';
+	clientId: string;
+	readyAt: number;
+}
+
 export interface BridgeServerWelcomeMessage {
 	type: 'bridge/welcome';
 	clientId: string;
@@ -88,7 +94,7 @@ export interface BridgeServerErrorMessage {
 	requestId?: string;
 }
 
-export type BridgeClientMessage = BridgeClientHelloMessage | BridgeClientHeartbeatMessage | BridgeClientResultMessage | BridgeClientLogMessage;
+export type BridgeClientMessage = BridgeClientHelloMessage | BridgeClientHeartbeatMessage | BridgeClientResultMessage | BridgeClientLogMessage | BridgeClientReadyMessage;
 
 export type BridgeServerMessage = BridgeServerWelcomeMessage | BridgeServerRoleMessage | BridgeServerDebugSwitchMessage | BridgeServerHeartbeatAckMessage | BridgeServerTaskMessage | BridgeServerErrorMessage;
 

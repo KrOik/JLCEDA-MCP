@@ -27,6 +27,7 @@ interface BridgePeerState {
 	clientId: string;
 	connectedAt: number;
 	lastSeenAt: number;
+	isReady: boolean;
 	socket: WebSocket;
 }
 
@@ -182,6 +183,7 @@ const VALID_CLIENT_MESSAGE_TYPES = new Set([
 	'bridge/hello',
 	'bridge/heartbeat',
 	'bridge/result',
+	'bridge/ready',
 	'bridge/log',
 ]);
 
@@ -248,9 +250,19 @@ function getActivePeer(): BridgePeerState | undefined {
 	return peer;
 }
 
+// 获取当前已就绪的活动客户端。
+function getReadyActivePeer(): BridgePeerState | undefined {
+	const activePeer = getActivePeer();
+	if (!activePeer || !activePeer.isReady) {
+		return undefined;
+	}
+
+	return activePeer;
+}
+
 // 尝试唤醒等待活动客户端的调用。
 function resolveActiveWaiters(): void {
-	if (!getActivePeer() || pendingActiveWaiters.size === 0) {
+	if (!getReadyActivePeer() || pendingActiveWaiters.size === 0) {
 		return;
 	}
 
@@ -476,6 +488,7 @@ async function registerClient(clientId: string, socket: WebSocket): Promise<Brid
 		clientId: normalizedClientId,
 		connectedAt: existingPeer?.connectedAt ?? current,
 		lastSeenAt: current,
+		isReady: isExistingSocketBinding ? existingPeer?.isReady ?? false : false,
 		socket,
 	};
 	peersByClientId.set(normalizedClientId, peer);
@@ -507,7 +520,7 @@ async function registerClient(clientId: string, socket: WebSocket): Promise<Brid
 // 等待活动客户端就绪。
 async function waitForActivePeer(timeoutMs: number): Promise<void> {
 	await cleanupExpiredPeers();
-	if (getActivePeer()) {
+	if (getReadyActivePeer()) {
 		return;
 	}
 
@@ -598,6 +611,14 @@ async function handleClientMessage(socket: WebSocket, data: RawData): Promise<vo
 		return;
 	}
 
+	if (message.type === 'bridge/ready') {
+		const peer = await registerClient(message.clientId, socket);
+		peer.lastSeenAt = nowMs();
+		peer.isReady = true;
+		resolveActiveWaiters();
+		return;
+	}
+
 	if (message.type === 'bridge/log') {
 		const peer = await registerClient(message.clientId, socket);
 		peer.lastSeenAt = nowMs();
@@ -668,6 +689,10 @@ export async function enqueueBridgeRequest(path: string, payload: unknown, timeo
 			throw error;
 		}
 		const activePeer = getActivePeer();
+		const readyActivePeer = getReadyActivePeer();
+		if (!readyActivePeer) {
+			continue;
+		}
 		if (!activePeer) {
 			continue;
 		}
@@ -692,14 +717,14 @@ export async function enqueueBridgeRequest(path: string, payload: unknown, timeo
 				resolve,
 				reject,
 				timer,
-				clientId: activePeer.clientId,
+				clientId: readyActivePeer.clientId,
 				leaseTerm: currentLeaseTerm,
 				path,
 			});
 		});
 
 		try {
-			await sendBridgeMessage(activePeer.socket, {
+			await sendBridgeMessage(readyActivePeer.socket, {
 				type: 'bridge/task',
 				requestId: request.requestId,
 				path: request.path,
@@ -714,7 +739,7 @@ export async function enqueueBridgeRequest(path: string, payload: unknown, timeo
 				clearTimeout(pending.timer);
 				pendingRequests.delete(requestId);
 			}
-			await removeSocket(activePeer.socket, BRIDGE_BROKER_TEXT.connection.taskSendFailure, {
+			await removeSocket(readyActivePeer.socket, BRIDGE_BROKER_TEXT.connection.taskSendFailure, {
 				disconnectType: 'send_failure',
 				disconnectActor: 'runtime',
 				closeReason: 'bridge_task_send_failed',

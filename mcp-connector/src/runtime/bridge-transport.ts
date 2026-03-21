@@ -187,6 +187,17 @@ export class BridgeTransport {
 	}
 
 	/**
+	 * 上报连接器执行链路已就绪。
+	 */
+	public reportReady(): void {
+		this.sendMessage({
+			type: 'bridge/ready',
+			clientId: this.clientId,
+			readyAt: Date.now(),
+		});
+	}
+
+	/**
 	 * 主动关闭桥接连接。
 	 */
 	public close(): void {

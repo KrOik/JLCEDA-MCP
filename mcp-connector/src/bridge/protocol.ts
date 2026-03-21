@@ -54,6 +54,13 @@ export interface BridgeClientLogMessage {
 	log: UnifiedLogEntry;
 }
 
+// 客户端上报就绪消息。
+export interface BridgeClientReadyMessage {
+	type: 'bridge/ready';
+	clientId: string;
+	readyAt: number;
+}
+
 // 服务端返回握手确认消息。
 export interface BridgeServerWelcomeMessage {
 	type: 'bridge/welcome';
@@ -103,7 +110,7 @@ export interface BridgeServerErrorMessage {
 	requestId?: string;
 }
 
-export type BridgeClientMessage = BridgeClientHelloMessage | BridgeClientHeartbeatMessage | BridgeClientResultMessage | BridgeClientLogMessage;
+export type BridgeClientMessage = BridgeClientHelloMessage | BridgeClientHeartbeatMessage | BridgeClientResultMessage | BridgeClientLogMessage | BridgeClientReadyMessage;
 
 export type BridgeServerMessage = BridgeServerWelcomeMessage | BridgeServerRoleMessage | BridgeServerDebugSwitchMessage | BridgeServerHeartbeatAckMessage | BridgeServerTaskMessage | BridgeServerErrorMessage;
 

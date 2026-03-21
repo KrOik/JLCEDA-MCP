@@ -1,6 +1,6 @@
 # MCP 连接器
 
-MCP 连接器是安装在嘉立创 EDA 中的客户端扩展，与 VS Code/Cursor 侧的嘉立创 EDA MCP 服务端配套使用，让 Copilot、Claude、Gemini 等 AI 大模型可以直接读取 EDA 上下文、查询 API 文档、触发 API 调用。
+MCP 连接器是安装在嘉立创 EDA 中的客户端扩展，需要与 VS Code/Cursor 侧的嘉立创 EDA MCP 服务端配套使用。接入后，你可以直接在 Copilot、Cursor Chat、Claude Code 等 AI 助手中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
 
 ![演示动画](images/demo.gif)
 
@@ -11,7 +11,9 @@ MCP 连接器是安装在嘉立创 EDA 中的客户端扩展，与 VS Code/Curso
 
 ## 安装
 
-两个扩展都需要安装。**VS Code 内置 Copilot 和 Cursor 内置 Chat 在安装服务端扩展后会自动配置 MCP 服务；其他聊天工具如 Claude Code、Codex，需要手动配置 MCP 服务。**
+**服务端**和**客户端**两个扩展都需要安装。
+
+> VS Code 内置 Copilot 和 Cursor 内置 Chat 在安装服务端扩展后会自动配置 MCP 服务；其他聊天工具如 Claude Code、Codex，需要手动配置 MCP 服务。
 
 ### 客户端（嘉立创 EDA）
 
@@ -36,17 +38,6 @@ MCP 连接器是安装在嘉立创 EDA 中的客户端扩展，与 VS Code/Curso
 - VS Code 扩展商店：https://marketplace.visualstudio.com/items?itemName=chengbin.jlceda-mcp-server
 - Cursor（Open VSX）：https://open-vsx.org/extension/chengbin/jlceda-mcp-server
 
-**从 GitHub 安装包安装：**
-
-1. 打开发布页：https://github.com/sengbin/JLCEDA-MCP/releases/tag/package
-2. 下载 VSIX 安装包，执行"Extensions: Install from VSIX..."完成安装。
-
-## 适用场景
-
-1. 在聊天中读取当前工程、文档和选区上下文。
-2. 让 AI 调用 EDA API 执行在线操作。
-3. 在聊天中查询 EDA API 文档。
-
 ## 状态说明
 
 连接设置页面展示两行状态，每秒自动刷新：
@@ -69,7 +60,7 @@ MCP 连接器是安装在嘉立创 EDA 中的客户端扩展，与 VS Code/Curso
 
 请在聊天客户端确认该 MCP 服务已被信任，并检查工具开关是否开启。
 
-### 文档检索和上下文读取失败？
+### AI 读不到当前图纸内容怎么办？
 
 EDA 页面可能未桥接成功，请回到连接设置页确认连接状态是否正常。
 

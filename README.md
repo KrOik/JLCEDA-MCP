@@ -1,6 +1,6 @@
 # JLCEDA MCP
 
-JLCEDA MCP 是一套面向嘉立创 EDA 的本地 MCP 双扩展方案，让 Copilot、Claude、Gemini 等 AI 大模型可以直接读取 EDA 上下文、查询 API 文档、触发 EDA API 调用。
+JLCEDA MCP 是一套面向嘉立创 EDA 的本地 MCP 双扩展方案，由 mcp-server 和 mcp-connector 组成。接入后，你可以直接在 Copilot、Cursor Chat、Claude Code 等 AI 助手中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
 
 ## 整体链路
 
@@ -12,16 +12,17 @@ VS Code / Cursor（mcp-server）
 AI 大模型（Copilot / Claude / Gemini 等）
 ```
 
-- **mcp-connector**：EDA 侧扩展，建立到 mcp-server 的 WebSocket 连接，在 EDA 进程内执行 API 调用、文档检索和上下文读取。
-- **mcp-server**：VS Code/Cursor 侧扩展，通过 stdio 将三个 MCP 工具暴露给 AI 助手，并托管桥接 WebSocket 服务接收连接器连接。
+- **mcp-connector**：EDA 侧扩展，建立到 mcp-server 的 WebSocket 连接，负责让 AI 在嘉立创 EDA 中读取当前图纸信息并执行相关操作。
+- **mcp-server**：VS Code/Cursor 侧扩展，通过 stdio 将多项 MCP 工具能力暴露给 AI 助手，并托管桥接 WebSocket 服务接收连接器连接。
 
 ## 可用工具
 
 | 工具 | 说明 |
 |------|------|
-| `jlceda_api_search` | 查询 EDA API 文档，支持按名称、scope、owner 过滤，最多返回 50 条 |
-| `jlceda_context_get` | 读取当前工程、文档、原理图、PCB、拼版及选区信息 |
-| `jlceda_api_invoke` | 触发 EDA 页面执行指定 API 并返回结果，支持自定义超时（1000–120000 ms） |
+| `jlceda_api_search` | 检索嘉立创 EDA API 文档，支持按名称、范围、命名空间过滤，最多返回 50 条 |
+| `jlceda_api_invoke` | 请求嘉立创 EDA 执行指定 API，并返回执行结果，支持自定义超时（1000–120000 ms） |
+| `jlceda_context_get` | 获取当前 EDA 运行状态快照，包括工程、页面、选区等信息 |
+| `jlceda_schematic_check` | 对当前原理图执行完整检查，返回 ERC 结果和精简网表，便于分析电路问题 |
 
 ## 安装
 
@@ -34,21 +35,11 @@ AI 大模型（Copilot / Claude / Gemini 等）
 - VS Code：[marketplace.visualstudio.com](https://marketplace.visualstudio.com/items?itemName=chengbin.jlceda-mcp-server)
 - Cursor（Open VSX）：[open-vsx.org](https://open-vsx.org/extension/chengbin/jlceda-mcp-server)
 
-**从安装包安装：**
-
-1. 打开 [GitHub Releases](https://github.com/sengbin/JLCEDA-MCP/releases/tag/package)，下载 VSIX 安装包。
-2. 在 VS Code/Cursor 中执行"Extensions: Install from VSIX..."完成安装。
-
 ### mcp-connector（嘉立创 EDA）
 
 **从扩展管理器安装（推荐）：**
 
 打开嘉立创 EDA，进入扩展管理器，搜索"MCP连接器"并安装。
-
-**从安装包安装：**
-
-1. 打开 [GitHub Releases](https://github.com/sengbin/JLCEDA-MCP/releases/tag/package)，下载 `.eext` 安装包。
-2. 在嘉立创 EDA 中导入并安装。
 
 ## 注意事项
 

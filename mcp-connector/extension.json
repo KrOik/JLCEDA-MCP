@@ -3,7 +3,7 @@
 	"uuid": "1f41b7a0f9784d6aa5fd77478de4a25c",
 	"displayName": "MCP连接器",
 	"description": "将 VSCode/Cursor 中的 AI 助手桥接到嘉立创 EDA MCP 服务。",
-	"version": "1.1.4",
+	"version": "1.2.0",
 	"publisher": "",
 	"engines": {
 		"eda": "^3.0.0"

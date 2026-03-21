@@ -6,7 +6,7 @@
 
 ## 安装
 
-两个扩展都需要安装。**默认安装完成后无需任何配置，直接即可使用。**
+两个扩展都需要安装。**VS Code 内置 Copilot 和 Cursor 内置 Chat 在安装服务端扩展后会自动配置 MCP 服务；其他聊天工具如 Claude Code、Codex，需要手动配置 MCP 服务。**
 
 ### 服务端（VS Code / Cursor）
 

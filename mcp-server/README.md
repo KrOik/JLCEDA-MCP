@@ -4,6 +4,8 @@
 
 项目地址：https://github.com/sengbin/JLCEDA-MCP
 
+---
+
 ## 安装
 
 **服务端**和**客户端**两个扩展都需要安装。
@@ -21,69 +23,6 @@
 - VS Code 扩展商店：https://marketplace.visualstudio.com/items?itemName=chengbin.jlceda-mcp-server
 - Cursor（Open VSX）：https://open-vsx.org/extension/chengbin/jlceda-mcp-server
 
-### 第三方聊天工具手动配置 MCP
-
-如果你使用的是 Copilot 之外的第三方聊天工具，并且该工具不会自动读取 VS Code 或 Cursor 注册的 MCP 服务定义，可以手动把本扩展作为 stdio MCP 服务接入。
-
-#### 运行入口
-
-- 命令：Node.js 可执行文件，一般直接使用当前系统里的 `node`
-- 运行脚本：扩展安装目录下的 `out/server/runtime.js`（Windows 下就是 `out\server\runtime.js`）
-- 工作目录：建议设置为扩展根目录，也就是 `package.json` 所在目录
-
-#### 必要参数
-
-运行脚本后面至少需要带上这些参数：
-
-- `--host 127.0.0.1`：桥接 WebSocket 监听地址；未修改配置时保持默认值即可
-- `--port 8765`：桥接 WebSocket 监听端口；如果你在扩展设置中改过端口，这里必须保持一致
-- `--status-file <可写入的状态文件绝对路径>`：必填，用来保存运行时状态；路径不存在时会自动创建父目录
-- `--extension-version <当前扩展版本号>`：必填，必须与已安装扩展版本一致；扩展升级后这里也要跟着改
-
-#### 可选参数
-
-- `--enable-system-log false`：是否输出系统日志，默认可不写
-- `--enable-connection-list false`：是否启用连接列表调试信息，默认可不写
-- `--agent-instructions <Base64 文本>`：附加自定义 AI 指令，可不填；如果要传，内容需要先转成 Base64
-
-#### 通用配置示例
-
-下面是一个通用的 stdio MCP 配置示例。不同聊天工具的字段名可能略有区别，但 `command`、`args`、`cwd` 这三部分通常都需要。示例里的 `<当前扩展版本号>` 只是占位，实际使用时要替换成你本机已安装扩展的真实版本：
-
-```json
-{
-  "mcpServers": {
-    "jlceda": {
-      "command": "node",
-      "args": [
-        "C:\\Users\\<你的用户名>\\.vscode\\extensions\\chengbin.jlceda-mcp-server-<当前扩展版本号>\\out\\server\\runtime.js",
-        "--host",
-        "127.0.0.1",
-        "--port",
-        "8765",
-        "--status-file",
-        "C:\\Users\\<你的用户名>\\AppData\\Roaming\\jlceda-mcp\\runtime-status.json",
-        "--extension-version",
-        "<当前扩展版本号>",
-        "--enable-system-log",
-        "false",
-        "--enable-connection-list",
-        "false"
-      ],
-      "cwd": "C:\\Users\\<你的用户名>\\.vscode\\extensions\\chengbin.jlceda-mcp-server-<当前扩展版本号>"
-    }
-  }
-}
-```
-
-#### 配置时的注意点
-
-1. 示例里的 `<当前扩展版本号>` 需要你手动替换，至少要同步改 3 个位置：扩展目录路径、`cwd` 路径、`--extension-version` 的参数值。
-2. `runtime.js` 必须指向你本机实际安装的扩展目录，不能直接照抄示例路径。
-3. `--extension-version` 必须和扩展当前版本一致，否则运行时会直接报错退出。
-4. `--status-file` 必须使用当前用户有写权限的绝对路径。
-5. `--port` 必须和嘉立创 EDA 连接器里配置的地址保持一致，否则工具调用无法桥接到 EDA。
-
 ### 客户端（嘉立创 EDA）
 
 客户端文档：[MCP 连接器 README](https://github.com/sengbin/JLCEDA-MCP/blob/main/mcp-connector/README.md)
@@ -92,6 +31,129 @@
 
 打开嘉立创 EDA，进入扩展管理器，搜索"MCP连接器"并安装。
 
+---
+
+### 第三方聊天工具手动配置 MCP
+
+如果你使用的是 Copilot 之外的第三方聊天工具，并且该工具不会自动读取 VS Code 或 Cursor 注册的 MCP 服务定义，可以手动把本扩展作为 stdio MCP 服务接入。
+
+#### MCP 配置说明
+
+配置参数：
+- `command`：启动命令，通常使用 `node`
+- `args`：启动参数，至少包含 `runtime.js` 路径和 4 个关键参数
+- `cwd`：工作目录，建议设置为扩展根目录（`package.json` 所在目录）
+
+关键参数：
+- `--host`：桥接监听地址，默认 `127.0.0.1`
+- `--port`：桥接监听端口，默认 `8765`
+- `--status-file`：状态文件绝对路径（必须可写）
+- `--extension-version`：当前已安装扩展版本号
+
+可选参数：
+- `--enable-system-log false`：关闭系统日志输出
+- `--enable-connection-list false`：关闭连接列表调试输出
+- `--agent-instructions <Base64 文本>`：追加自定义 AI 指令
+
+注意事项：
+1. `runtime.js` 路径必须指向本机实际安装目录。
+2. 版本号至少要在 3 个位置保持一致：扩展目录、`cwd`、`--extension-version`。
+3. `--status-file` 必须使用当前用户有写权限的绝对路径。
+4. `--port` 必须与嘉立创 EDA 连接器配置一致。
+5. 扩展升级后需要同步更新路径和版本号参数。
+
+#### Claude Code（stdio）配置（按官方方式）
+
+参考 Claude Code 官方本地 stdio 配置方式（`claude mcp add --transport stdio <name> -- <command> [args...]`），针对“从扩展管理器安装”的本扩展，建议按下面步骤配置。
+
+1. 确认扩展安装目录与版本号
+
+  - VS Code 默认目录（Windows）：`C:\Users\<你的用户名>\.vscode\extensions\chengbin.jlceda-mcp-server-<版本号>`
+  - Cursor 默认目录（Windows）：`C:\Users\<你的用户名>\.cursor\extensions\chengbin.jlceda-mcp-server-<版本号>`
+  - 关键文件：`out\\server\\runtime.js`
+
+2. 执行 Claude Code 添加命令（Windows 原生环境推荐 `cmd /c` 包装）
+
+```bash
+claude mcp add --transport stdio --scope user jlceda -- cmd /c node "C:\Users\<你的用户名>\.vscode\extensions\chengbin.jlceda-mcp-server-<版本号>\out\server\runtime.js" --host 127.0.0.1 --port 8765 --status-file "C:\Users\<你的用户名>\AppData\Roaming\jlceda-mcp\runtime-status.json" --extension-version <版本号> --enable-system-log false --enable-connection-list false
+```
+
+3. 校验是否配置成功
+
+```bash
+claude mcp list
+claude mcp get jlceda
+```
+
+然后在 Claude Code 中输入 `/mcp`，确认 `jlceda` 服务状态正常。
+
+4. 关键注意事项
+
+  - 选项顺序必须正确：`--transport`、`--scope` 等选项要在服务名 `jlceda` 之前；`--` 之后才是实际启动命令和参数。
+  - Windows 下如果命令使用 `npx` 或复杂启动链，官方建议使用 `cmd /c`，否则可能出现连接立即关闭。
+  - `--extension-version` 必须与本机已安装扩展版本完全一致，否则运行时会拒绝启动。
+  - `--port` 必须与嘉立创 EDA 连接器配置一致（默认 `8765`）。
+
+5. 团队共享（可选）
+
+如果希望项目成员共享同一 MCP 配置，可改用 `--scope project`，Claude Code 会在项目根目录写入 `.mcp.json`。如果只给当前用户使用，保留 `--scope user` 即可。
+
+#### Codex（stdio）配置（按官方方式）
+
+参考 Codex 官方 MCP 文档，Codex 支持通过 CLI 或直接编辑 `config.toml` 两种方式接入 stdio MCP 服务。
+
+1. 配置文件位置（官方）
+
+  - 用户级：`~/.codex/config.toml`
+  - 项目级（受信任项目）：`.codex/config.toml`
+  - Codex CLI 与 IDE 扩展共享同一份 MCP 配置
+
+2. 方式一：用 Codex CLI 添加
+
+官方语法：
+
+```bash
+codex mcp add <server-name> --env VAR1=VALUE1 -- <stdio server-command>
+```
+
+结合本扩展的示例（Windows）：
+
+```bash
+codex mcp add jlceda -- node "C:\Users\<你的用户名>\.vscode\extensions\chengbin.jlceda-mcp-server-<版本号>\out\server\runtime.js" --host 127.0.0.1 --port 8765 --status-file "C:\Users\<你的用户名>\AppData\Roaming\jlceda-mcp\runtime-status.json" --extension-version <版本号> --enable-system-log false --enable-connection-list false
+```
+
+3. 方式二：直接编辑 `config.toml`
+
+在 `~/.codex/config.toml`（或项目级 `.codex/config.toml`）中添加：
+
+```toml
+[mcp_servers.jlceda]
+command = "node"
+args = [
+  "C:\\Users\\<你的用户名>\\.vscode\\extensions\\chengbin.jlceda-mcp-server-<版本号>\\out\\server\\runtime.js",
+  "--host", "127.0.0.1",
+  "--port", "8765",
+  "--status-file", "C:\\Users\\<你的用户名>\\AppData\\Roaming\\jlceda-mcp\\runtime-status.json",
+  "--extension-version", "<版本号>",
+  "--enable-system-log", "false",
+  "--enable-connection-list", "false"
+]
+cwd = "C:\\Users\\<你的用户名>\\.vscode\\extensions\\chengbin.jlceda-mcp-server-<版本号>"
+```
+
+4. 校验连接
+
+  - 在 Codex 终端界面使用 `/mcp` 查看活动 MCP 服务
+  - 使用 `codex mcp --help` 查看可用 MCP 管理命令
+
+5. 关键注意事项
+
+  - `runtime.js` 路径必须是你本机实际安装目录。
+  - `--extension-version` 必须与已安装扩展版本一致。
+  - `--port` 必须与嘉立创 EDA 连接器配置一致（默认 `8765`）。
+
+---
+
 ## 注意事项
 
 1. 本扩展需要与 EDA 侧 MCP 连接器配套安装，单独安装无法在线调用。
@@ -99,6 +161,8 @@
 3. 首次发起聊天后服务才会启动，且仅在原理图或 PCB 页面可连接。
 4. 多页面同时连接时，只有活动角色执行任务，待命角色保持在线等待接管。若当前 EDA 页面与活动客户端不一致，请关闭其他 EDA 页面后刷新当前页。
 5. 状态异常时优先重载 VS Code/Cursor，再重连 EDA。
+
+---
 
 ## 常见问题
 
@@ -114,9 +178,13 @@
 
 服务端与连接器地址必须完全一致，任何一侧未更新都会导致桥接失败。
 
+---
+
 ## 许可证
 
 本扩展采用 [Apache License 2.0](LICENSE) 许可证。
+
+---
 
 ## 第三方库声明
 

@@ -24,11 +24,6 @@ MCP 连接器是安装在嘉立创 EDA 中的客户端扩展，需要与 VS Code
 1. 打开嘉立创 EDA，进入扩展管理器。
 2. 搜索"MCP连接器"并安装。
 
-**从 GitHub 安装包安装：**
-
-1. 打开发布页：https://github.com/sengbin/JLCEDA-MCP/releases/tag/package
-2. 下载 `.eext` 安装包，在嘉立创 EDA 中导入并安装。
-
 ### 服务端（VS Code / Cursor）
 
 服务端文档：[嘉立创 EDA MCP 服务端 README](https://github.com/sengbin/JLCEDA-MCP/blob/main/mcp-server/README.md)

@@ -26,7 +26,11 @@ AI 大模型（Copilot / Claude / Gemini 等）
 
 ## 安装
 
-两个扩展都需要安装，**VS Code 内置 Copilot 和 Cursor 内置 Chat 在安装服务端扩展后会自动配置 MCP 服务；其他聊天工具如 Claude Code、Codex，需要手动配置 MCP 服务。**
+**服务端**和**客户端**两个扩展都需要安装。
+
+> VS Code 内置 Copilot 和 Cursor 内置 Chat 在安装服务端扩展后会自动配置 MCP 服务；其他聊天工具如 Claude Code、Codex，需要手动配置 MCP 服务。
+
+> 初次安装时，先确认 VS Code/Cursor 与嘉立创 EDA 两侧扩展都已安装，再检查聊天工具的 MCP 服务配置是否正确。
 
 ### mcp-server（VS Code / Cursor）
 
@@ -45,8 +49,9 @@ AI 大模型（Copilot / Claude / Gemini 等）
 
 1. 两个扩展必须同时安装，单独安装任意一侧均无法使用在线调用功能。
 2. 如果修改了服务端监听端口，需在 EDA 连接器设置页同步更新桥接地址。
-3. 多页面同时连接时，只有活动角色页面执行任务，其余页面处于待命状态，属正常现象。
-4. 状态异常时，先重载 VS Code/Cursor，再重启嘉立创 EDA。
+3. 首次发起聊天后服务才会启动，且仅在原理图或 PCB 页面可连接。
+4. 多页面同时连接时，只有活动角色页面执行任务，其余页面处于待命状态，属正常现象。若当前 EDA 页面与活动客户端不一致，请关闭其他 EDA 页面后刷新当前页。
+5. 状态异常时，先重载 VS Code/Cursor，再重启嘉立创 EDA。
 
 ---
 

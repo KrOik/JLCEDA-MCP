@@ -5,7 +5,8 @@ MCP 连接器是安装在嘉立创 EDA 中的客户端扩展，需要与 VS Code
 ![演示动画](images/demo.gif)
 
 > 这套方案的链路是：EDA -> WebSocket (Bridge) -> stdio (MCP) -> 内置 AI 助手（Copilot / Cursor Chat）。
-> B 站教程视频：https://www.bilibili.com/video/BV11QwuzxEDy/
+
+> B 站演示视频：https://www.bilibili.com/video/BV11QwuzxEDy/
 
 项目地址：https://github.com/sengbin/JLCEDA-MCP
 

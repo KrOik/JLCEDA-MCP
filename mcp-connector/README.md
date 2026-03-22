@@ -1,10 +1,10 @@
 # MCP 连接器
 
-MCP 连接器是安装在嘉立创 EDA 中的客户端扩展，需要与 VS Code/Cursor 侧的嘉立创 EDA MCP 服务端配套使用。接入后，你可以直接在 Copilot、Cursor Chat、Claude Code 等 AI 助手中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
+MCP 连接器是安装在嘉立创 EDA 中的客户端扩展，需要与 VS Code/Cursor 侧的嘉立创 EDA MCP 服务端配套使用。接入后，你可以直接在 Copilot、Cursor Chat、Claude Code、Codex 等 AI 助手中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
 
 ![演示动画](images/demo.gif)
 
-> 这套方案的链路是：EDA -> WebSocket (Bridge) -> stdio (MCP) -> AI 大模型。
+> 这套方案的链路是：EDA -> WebSocket (Bridge) -> stdio (MCP) -> AI 助手（Copilot / Cursor Chat / Claude Code / Codex 等）。
 > B 站教程视频：https://www.bilibili.com/video/BV11QwuzxEDy/
 
 项目地址：https://github.com/sengbin/JLCEDA-MCP

@@ -92,11 +92,6 @@
 
 打开嘉立创 EDA，进入扩展管理器，搜索"MCP连接器"并安装。
 
-**从 GitHub 安装包安装：**
-
-1. 打开发布页：https://github.com/sengbin/JLCEDA-MCP/releases/tag/package
-2. 下载 `.eext` 安装包，在嘉立创 EDA 中导入并安装。
-
 ## 注意事项
 
 1. 本扩展需要与 EDA 侧 MCP 连接器配套安装，单独安装无法在线调用。

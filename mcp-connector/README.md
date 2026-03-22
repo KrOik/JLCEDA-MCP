@@ -1,10 +1,10 @@
 # MCP 连接器
 
-MCP 连接器是安装在嘉立创 EDA 中的客户端扩展，需要与 VS Code/Cursor 侧的嘉立创 EDA MCP 服务端配套使用。接入后，你可以直接在 Copilot、Cursor Chat、Claude Code、Codex 等 AI 助手中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
+MCP 连接器是安装在嘉立创 EDA 中的客户端扩展，需要与 VS Code/Cursor 侧的嘉立创 EDA MCP 服务端配套使用。接入后，你可以直接在 Copilot、Cursor Chat 中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
 
 ![演示动画](images/demo.gif)
 
-> 这套方案的链路是：EDA -> WebSocket (Bridge) -> stdio (MCP) -> AI 助手（Copilot / Cursor Chat / Claude Code / Codex 等）。
+> 这套方案的链路是：EDA -> WebSocket (Bridge) -> stdio (MCP) -> 内置 AI 助手（Copilot / Cursor Chat）。
 > B 站教程视频：https://www.bilibili.com/video/BV11QwuzxEDy/
 
 项目地址：https://github.com/sengbin/JLCEDA-MCP
@@ -13,9 +13,17 @@ MCP 连接器是安装在嘉立创 EDA 中的客户端扩展，需要与 VS Code
 
 **服务端**和**客户端**两个扩展都需要安装。
 
-> VS Code 内置 Copilot 和 Cursor 内置 Chat 在安装服务端扩展后会自动配置 MCP 服务；其他聊天工具如 Claude Code、Codex，需要手动配置 MCP 服务。
+> VS Code 内置 Copilot 和 Cursor 内置 Chat 在安装服务端扩展后会自动配置 MCP 服务；其他第三方聊天工具如 Claude Code、Codex，需要手动配置 MCP 服务。
 
 > 初次安装时，先确认 VS Code/Cursor 与嘉立创 EDA 两侧扩展都已安装，再检查聊天工具的 MCP 服务配置是否正确。
+
+### 使用模式说明
+
+- 本套扩展默认面向 VS Code/Cursor 内置聊天工具（Copilot、Cursor Chat）。
+- 内置聊天工具会自动注册 MCP 服务定义。
+- 第三方聊天工具（Claude Code、Codex）需要手动配置 stdio MCP。
+- 第三方手动配置会独立启动 runtime，不复用 VS Code 内已启动服务。
+- 因此第三方模式下，VS Code 扩展参数不会自动生效，VS Code 页面也看不到该会话的服务与连接状态。
 
 ### 客户端（嘉立创 EDA）
 

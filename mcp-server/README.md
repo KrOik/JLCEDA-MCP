@@ -1,6 +1,6 @@
 # 嘉立创 EDA MCP
 
-嘉立创 EDA MCP 是安装在 VS Code 或 Cursor 中的服务端扩展，需要与嘉立创 EDA 侧的 MCP 连接器配套使用。接入后，你可以直接在 Copilot、Cursor Chat、Claude Code 等 AI 助手中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
+嘉立创 EDA MCP 是安装在 VS Code 或 Cursor 中的服务端扩展，需要与嘉立创 EDA 侧的 MCP 连接器配套使用。接入后，你可以直接在 Copilot、Cursor Chat 中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
 
 项目地址：https://github.com/sengbin/JLCEDA-MCP
 
@@ -10,9 +10,17 @@
 
 **服务端**和**客户端**两个扩展都需要安装。
 
-> VS Code 内置 Copilot 和 Cursor 内置 Chat 在安装服务端扩展后会自动配置 MCP 服务；其他聊天工具如 Claude Code、Codex，需要手动配置 MCP 服务。
+> VS Code 内置 Copilot 和 Cursor 内置 Chat 在安装服务端扩展后会自动配置 MCP 服务；其他第三方聊天工具如 Claude Code、Codex，需要手动配置 MCP 服务。
 
 > 初次安装时，先确认 VS Code/Cursor 与嘉立创 EDA 两侧扩展都已安装，再检查聊天工具的 MCP 服务配置是否正确。
+
+### 使用模式说明
+
+- 本扩展默认面向 VS Code/Cursor 内置聊天工具（Copilot、Cursor Chat）。
+- 内置聊天工具会自动注册 MCP 服务定义，不需要手动配置 stdio。
+- 第三方聊天工具（Claude Code、Codex）需要手动配置 stdio MCP，并独立启动 runtime。
+- 第三方独立 runtime 不会复用 VS Code 内会话，因此 VS Code 扩展参数不会自动同步。
+- 第三方会话运行时，VS Code 页面不会显示该会话的服务与连接状态。
 
 ### 服务端（VS Code / Cursor）
 
@@ -36,6 +44,8 @@
 ### 第三方聊天工具手动配置 MCP
 
 如果你使用的是 Copilot 之外的第三方聊天工具，并且该工具不会自动读取 VS Code 或 Cursor 注册的 MCP 服务定义，可以手动把本扩展作为 stdio MCP 服务接入。
+
+> 说明：第三方手动接入会启动独立 runtime 进程，不会复用 VS Code 内置聊天会话，所以不会共享 VS Code 侧参数与状态显示。
 
 #### MCP 配置说明
 

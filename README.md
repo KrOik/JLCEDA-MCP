@@ -1,6 +1,6 @@
 # JLCEDA MCP
 
-JLCEDA MCP 是一套面向嘉立创 EDA 的本地 MCP 双扩展方案，由 mcp-server 和 mcp-connector 组成。接入后，你可以直接在 Copilot、Cursor Chat、Claude Code 等 AI 助手中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
+JLCEDA MCP 是一套面向嘉立创 EDA 的本地 MCP 双扩展方案，由 mcp-server 和 mcp-connector 组成。接入后，你可以直接在 Copilot、Cursor Chat 中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
 
 ## 整体链路
 
@@ -9,7 +9,7 @@ JLCEDA MCP 是一套面向嘉立创 EDA 的本地 MCP 双扩展方案，由 mcp-
     ↕ WebSocket 桥接
 VS Code / Cursor（mcp-server）
     ↕ stdio MCP 协议
-AI 助手（Copilot / Cursor Chat / Claude Code / Codex 等）
+内置 AI 助手（Copilot / Cursor Chat）
 ```
 
 - **mcp-connector**：EDA 侧扩展，建立到 mcp-server 的 WebSocket 连接，负责让 AI 在嘉立创 EDA 中读取当前图纸信息并执行相关操作。
@@ -28,9 +28,17 @@ AI 助手（Copilot / Cursor Chat / Claude Code / Codex 等）
 
 **服务端**和**客户端**两个扩展都需要安装。
 
-> VS Code 内置 Copilot 和 Cursor 内置 Chat 在安装服务端扩展后会自动配置 MCP 服务；其他聊天工具如 Claude Code、Codex，需要手动配置 MCP 服务。
+> VS Code 内置 Copilot 和 Cursor 内置 Chat 在安装服务端扩展后会自动配置 MCP 服务；其他第三方聊天工具如 Claude Code、Codex，需要手动配置 MCP 服务。
 
 > 初次安装时，先确认 VS Code/Cursor 与嘉立创 EDA 两侧扩展都已安装，再检查聊天工具的 MCP 服务配置是否正确。
+
+### 使用模式说明
+
+- 本套扩展默认面向 VS Code/Cursor 内置聊天工具（Copilot、Cursor Chat）。
+- Copilot、Cursor Chat 会自动注册 MCP 服务定义，无需手动配置 stdio。
+- 第三方聊天工具（Claude Code、Codex）可兼容接入，但需要手动配置 stdio MCP。
+- 第三方手动配置会独立启动 runtime，不会复用 VS Code 内置聊天会话。
+- 因此第三方模式下，VS Code 扩展参数不会自动生效，VS Code 页面也看不到该会话的服务与连接状态。
 
 ### mcp-server（VS Code / Cursor）
 

@@ -26,6 +26,7 @@ import { BridgeTransport } from './bridge-transport.ts';
 
 const RECONNECT_INTERVAL_MS = 1200;
 const CONTEXT_SYNC_INTERVAL_MS = 1000;
+const CONNECT_SUCCESS_TOAST_TIMER_SECONDS = 3;
 
 const BRIDGE_TASK_HANDLERS: Record<string, (payload: unknown) => Promise<unknown>> = {
 	'/bridge/jlceda/api/search': handleApiSearchTask,
@@ -66,6 +67,17 @@ function writeRuntimeWarningLog(event: string, summary: string, message: string,
 		errorCode,
 	}));
 	console.warn(connectorLogPipeline.format(logEntry));
+}
+
+// 显示桥接连接成功提示。
+function showConnectSuccessToast(): void {
+	try {
+		eda.sys_Message.showToastMessage(CONNECTOR_STATUS_TEXT.connection.connectSuccessToast, ESYS_ToastMessageType.SUCCESS, CONNECT_SUCCESS_TOAST_TIMER_SECONDS);
+	}
+	catch (error: unknown) {
+		const message = toSafeErrorMessage(error);
+		writeRuntimeWarningLog('status.connected.toast.failed', CONNECTOR_STATUS_TEXT.runtime.connectedToastFailedSummary, message, message, 'status_connected_toast_failed');
+	}
 }
 
 // 应用服务端下发的调试开关。
@@ -218,6 +230,7 @@ async function ensureConnected(): Promise<void> {
 		connectorLogDispatchPipeline.flushToTransport(transport);
 		// 只有运行时确认握手完成并接管实例后，才通知服务端允许调度任务。
 		transport.reportReady();
+		showConnectSuccessToast();
 	}
 	catch (error: unknown) {
 		instance.close();

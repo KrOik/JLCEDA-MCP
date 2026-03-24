@@ -166,7 +166,7 @@ export async function handleComponentSelectTask(payload: unknown): Promise<unkno
 	const selection: ComponentSelectRequest = {
 		protocol: COMPONENT_SELECT_PROTOCOL,
 		title: `器件选型：${keyword}`,
-		description: `以下是立创商城中“${keyword}”的搜索结果，请先确认具体型号后再继续放置。`,
+		description: `以下是系统库中“${keyword}”的搜索结果，请先确认具体型号后再继续放置。`,
 		candidates,
 		pageSize: limit,
 		currentPage: page,

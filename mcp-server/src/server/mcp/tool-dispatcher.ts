@@ -490,7 +490,7 @@ export class ToolDispatcher {
 					return {
 						ok: true,
 						selectedCandidate,
-						message: `用户已选择器件：${selectedCandidate.name || selectedCandidate.uuid}`,
+						message: `用户已最终确认器件：${selectedCandidate.name || selectedCandidate.uuid}。后续必须以该器件为准，不得因 AI 预期不一致而要求用户重新选型，也不得自行改选其他候选器件。`,
 					};
 				}
 

@@ -48,6 +48,41 @@ interface LibDeviceApi {
 
 const COMPONENT_SELECT_PROTOCOL = 'component-select/v1';
 const COMPONENT_SELECT_DEFAULT_LIMIT = 20;
+const AMBIGUOUS_VALUE_TOKEN_PATTERN = /^\d+(?:\.\d+)?[kmgunp]$/i;
+const VALUE_UNIT_REQUIRED_COMPONENT_KEYWORDS: readonly string[] = [
+	'电阻',
+	'resistor',
+	'电容',
+	'capacitor',
+	'cap',
+	'电感',
+	'inductor',
+];
+
+// 判断当前关键词是否属于电阻/电容/电感这类需要对阻值、容值、感值强制单位的器件。
+function keywordRequiresValueUnit(keyword: string): boolean {
+	const normalizedKeyword = keyword.toLowerCase();
+	return VALUE_UNIT_REQUIRED_COMPONENT_KEYWORDS.some(componentKeyword => normalizedKeyword.includes(componentKeyword));
+}
+
+// 检查关键词中是否存在缺少单位符号的数值参数。
+function findKeywordTokenMissingUnit(keyword: string): string | null {
+	if (!keywordRequiresValueUnit(keyword)) {
+		return null;
+	}
+
+	const keywordTokens = keyword.split(/\s+/).map(token => token.trim()).filter(Boolean);
+	for (const keywordToken of keywordTokens) {
+		const normalizedToken = keywordToken.replace(/^[,，;；]+|[,，;；]+$/g, '');
+		if (!normalizedToken || !/\d/.test(normalizedToken)) {
+			continue;
+		}
+		if (AMBIGUOUS_VALUE_TOKEN_PATTERN.test(normalizedToken)) {
+			return normalizedToken;
+		}
+	}
+	return null;
+}
 
 // 将搜索结果项映射为统一候选器件结构。
 function mapDeviceSearchItem(raw: unknown): ComponentSelectCandidate {
@@ -91,6 +126,11 @@ export async function handleComponentSelectTask(payload: unknown): Promise<unkno
 	const keyword = String(payload.keyword ?? '').trim();
 	if (keyword.length === 0) {
 		throw new Error('component_select 缺少 keyword 参数。');
+	}
+
+	const keywordTokenMissingUnit = findKeywordTokenMissingUnit(keyword);
+	if (keywordTokenMissingUnit) {
+		throw new Error(`电阻、电容、电感这类器件的阻值/容值/感值必须带单位符号，检测到“${keywordTokenMissingUnit}”缺少单位。请改为带单位的写法后重试，例如电阻使用 1kΩ，电容使用 100nF，电感使用 10uH。`);
 	}
 
 	const limit = parseBoundedIntegerValue(payload.limit, COMPONENT_SELECT_DEFAULT_LIMIT, 2, 20);

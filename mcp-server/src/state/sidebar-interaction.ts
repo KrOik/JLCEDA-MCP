@@ -42,7 +42,7 @@ export interface SidebarComponentPlaceItem {
 export interface SidebarComponentPlaceRowState {
   title: string;
   detail: string;
-  status: 'pending' | 'active' | 'success' | 'timeout' | 'error';
+  status: 'pending' | 'active' | 'success' | 'timeout' | 'error' | 'skipped';
   statusText: string;
 }
 

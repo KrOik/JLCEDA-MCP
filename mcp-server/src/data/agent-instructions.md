@@ -64,8 +64,9 @@
 - `timeoutSeconds`：单个器件放置超时时间，可选，范围 30-180 秒。
 
 结果处理：
-- 若返回 `ok: true`，说明器件已按顺序完成放置。
+- 若返回 `ok: true`，说明全部流程已完成；检查 `skippedComponents` 字段了解用户跳过了哪些器件，并告知用户。
 - 若返回 `ok: false`，必须根据 `error`、`errorCode`、`failedIndex` 和 `failedComponent` 判断失败原因，不得自行猜测修复。
+- 若 `errorCode` 为 `COMPONENT_PLACE_CANCELLED`，说明用户在开始放置前整体取消，禁止重试，直接告知用户已取消并停止。
 
 ### jlceda_schematic_check
 

@@ -528,7 +528,9 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       z-index: 9999;
       left: 8px;
       right: 8px;
-      padding: 10px 12px;
+      max-height: min(50vh, 320px);
+      overflow-y: auto;
+      padding: 8px 10px;
       background: var(--vscode-editorHoverWidget-background, var(--panel-status-bg));
       border: 1px solid var(--vscode-editorHoverWidget-border, var(--panel-border));
       border-radius: 6px;
@@ -541,24 +543,22 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     .interaction-candidate-popup.is-visible {
       display: block;
     }
-    .interaction-candidate-popup-name {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 6px;
-      word-break: break-word;
-    }
     .interaction-candidate-popup-row {
       display: flex;
-      gap: 6px;
+      align-items: baseline;
+      gap: 0;
       margin-bottom: 3px;
+      flex-wrap: wrap;
     }
     .interaction-candidate-popup-label {
       flex: none;
-      width: 44px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text);
-      text-align: right;
+    }
+    .interaction-candidate-popup-sep {
+      flex: none;
+      color: var(--muted);
+      margin-right: 2px;
     }
     .interaction-candidate-popup-value {
       flex: 1 1 auto;
@@ -667,6 +667,9 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     .interaction-place-row.is-error {
       border-color: color-mix(in srgb, var(--danger) 60%, var(--panel-border));
       background: color-mix(in srgb, var(--danger) 12%, var(--panel-status-bg));
+    }
+    .interaction-place-row.is-skipped {
+      opacity: 0.55;
     }
     .interaction-place-row.is-active .interaction-place-row-status {
       color: var(--btn-primary-bg);
@@ -1935,50 +1938,62 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     // 候选详情浮层（DOM 中唯一实例）
     const candidatePopupEl = document.getElementById('interactionCandidatePopup');
 
-    function showCandidatePopup(targetEl, candidate) {
-      if (!candidatePopupEl || !candidate) {
+    // 将分号分隔的 key:value 描述字符串渲染到弹出层
+    function renderDescriptionToPopup(description) {
+      candidatePopupEl.innerHTML = '';
+      const raw = String(description || '').trim();
+      if (!raw) {
+        const empty = document.createElement('div');
+        empty.className = 'interaction-candidate-popup-value';
+        empty.textContent = '（暂无描述）';
+        candidatePopupEl.appendChild(empty);
         return;
       }
 
-      candidatePopupEl.innerHTML = '';
-      const nameEl = document.createElement('div');
-      nameEl.className = 'interaction-candidate-popup-name';
-      nameEl.textContent = String(candidate.name || candidate.uuid || '-');
-      candidatePopupEl.appendChild(nameEl);
-
-      const popupFields = [
-        { label: '封装', value: String(candidate.footprintName || '').trim() },
-        { label: '符号', value: String(candidate.symbolName || '').trim() },
-        { label: '描述', value: String(candidate.description || '').trim() },
-        { label: '品牌', value: String(candidate.manufacturer || '').trim() },
-        { label: '供应商', value: String(candidate.supplier || '').trim() },
-        { label: '库存', value: Number.isFinite(Number(candidate.lcscInventory)) && Number(candidate.lcscInventory) > 0 ? String(candidate.lcscInventory) : '' },
-        { label: '价格', value: Number.isFinite(Number(candidate.lcscPrice)) && Number(candidate.lcscPrice) > 0 ? String(candidate.lcscPrice) : '' },
-      ];
-
-      popupFields.forEach(({ label, value }) => {
-        if (!value) {
-          return;
-        }
+      const segments = raw.split(/[;；]/).map((s) => s.trim()).filter(Boolean);
+      segments.forEach((seg) => {
+        const colonIdx = seg.search(/[:：]/);
         const row = document.createElement('div');
         row.className = 'interaction-candidate-popup-row';
-        const lbl = document.createElement('span');
-        lbl.className = 'interaction-candidate-popup-label';
-        lbl.textContent = label;
-        const val = document.createElement('span');
-        val.className = 'interaction-candidate-popup-value';
-        val.textContent = value;
-        row.appendChild(lbl);
-        row.appendChild(val);
+        if (colonIdx > 0) {
+          const keyText = seg.slice(0, colonIdx).trim();
+          const valText = seg.slice(colonIdx + 1).trim();
+          const lbl = document.createElement('strong');
+          lbl.className = 'interaction-candidate-popup-label';
+          lbl.textContent = keyText;
+          const sep = document.createElement('span');
+          sep.className = 'interaction-candidate-popup-sep';
+          sep.textContent = '：';
+          const val = document.createElement('span');
+          val.className = 'interaction-candidate-popup-value';
+          val.textContent = valText;
+          row.appendChild(lbl);
+          row.appendChild(sep);
+          row.appendChild(val);
+        } else {
+          const val = document.createElement('span');
+          val.className = 'interaction-candidate-popup-value';
+          val.textContent = seg;
+          row.appendChild(val);
+        }
         candidatePopupEl.appendChild(row);
       });
+    }
 
-      // 先隐式显示以测量高度，再计算定位
+    // 渲染纯文本内容到弹出层
+    function renderTextToPopup(text) {
+      candidatePopupEl.innerHTML = '';
+      const val = document.createElement('div');
+      val.className = 'interaction-candidate-popup-value';
+      val.textContent = String(text || '').trim() || '-';
+      candidatePopupEl.appendChild(val);
+    }
+
+    function positionAndShowPopup(targetEl) {
       candidatePopupEl.style.visibility = 'hidden';
       candidatePopupEl.classList.add('is-visible');
       const popupH = candidatePopupEl.offsetHeight;
       candidatePopupEl.style.visibility = '';
-
       const rect = targetEl.getBoundingClientRect();
       const vpH = document.documentElement.clientHeight;
       let top = rect.bottom + 6;
@@ -1989,6 +2004,22 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         top = 8;
       }
       candidatePopupEl.style.top = top + 'px';
+    }
+
+    function showDescPopup(targetEl, candidate) {
+      if (!candidatePopupEl || !candidate) {
+        return;
+      }
+      renderDescriptionToPopup(candidate.description);
+      positionAndShowPopup(targetEl);
+    }
+
+    function showTextPopup(targetEl, text) {
+      if (!candidatePopupEl || !String(text || '').trim()) {
+        return;
+      }
+      renderTextToPopup(text);
+      positionAndShowPopup(targetEl);
     }
 
     function hideCandidatePopup() {
@@ -2224,27 +2255,34 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         const nameCell = document.createElement('td');
         nameCell.className = 'interaction-select-cell interaction-select-cell-name';
         nameCell.textContent = String(candidate.name || candidate.uuid || '未命名器件');
-        nameCell.title = String(candidate.name || candidate.uuid || '');
+        nameCell.addEventListener('mouseenter', () => {
+          showTextPopup(nameCell, candidate.name || candidate.uuid || '');
+        });
+        nameCell.addEventListener('mouseleave', hideCandidatePopup);
 
         const footprintCell = document.createElement('td');
         footprintCell.className = 'interaction-select-cell interaction-select-cell-footprint';
         footprintCell.textContent = String(candidate.footprintName || '-');
-        footprintCell.title = String(candidate.footprintName || '');
+        footprintCell.addEventListener('mouseenter', () => {
+          showTextPopup(footprintCell, candidate.footprintName || '');
+        });
+        footprintCell.addEventListener('mouseleave', hideCandidatePopup);
 
         const descCell = document.createElement('td');
         descCell.className = 'interaction-select-cell interaction-select-cell-desc';
         descCell.textContent = String(candidate.description || '-');
         descCell.addEventListener('mouseenter', () => {
-          showCandidatePopup(descCell, candidate);
+          showDescPopup(descCell, candidate);
         });
-        descCell.addEventListener('mouseleave', () => {
-          hideCandidatePopup();
-        });
+        descCell.addEventListener('mouseleave', hideCandidatePopup);
 
         const brandCell = document.createElement('td');
         brandCell.className = 'interaction-select-cell interaction-select-cell-brand';
         brandCell.textContent = String(candidate.manufacturer || '-');
-        brandCell.title = String(candidate.manufacturer || '');
+        brandCell.addEventListener('mouseenter', () => {
+          showTextPopup(brandCell, candidate.manufacturer || '');
+        });
+        brandCell.addEventListener('mouseleave', hideCandidatePopup);
 
         row.appendChild(nameCell);
         row.appendChild(footprintCell);
@@ -2407,7 +2445,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       const cancelButton = document.createElement('button');
       cancelButton.type = 'button';
       cancelButton.className = 'secondary';
-      cancelButton.textContent = isInteractionActionPending(interaction.requestId, 'cancel') ? '提交中' : (interaction.started ? '取消任务' : '取消');
+      cancelButton.textContent = isInteractionActionPending(interaction.requestId, 'cancel') ? '提交中' : (interaction.started ? '跳过此器件' : '取消');
       cancelButton.disabled = !interaction.canCancel || pendingInteractionActionKey.length > 0;
       cancelButton.addEventListener('click', () => {
         if (cancelButton.disabled) {

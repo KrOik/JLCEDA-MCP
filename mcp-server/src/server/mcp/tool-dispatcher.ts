@@ -544,6 +544,7 @@ export class ToolDispatcher {
 
 		const requestId = createInteractionRequestId('component_place');
 		const placedComponents: SidebarComponentPlaceItem[] = [];
+		const skippedComponents: SidebarComponentPlaceItem[] = [];
 		const interaction: SidebarComponentPlaceInteraction = {
 			kind: 'component-place',
 			requestId,
@@ -565,16 +566,15 @@ export class ToolDispatcher {
 			this.writeInteractionRequest(interaction);
 		};
 
-		const finalizeCancelled = (failedIndex?: number, failedComponent?: SidebarComponentPlaceItem): Record<string, unknown> => {
+		const finalizeCancelled = (): Record<string, unknown> => {
 			return {
 				ok: false,
-				error: '用户取消器件放置，工具执行已终止。',
+				error: '用户在开始放置前取消了操作，请勿重试，直接告知用户已取消并停止。',
 				errorCode: 'COMPONENT_PLACE_CANCELLED',
 				placedCount: placedComponents.length,
 				totalCount: placementPayload.components.length,
 				placedComponents,
-				failedIndex,
-				failedComponent,
+				skippedComponents,
 			};
 		};
 
@@ -595,11 +595,13 @@ export class ToolDispatcher {
 			for (let index = 0; index < placementPayload.components.length; index += 1) {
 				const component = placementPayload.components[index];
 				if (this.tryConsumeInteractionCancel(requestId)) {
-					interaction.rows[index].status = 'error';
-					interaction.rows[index].statusText = '已取消';
-					interaction.statusText = '已取消';
+					// 放置开始前点了跳过：标记当前器件已跳过，继续下一个
+					skippedComponents.push(component);
+					interaction.rows[index].status = 'skipped';
+					interaction.rows[index].statusText = '已跳过';
+					interaction.statusText = `已跳过第 ${String(index + 1)} 个器件，继续下一个。`;
 					writePlaceInteraction();
-					return finalizeCancelled(index + 1, component);
+					continue;
 				}
 
 				let placedCurrentComponent = false;
@@ -635,14 +637,13 @@ export class ToolDispatcher {
 					const sessionId = startResult.sessionId;
 					const startedAt = Date.now();
 					let placed = false;
+					let skippedByUser = false;
 					while (Date.now() - startedAt < placementPayload.timeoutSeconds * 1000) {
 						if (this.tryConsumeInteractionCancel(requestId)) {
 							await this.closeComponentPlaceAttempt(sessionId);
-							interaction.rows[index].status = 'error';
-							interaction.rows[index].statusText = '已取消';
-							interaction.statusText = '已取消';
-							writePlaceInteraction();
-							return finalizeCancelled(index + 1, component);
+							// 放置开始后点了跳过：标记当前器件已跳过，继续下一个
+							skippedByUser = true;
+							break;
 						}
 
 						await sleep(COMPONENT_PLACE_CHECK_INTERVAL_MS);
@@ -685,16 +686,16 @@ export class ToolDispatcher {
 						break;
 					}
 
-					await this.closeComponentPlaceAttempt(sessionId);
-					if (attempt <= placementPayload.retryCount) {
-						interaction.rows[index].status = 'timeout';
-						interaction.rows[index].statusText = '准备重试';
-						interaction.rows[index].detail = `${formatPlaceComponentDetail(component)}  当前尝试已超时，即将开始第 ${String(attempt)} 次重试。`;
-						interaction.statusText = `第 ${String(index + 1)} 个器件已超时，准备重试。`;
-						interaction.noticeText = `器件“${formatPlaceComponentTitle(component)}”放置超时，正在准备重试。`;
-						writePlaceInteraction();
-						continue;
-					}
+						if (skippedByUser) {
+							skippedComponents.push(component);
+							interaction.rows[index].status = 'skipped';
+							interaction.rows[index].statusText = '已跳过';
+							interaction.statusText = `已跳过第 ${String(index + 1)} 个器件，继续下一个。`;
+							interaction.noticeText = '';
+							writePlaceInteraction();
+							placedCurrentComponent = true;
+							break;
+						}
 
 					interaction.rows[index].status = 'error';
 					interaction.rows[index].statusText = '超时失败';
@@ -728,6 +729,8 @@ export class ToolDispatcher {
 				placedCount: placedComponents.length,
 				totalCount: placementPayload.components.length,
 				placedComponents,
+				skippedCount: skippedComponents.length,
+				skippedComponents,
 				message: `已完成全部 ${String(placementPayload.components.length)} 个器件的交互放置。`,
 			};
 		}

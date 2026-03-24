@@ -19,7 +19,7 @@ VS Code / Cursor（mcp-server）
 
 | 工具 | 说明 |
 |------|------|
-| `jlceda_schematic_check` | 对当前原理图执行完整检查，返回 ERC 结果和器件布局图（含坐标、引脚信息），便于分析电路和自动连线 |
+| `schematic_check`        | 对当前原理图执行完整检查，返回 ERC 结果和器件布局图（含坐标、引脚信息），便于分析电路和自动连线 |
 | `component_select` | 在 EDA 系统库中搜索候选器件，并在 VS Code / Cursor 侧边栏中由用户确认具体型号 |
 | `component_place` | 按顺序启动器件交互放置流程，在侧边栏中提示当前进度并等待用户完成放置 |
 

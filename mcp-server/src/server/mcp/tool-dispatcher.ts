@@ -47,7 +47,7 @@ const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
 	// 'jlceda_api_search',
 	// 'jlceda_context_get',
 	// 'jlceda_api_invoke',
-	'jlceda_schematic_check',
+	'schematic_check',
 	'component_select',
 	'component_place',
 ]);
@@ -178,7 +178,7 @@ export class ToolDispatcher {
 		if (!EXPOSED_MCP_TOOL_NAMES.has(toolCallParams.name)) {
 			throw new Error(`未知工具: ${toolCallParams.name}`);
 		}
-		if (toolCallParams.name === 'jlceda_schematic_check') {
+		if (toolCallParams.name === 'schematic_check') {
 			return this.toToolContent(await this.handleSchematicCheck());
 		}
 		if (toolCallParams.name === 'component_select') {

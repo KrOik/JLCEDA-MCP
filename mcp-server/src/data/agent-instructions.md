@@ -14,7 +14,7 @@
 
 - component_select：用于在 EDA 系统库中搜索候选器件，并在 VS Code 左侧边栏中显示交互选型面板。
 - component_place：用于在 VS Code 左侧边栏中显示交互放置面板，并等待用户完成器件放置流程。
-- jlceda_schematic_check：用于对当前原理图执行完整检查，返回 ERC 结果和精简网表供分析使用。
+- schematic_check：用于对当前原理图执行完整检查，返回 ERC 结果和器件布局图供分析使用。
 
 ## 工具调用方法
 
@@ -72,7 +72,7 @@
 - 若返回 `ok: false`，必须根据 `error`、`errorCode`、`failedIndex` 和 `failedComponent` 判断失败原因，不得自行猜测修复。
 - 若 `errorCode` 为 `COMPONENT_PLACE_CANCELLED`，说明用户在开始放置前整体取消，禁止重试，直接告知用户已取消并停止。
 
-### jlceda_schematic_check
+### schematic_check
 
 用途：
 - 对当前原理图执行完整检查，返回 ERC 结果和器件布局图。
@@ -82,7 +82,7 @@
 - 用户要求检查原理图、分析电路、查看是否有问题、判断能否工作时。
 
 调用方法：
-1. 直接调用 jlceda_schematic_check。
+1. 直接调用 schematic_check。
 2. 读取返回结果中的 `erc.passed` 和 `componentLayout`。
 3. 解析 componentLayout 中的元件位号、名称、封装、坐标、旋转和引脚几何信息。
 4. 按固定结构输出检查报告。

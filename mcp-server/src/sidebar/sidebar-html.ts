@@ -240,7 +240,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       justify-content: stretch;
       margin-top: 0;
       margin-bottom: 0;
-      padding: 0 8px;
+      padding: 0;
       box-sizing: border-box;
     }
     .status-card {
@@ -258,43 +258,53 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       flex: 1 1 auto;
       width: 100%;
       min-width: 0;
-      height: 38px;
+      height: 40px;
       font-size: 14px;
       font-weight: 600;
-      border-radius: 6px;
-      padding: 0 10px;
+      border-radius: 8px;
+      padding: 0 12px;
       margin-left: 0;
     }
     .open-editor-button {
       position: relative;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
+      justify-content: space-between;
+      gap: 10px;
       background: var(--btn-primary-bg);
+      border: 1px solid color-mix(in srgb, var(--btn-primary-bg) 74%, #ffffff 12%);
       color: var(--btn-primary-fg);
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--btn-primary-bg) 72%, #ffffff 10%);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+      transition: background-color .16s ease, border-color .16s ease, box-shadow .16s ease;
     }
     .open-editor-button-label {
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
+      letter-spacing: 0.01em;
       line-height: 1;
     }
     .open-editor-button-icon {
-      position: absolute;
-      right: 10px;
-      width: 18px;
-      height: 18px;
+      width: 14px;
+      height: 14px;
       margin-top: 0;
       flex: none;
       display: block;
       fill: currentColor;
+      opacity: 0.92;
+      transition: opacity .16s ease;
     }
     .open-editor-button:hover {
       background: var(--btn-primary-hover);
+      border-color: color-mix(in srgb, var(--btn-primary-hover) 76%, #ffffff 12%);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+    }
+    .open-editor-button:hover .open-editor-button-icon {
+      opacity: 1;
     }
     .open-editor-button:active {
       background: var(--btn-primary-active);
+      border-color: color-mix(in srgb, var(--btn-primary-active) 82%, #000000 8%);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
     }
     label {
       font-size: 12px;

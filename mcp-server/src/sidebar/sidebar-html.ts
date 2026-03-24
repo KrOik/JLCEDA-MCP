@@ -1137,6 +1137,16 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       font-size: 12px;
       line-height: 1.45;
       color: var(--muted);
+      min-width: 0;
+    }
+    @media (max-width: 420px) {
+      .section-description {
+        display: block;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
     }
     .status-log-toggle {
       cursor: pointer;

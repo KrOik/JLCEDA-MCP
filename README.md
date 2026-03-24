@@ -19,26 +19,25 @@ VS Code / Cursor（mcp-server）
 
 | 工具 | 说明 |
 |------|------|
-| `jlceda_api_search` | 检索嘉立创 EDA API 文档，支持按名称、范围、命名空间过滤，最多返回 50 条 |
-| `jlceda_api_invoke` | 请求嘉立创 EDA 执行指定 API，并返回执行结果，支持自定义超时（1000–120000 ms） |
-| `jlceda_context_get` | 获取当前 EDA 运行状态快照，包括工程、页面、选区等信息 |
 | `jlceda_schematic_check` | 对当前原理图执行完整检查，返回 ERC 结果和精简网表，便于分析电路问题 |
+| `component_select` | 在 EDA 系统库中搜索候选器件，并在 VS Code / Cursor 侧边栏中由用户确认具体型号 |
+| `component_place` | 按顺序启动器件交互放置流程，在侧边栏中提示当前进度并等待用户完成放置 |
+
+## 交互使用说明
+
+1. 当 AI 需要先确认器件型号时，会在 VS Code / Cursor 侧边栏弹出器件选型面板，由用户手动确认具体器件。
+2. 当 AI 需要在原理图中放置器件时，会在侧边栏弹出交互放置面板，按顺序提示当前应放置的器件。
+3. 在器件选型或器件放置过程中，如果点击取消或跳过，只会跳过当前器件，AI 会继续处理后续器件，不会重试当前项。
+4. 电源符号和地符号不会由 AI 自动放置，需由用户在嘉立创 EDA 中手动添加。
+5. 如果启用了“打开 EDA 时关闭侧边栏”，那么打开 EDA 后，以及器件选型或器件放置完成后，侧边栏都会自动收起。
 
 ## 安装
 
 **服务端**和**客户端**两个扩展都需要安装。
 
-> VS Code 内置 Copilot 和 Cursor 内置 Chat 在安装服务端扩展后会自动配置 MCP 服务；其他第三方聊天工具如 Claude Code、Codex，需要手动配置 MCP 服务。
+> 目前仅支持 VS Code 内置 Copilot 和 Cursor 内置 Chat，其他第三方聊天工具暂不支持。
 
 > 初次安装时，先确认 VS Code/Cursor 与嘉立创 EDA 两侧扩展都已安装，再检查聊天工具的 MCP 服务配置是否正确。
-
-### 使用模式说明
-
-- 本套扩展默认面向 VS Code/Cursor 内置聊天工具（Copilot、Cursor Chat）。
-- Copilot、Cursor Chat 会自动注册 MCP 服务定义，无需手动配置 stdio。
-- 第三方聊天工具（Claude Code、Codex）可兼容接入，但需要手动配置 stdio MCP。
-- 第三方手动配置会独立启动 runtime，不会复用 VS Code 内置聊天会话。
-- 因此第三方模式下，VS Code 扩展参数不会自动生效，VS Code 页面也看不到该会话的服务与连接状态。
 
 ### mcp-server（VS Code / Cursor）
 

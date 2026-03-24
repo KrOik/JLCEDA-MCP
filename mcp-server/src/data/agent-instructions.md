@@ -75,24 +75,24 @@
 ### jlceda_schematic_check
 
 用途：
-- 对当前原理图执行完整检查，返回 ERC 结果和精简网表。
-- 用于原理图检查、电路分析、可用性判断等场景。
+- 对当前原理图执行完整检查，返回 ERC 结果和器件布局图。
+- 用于原理图检查、电路分析、自动连线等场景。
 
 调用时机：
 - 用户要求检查原理图、分析电路、查看是否有问题、判断能否工作时。
 
 调用方法：
 1. 直接调用 jlceda_schematic_check。
-2. 读取返回结果中的 `erc.passed` 和 `netlist`。
-3. 解析 netlist 中的元件、封装、引脚和网络连接信息。
+2. 读取返回结果中的 `erc.passed` 和 `componentLayout`。
+3. 解析 componentLayout 中的元件位号、名称、封装、坐标、旋转和引脚几何信息。
 4. 按固定结构输出检查报告。
 
 参数规则：
 - 无参数。
 
 结果处理：
-- 返回字段包含 `erc.passed` 和 `netlist`。
-- `netlist` 中的 `components` 数组包含位号、器件名、封装和引脚网络信息。
+- 返回字段包含 `erc.passed` 和 `componentLayout`。
+- `componentLayout` 中的 `components` 数组包含位号、名称、封装、坐标、旋转、镜像，以及每个引脚的名称、编号、类型、坐标、旋转、引脚长度和连接状态。
 
 输出报告结构：
 一、ERC 基础检查

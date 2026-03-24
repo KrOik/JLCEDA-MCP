@@ -89,7 +89,7 @@
   },
   {
     "name": "jlceda_schematic_check",
-    "description": "对当前原理图执行完整检查：ERC 电气规则检查 + 网表获取 + 精简提取，返回 ERC 结果与压缩后的网表供 AI 分析。无需传入任何参数。",
+    "description": "对当前原理图执行完整检查：ERC 电气规则检查 + 构建器件布局图（含每个器件的位号、坐标、旋转、镜像、封装，及每个引脚的名称、编号、类型、坐标、方向、引脚长度、连接状态），返回 ERC 结果与器件布局图供 AI 分析。无需传入任何参数。",
     "inputSchema": {
       "type": "object",
       "properties": {},

@@ -426,19 +426,26 @@ async function removeSocket(socket: WebSocket, reason: string, context: RemoveSo
 	});
 }
 
-// 定期清理心跳超时客户端。
+// 定期清理失效客户端：WebSocket 连接不可用或心跳超时。
 async function cleanupExpiredPeers(): Promise<void> {
 	const current = nowMs();
 	for (const peer of [...peersByClientId.values()]) {
-		if (current - peer.lastSeenAt <= BRIDGE_CLIENT_TTL_MS) {
+		if (peer.socket.readyState !== WebSocket.OPEN) {
+			await removeSocket(peer.socket, BRIDGE_BROKER_TEXT.connection.socketStateNotOpen, {
+				disconnectType: 'socket_state_check',
+				disconnectActor: 'runtime',
+				closeReason: BRIDGE_BROKER_TEXT.connection.socketStateNotOpenReason,
+			});
 			continue;
 		}
 
-		await removeSocket(peer.socket, BRIDGE_BROKER_TEXT.connection.heartbeatTimeoutDetail, {
-			disconnectType: 'heartbeat_timeout',
-			disconnectActor: 'timeout',
-			closeReason: BRIDGE_BROKER_TEXT.connection.heartbeatTimeoutReason,
-		});
+		if (current - peer.lastSeenAt > BRIDGE_CLIENT_TTL_MS) {
+			await removeSocket(peer.socket, BRIDGE_BROKER_TEXT.connection.heartbeatTimeoutDetail, {
+				disconnectType: 'heartbeat_timeout',
+				disconnectActor: 'timeout',
+				closeReason: BRIDGE_BROKER_TEXT.connection.heartbeatTimeoutReason,
+			});
+		}
 	}
 }
 

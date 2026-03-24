@@ -72,6 +72,8 @@ export class ServerStateManager {
 				socketNotOpen: '桥接连接未打开。',
 				heartbeatTimeoutDetail: '桥接客户端心跳超时。',
 				heartbeatTimeoutReason: '心跳超时',
+				socketStateNotOpen: '桥接客户端 WebSocket 连接不可用。',
+				socketStateNotOpenReason: '连接状态异常',
 				missingClientId: '桥接客户端缺少 clientId。',
 				clientConnectionClosed: '桥接客户端连接已关闭。',
 				clientConnectionInterrupted: '桥接客户端连接异常中断。',

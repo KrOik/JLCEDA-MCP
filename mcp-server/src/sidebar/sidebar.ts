@@ -111,6 +111,8 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
   private currentInteractionSignature = '';
   // 已尝试拉起侧边栏的交互请求 ID，防止同一请求反复抢焦点。
   private lastRevealedInteractionRequestId = '';
+  // 上一次交互请求的 kind，用于判断交互结束后是否需要关闭侧边栏。
+  private lastInteractionKind: string | null = null;
 
   public constructor(
     private readonly extensionUri: vscode.Uri,
@@ -440,16 +442,30 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     this.currentInteractionSignature = nextSignature;
 
     if (nextInteraction) {
+      this.lastInteractionKind = nextInteraction.kind;
       if (nextInteraction.requestId !== this.lastRevealedInteractionRequestId) {
         this.lastRevealedInteractionRequestId = nextInteraction.requestId;
         void this.revealSidebarForInteraction();
       }
     }
     else {
+      const prevKind = this.lastInteractionKind;
+      this.lastInteractionKind = null;
       this.lastRevealedInteractionRequestId = '';
+      if (prevKind === 'component-select' || prevKind === 'component-place') {
+        void this.closeSidebarAfterInteraction();
+      }
     }
 
     this.postInteraction();
+  }
+
+  // 器件选型或器件放置完成后，若设置项开启则关闭侧边栏。
+  private async closeSidebarAfterInteraction(): Promise<void> {
+    const config = vscode.workspace.getConfiguration('jlcMcpServer');
+    if (config.get<boolean>('closeSidebarOnOpenEditor', false)) {
+      await vscode.commands.executeCommand('workbench.action.closeSidebar');
+    }
   }
 
   // 尽量将当前交互面板对应的侧边栏拉起到前台。

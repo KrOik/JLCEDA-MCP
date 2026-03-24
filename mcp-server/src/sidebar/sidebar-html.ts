@@ -189,12 +189,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       min-height: 0;
     }
     .bottom-dock {
-      position: sticky;
-      bottom: 0;
-      margin-top: auto;
-      padding-top: 12px;
-      background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 0%, transparent) 0%, var(--bg) 20px);
-      z-index: 2;
+      padding-top: 2px;
     }
     .main-stack > .card,
     .main-stack > .status-actions,
@@ -526,8 +521,8 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     .interaction-candidate-popup {
       position: fixed;
       z-index: 9999;
-      left: 8px;
-      right: 8px;
+      width: max-content;
+      max-width: min(300px, calc(100vw - 16px));
       max-height: min(50vh, 320px);
       overflow-y: auto;
       padding: 8px 10px;
@@ -1989,37 +1984,48 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       candidatePopupEl.appendChild(val);
     }
 
-    function positionAndShowPopup(targetEl) {
+    function positionAndShowPopup(clientX, clientY) {
       candidatePopupEl.style.visibility = 'hidden';
       candidatePopupEl.classList.add('is-visible');
+      const popupW = candidatePopupEl.offsetWidth;
       const popupH = candidatePopupEl.offsetHeight;
       candidatePopupEl.style.visibility = '';
-      const rect = targetEl.getBoundingClientRect();
+      const vpW = document.documentElement.clientWidth;
       const vpH = document.documentElement.clientHeight;
-      let top = rect.bottom + 6;
+      const offsetX = 14;
+      const offsetY = 14;
+      let left = clientX + offsetX;
+      let top = clientY + offsetY;
+      if (left + popupW > vpW - 8) {
+        left = clientX - popupW - offsetX;
+      }
+      if (left < 8) {
+        left = 8;
+      }
       if (top + popupH > vpH - 8) {
-        top = rect.top - popupH - 6;
+        top = clientY - popupH - offsetY;
       }
       if (top < 8) {
         top = 8;
       }
+      candidatePopupEl.style.left = left + 'px';
       candidatePopupEl.style.top = top + 'px';
     }
 
-    function showDescPopup(targetEl, candidate) {
+    function showDescPopup(e, candidate) {
       if (!candidatePopupEl || !candidate) {
         return;
       }
       renderDescriptionToPopup(candidate.description);
-      positionAndShowPopup(targetEl);
+      positionAndShowPopup(e.clientX, e.clientY);
     }
 
-    function showTextPopup(targetEl, text) {
+    function showTextPopup(e, text) {
       if (!candidatePopupEl || !String(text || '').trim()) {
         return;
       }
       renderTextToPopup(text);
-      positionAndShowPopup(targetEl);
+      positionAndShowPopup(e.clientX, e.clientY);
     }
 
     function hideCandidatePopup() {
@@ -2255,34 +2261,34 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         const nameCell = document.createElement('td');
         nameCell.className = 'interaction-select-cell interaction-select-cell-name';
         nameCell.textContent = String(candidate.name || candidate.uuid || '未命名器件');
-        nameCell.addEventListener('mouseenter', () => {
-          showTextPopup(nameCell, candidate.name || candidate.uuid || '');
-        });
-        nameCell.addEventListener('mouseleave', hideCandidatePopup);
 
         const footprintCell = document.createElement('td');
         footprintCell.className = 'interaction-select-cell interaction-select-cell-footprint';
         footprintCell.textContent = String(candidate.footprintName || '-');
-        footprintCell.addEventListener('mouseenter', () => {
-          showTextPopup(footprintCell, candidate.footprintName || '');
-        });
-        footprintCell.addEventListener('mouseleave', hideCandidatePopup);
 
         const descCell = document.createElement('td');
         descCell.className = 'interaction-select-cell interaction-select-cell-desc';
-        descCell.textContent = String(candidate.description || '-');
-        descCell.addEventListener('mouseenter', () => {
-          showDescPopup(descCell, candidate);
+        const descRaw = String(candidate.description || '');
+        const descShort = descRaw
+          ? descRaw.split(';').map(seg => {
+              const idx = seg.indexOf(':');
+              return idx >= 0 ? seg.slice(idx + 1).trim() : seg.trim();
+            }).filter(v => v && v !== '-').join('  ') || '-'
+          : '-';
+        descCell.textContent = descShort;
+        descCell.addEventListener('mouseenter', (e) => {
+          showDescPopup(e, candidate);
+        });
+        descCell.addEventListener('mousemove', (e) => {
+          if (candidatePopupEl && candidatePopupEl.classList.contains('is-visible')) {
+            positionAndShowPopup(e.clientX, e.clientY);
+          }
         });
         descCell.addEventListener('mouseleave', hideCandidatePopup);
 
         const brandCell = document.createElement('td');
         brandCell.className = 'interaction-select-cell interaction-select-cell-brand';
         brandCell.textContent = String(candidate.manufacturer || '-');
-        brandCell.addEventListener('mouseenter', () => {
-          showTextPopup(brandCell, candidate.manufacturer || '');
-        });
-        brandCell.addEventListener('mouseleave', hideCandidatePopup);
 
         row.appendChild(nameCell);
         row.appendChild(footprintCell);
@@ -2346,7 +2352,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       const cancelButton = document.createElement('button');
       cancelButton.type = 'button';
       cancelButton.className = 'secondary';
-      cancelButton.textContent = '取消';
+      cancelButton.textContent = isInteractionActionPending(interaction.requestId, 'cancel') ? '提交中' : '跳过此器件';
       cancelButton.disabled = pendingInteractionActionKey.length > 0;
       cancelButton.addEventListener('click', () => {
         if (cancelButton.disabled) {

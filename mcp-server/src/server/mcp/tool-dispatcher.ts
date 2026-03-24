@@ -469,8 +469,8 @@ export class ToolDispatcher {
 					return {
 						ok: true,
 						skipped: true,
-						skipReason: 'user-cancelled-selection',
-						message: '用户取消当前器件选型，请不要放置该器件，继续处理后续步骤，不要重试当前器件选型。',
+						skipReason: 'user-skipped-selection',
+						message: '用户跳过了当前器件选型，请不要放置该器件，继续处理后续步骤，不要重试当前器件选型。',
 					};
 				}
 

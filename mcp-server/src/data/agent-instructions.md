@@ -40,7 +40,7 @@
 
 结果处理：
 - 若返回 `ok: true` 且包含 `selectedCandidate`，说明用户已确认器件型号。
-- 若返回 `ok: true` 且 `skipped: true`，说明用户取消了当前器件选型；不要重试当前选型，继续处理后续步骤。
+- 若返回 `ok: true` 且 `skipped: true`，说明用户跳过了当前器件选型；不要重试当前选型，继续处理后续步骤。
 - 必须以返回结果中的 `selectedCandidate.uuid` 和 `selectedCandidate.libraryUuid` 作为后续放置输入，不得自行猜测。
 
 ### component_place
@@ -52,6 +52,10 @@
 调用时机：
 - 已经通过 component_select 或用户明确提供了器件 uuid 和 libraryUuid。
 - 需要按顺序组织多个器件的交互放置任务时。
+
+禁止调用时机：
+- 禁止将电源符号（VCC、VDD、+3.3V、+5V 等）和地符号（GND、AGND、DGND 等）通过此工具放置。
+- 电源和地符号必须由用户在 EDA 中手动放置，AI 不得代劳；如果任务涉及电源或地，需在完成其他器件放置后，明确告知用户手动添加所需的电源和地符号。
 
 调用方法：
 1. 准备待放置器件数组，每项至少包含 uuid 和 libraryUuid。

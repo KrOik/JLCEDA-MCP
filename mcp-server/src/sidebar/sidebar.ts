@@ -455,7 +455,9 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
   // 尽量将当前交互面板对应的侧边栏拉起到前台。
   private async revealSidebarForInteraction(): Promise<void> {
     if (this.view) {
-      this.view.show(false);
+      if (!this.view.visible) {
+        this.view.show(true);
+      }
       return;
     }
 

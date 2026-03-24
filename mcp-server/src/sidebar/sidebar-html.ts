@@ -454,13 +454,123 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       font-size: 12px;
       line-height: 1.45;
     }
-    .interaction-select-list,
+    .interaction-select-wrapper {
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 2px;
+    }
+    .interaction-select-thead-wrap {
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .interaction-select-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .interaction-select-th {
+      padding: 5px 6px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      background: color-mix(in srgb, var(--panel-status-bg) 98%, transparent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      user-select: none;
+    }
+    .interaction-select-viewport {
+      max-height: min(46vh, 320px);
+      overflow: hidden;
+    }
+    .interaction-select-row {
+      cursor: pointer;
+      border-bottom: 1px solid color-mix(in srgb, var(--panel-border) 60%, transparent);
+    }
+    .interaction-select-row:hover {
+      background: color-mix(in srgb, var(--text) 6%, transparent);
+    }
+    .interaction-select-row.is-selected {
+      background: color-mix(in srgb, var(--btn-primary-bg) 12%, transparent);
+    }
+    .interaction-select-row:last-child {
+      border-bottom: none;
+    }
+    .interaction-select-cell {
+      padding: 5px 6px;
+      vertical-align: top;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .interaction-select-cell-name {
+      width: 28%;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .interaction-select-cell-footprint {
+      width: 22%;
+      color: var(--muted);
+    }
+    .interaction-select-cell-desc {
+      width: 30%;
+      color: var(--muted);
+    }
+    .interaction-select-cell-brand {
+      width: 20%;
+      color: var(--muted);
+    }
+    .interaction-candidate-popup {
+      position: fixed;
+      z-index: 9999;
+      left: 8px;
+      right: 8px;
+      padding: 10px 12px;
+      background: var(--vscode-editorHoverWidget-background, var(--panel-status-bg));
+      border: 1px solid var(--vscode-editorHoverWidget-border, var(--panel-border));
+      border-radius: 6px;
+      box-shadow: 0 4px 20px color-mix(in srgb, #000 30%, transparent);
+      font-size: 11px;
+      line-height: 1.5;
+      pointer-events: none;
+      display: none;
+    }
+    .interaction-candidate-popup.is-visible {
+      display: block;
+    }
+    .interaction-candidate-popup-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+    .interaction-candidate-popup-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 3px;
+    }
+    .interaction-candidate-popup-label {
+      flex: none;
+      width: 44px;
+      font-weight: 600;
+      color: var(--text);
+      text-align: right;
+    }
+    .interaction-candidate-popup-value {
+      flex: 1 1 auto;
+      min-width: 0;
+      color: var(--muted);
+      word-break: break-word;
+    }
     .interaction-place-list {
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
-    .interaction-select-option,
     .interaction-place-row {
       width: 100%;
       border: 1px solid var(--panel-border);
@@ -468,22 +578,6 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       background: color-mix(in srgb, var(--panel-status-bg) 92%, var(--bg));
       box-sizing: border-box;
     }
-    .interaction-select-option {
-      padding: 8px 10px;
-      text-align: left;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      height: auto;
-    }
-    .interaction-select-option:hover:not(:disabled) {
-      background: color-mix(in srgb, var(--text) 6%, var(--panel-status-bg));
-    }
-    .interaction-select-option.is-selected {
-      border-color: var(--btn-primary-bg);
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--btn-primary-bg) 48%, transparent);
-    }
-    .interaction-option-title,
     .interaction-place-row-title {
       font-size: 12px;
       font-weight: 700;
@@ -491,20 +585,11 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       line-height: 1.4;
       word-break: break-word;
     }
-    .interaction-option-meta,
     .interaction-place-row-detail {
       font-size: 11px;
       line-height: 1.45;
       color: var(--muted);
       word-break: break-word;
-    }
-    .interaction-option-tags {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      font-size: 11px;
-      color: var(--muted);
-      line-height: 1.4;
     }
     .interaction-pagination,
     .interaction-actions {
@@ -1285,6 +1370,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       </div>
     </div>
   </div>
+  <div id="interactionCandidatePopup" class="interaction-candidate-popup" aria-hidden="true"></div>
   <div id="statusLogContextMenu" class="status-log-context-menu" role="menu" aria-label="日志右键菜单">
     <button id="copySelectedLog" type="button" role="menuitem">复制选中日志</button>
     <button id="copyAllLogs" type="button" role="menuitem">复制全部日志</button>
@@ -1344,6 +1430,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     let pageScrollbar = null;
     let statusLogScrollbar = null;
     let connectionListScrollbar = null;
+    let interactionScrollbar = null;
     let selectedStatusLogIndex = -1;
     let statusLogEntries = [];
     let filteredStatusLogEntries = [];
@@ -1804,6 +1891,112 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       return connectionListScrollbar;
     }
 
+    function destroyInteractionScrollbar() {
+      if (interactionScrollbar) {
+        interactionScrollbar.destroy();
+        interactionScrollbar = null;
+      }
+    }
+
+    function ensureInteractionScrollbar(viewportEl) {
+      const overlayApi = window.OverlayScrollbarsGlobal && window.OverlayScrollbarsGlobal.OverlayScrollbars;
+      if (!overlayApi || !(viewportEl instanceof HTMLElement)) {
+        return null;
+      }
+
+      if (interactionScrollbar && interactionScrollbar.elements().viewport === viewportEl) {
+        interactionScrollbar.options({
+          scrollbars: {
+            theme: getStatusLogScrollbarTheme(),
+            autoHide: 'leave',
+            autoHideSuspend: false
+          },
+          overflow: {
+            x: 'hidden'
+          }
+        });
+        return interactionScrollbar;
+      }
+
+      destroyInteractionScrollbar();
+      interactionScrollbar = overlayApi(viewportEl, {
+        scrollbars: {
+          theme: getStatusLogScrollbarTheme(),
+          autoHide: 'leave',
+          autoHideSuspend: false
+        },
+        overflow: {
+          x: 'hidden'
+        }
+      });
+      return interactionScrollbar;
+    }
+
+    // 候选详情浮层（DOM 中唯一实例）
+    const candidatePopupEl = document.getElementById('interactionCandidatePopup');
+
+    function showCandidatePopup(targetEl, candidate) {
+      if (!candidatePopupEl || !candidate) {
+        return;
+      }
+
+      candidatePopupEl.innerHTML = '';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'interaction-candidate-popup-name';
+      nameEl.textContent = String(candidate.name || candidate.uuid || '-');
+      candidatePopupEl.appendChild(nameEl);
+
+      const popupFields = [
+        { label: '封装', value: String(candidate.footprintName || '').trim() },
+        { label: '符号', value: String(candidate.symbolName || '').trim() },
+        { label: '描述', value: String(candidate.description || '').trim() },
+        { label: '品牌', value: String(candidate.manufacturer || '').trim() },
+        { label: '供应商', value: String(candidate.supplier || '').trim() },
+        { label: '库存', value: Number.isFinite(Number(candidate.lcscInventory)) && Number(candidate.lcscInventory) > 0 ? String(candidate.lcscInventory) : '' },
+        { label: '价格', value: Number.isFinite(Number(candidate.lcscPrice)) && Number(candidate.lcscPrice) > 0 ? String(candidate.lcscPrice) : '' },
+      ];
+
+      popupFields.forEach(({ label, value }) => {
+        if (!value) {
+          return;
+        }
+        const row = document.createElement('div');
+        row.className = 'interaction-candidate-popup-row';
+        const lbl = document.createElement('span');
+        lbl.className = 'interaction-candidate-popup-label';
+        lbl.textContent = label;
+        const val = document.createElement('span');
+        val.className = 'interaction-candidate-popup-value';
+        val.textContent = value;
+        row.appendChild(lbl);
+        row.appendChild(val);
+        candidatePopupEl.appendChild(row);
+      });
+
+      // 先隐式显示以测量高度，再计算定位
+      candidatePopupEl.style.visibility = 'hidden';
+      candidatePopupEl.classList.add('is-visible');
+      const popupH = candidatePopupEl.offsetHeight;
+      candidatePopupEl.style.visibility = '';
+
+      const rect = targetEl.getBoundingClientRect();
+      const vpH = document.documentElement.clientHeight;
+      let top = rect.bottom + 6;
+      if (top + popupH > vpH - 8) {
+        top = rect.top - popupH - 6;
+      }
+      if (top < 8) {
+        top = 8;
+      }
+      candidatePopupEl.style.top = top + 'px';
+    }
+
+    function hideCandidatePopup() {
+      if (candidatePopupEl) {
+        candidatePopupEl.classList.remove('is-visible');
+      }
+    }
+
     // 切换桥接设置区域的折叠状态。
     function setBridgeConfigCollapsed(collapsed) {
       isBridgeConfigCollapsed = Boolean(collapsed);
@@ -1919,6 +2112,8 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
 
       interactionHostElement.classList.toggle('is-empty', isEmpty);
       if (isEmpty) {
+        destroyInteractionScrollbar();
+        hideCandidatePopup();
         interactionHostElement.replaceChildren();
       }
     }
@@ -1970,57 +2165,98 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       }
 
       const card = createInteractionCard(interaction);
-      const list = document.createElement('div');
-      list.className = 'interaction-select-list';
+
+      // 创建外层包裹容器（统一边框 + 圆角）
+      const wrapper = document.createElement('div');
+      wrapper.className = 'interaction-select-wrapper';
+
+      // 固定表头（不参与滚动）
+      const theadWrap = document.createElement('div');
+      theadWrap.className = 'interaction-select-thead-wrap';
+      const headTable = document.createElement('table');
+      headTable.className = 'interaction-select-table';
+      const colgroup1 = document.createElement('colgroup');
+      [28, 22, 30, 20].forEach((pct) => {
+        const col = document.createElement('col');
+        col.style.width = pct + '%';
+        colgroup1.appendChild(col);
+      });
+      headTable.appendChild(colgroup1);
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      ['名称', '封装', '描述', '品牌'].forEach((label) => {
+        const th = document.createElement('th');
+        th.className = 'interaction-select-th';
+        th.textContent = label;
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      headTable.appendChild(thead);
+      theadWrap.appendChild(headTable);
+      wrapper.appendChild(theadWrap);
+
+      // 可滚动的数据行区域
+      const viewport = document.createElement('div');
+      viewport.className = 'interaction-select-viewport';
+      const bodyTable = document.createElement('table');
+      bodyTable.className = 'interaction-select-table';
+      const colgroup2 = document.createElement('colgroup');
+      [28, 22, 30, 20].forEach((pct) => {
+        const col = document.createElement('col');
+        col.style.width = pct + '%';
+        colgroup2.appendChild(col);
+      });
+      bodyTable.appendChild(colgroup2);
+      const tbody = document.createElement('tbody');
 
       interaction.candidates.forEach((candidate) => {
         const candidateKey = getInteractionCandidateKey(candidate);
-        const option = document.createElement('button');
-        option.type = 'button';
-        option.className = 'interaction-select-option' + (candidateKey === currentInteractionSelectionKey ? ' is-selected' : '');
-        option.disabled = pendingInteractionActionKey.length > 0;
-        option.addEventListener('click', () => {
+        const row = document.createElement('tr');
+        row.className = 'interaction-select-row' + (candidateKey === currentInteractionSelectionKey ? ' is-selected' : '');
+        row.addEventListener('click', () => {
+          if (pendingInteractionActionKey.length > 0) {
+            return;
+          }
           currentInteractionSelectionKey = candidateKey;
           renderInteractionPanel(currentInteraction);
         });
 
-        const title = document.createElement('div');
-        title.className = 'interaction-option-title';
-        title.textContent = String(candidate.name || candidate.uuid || '未命名器件');
+        const nameCell = document.createElement('td');
+        nameCell.className = 'interaction-select-cell interaction-select-cell-name';
+        nameCell.textContent = String(candidate.name || candidate.uuid || '未命名器件');
+        nameCell.title = String(candidate.name || candidate.uuid || '');
 
-        const meta = document.createElement('div');
-        meta.className = 'interaction-option-meta';
-        const metaParts = [];
-        if (String(candidate.footprintName || '').trim().length > 0) {
-          metaParts.push('封装：' + String(candidate.footprintName || '').trim());
-        }
-        if (String(candidate.symbolName || '').trim().length > 0) {
-          metaParts.push('符号：' + String(candidate.symbolName || '').trim());
-        }
-        if (String(candidate.manufacturer || '').trim().length > 0) {
-          metaParts.push('品牌：' + String(candidate.manufacturer || '').trim());
-        }
-        if (String(candidate.description || '').trim().length > 0) {
-          metaParts.push(String(candidate.description || '').trim());
-        }
-        meta.textContent = metaParts.join('  ');
+        const footprintCell = document.createElement('td');
+        footprintCell.className = 'interaction-select-cell interaction-select-cell-footprint';
+        footprintCell.textContent = String(candidate.footprintName || '-');
+        footprintCell.title = String(candidate.footprintName || '');
 
-        const tags = document.createElement('div');
-        tags.className = 'interaction-option-tags';
-        const inventoryText = Number.isFinite(Number(candidate.lcscInventory))
-          ? '库存：' + String(candidate.lcscInventory)
-          : '库存：-';
-        const priceText = Number.isFinite(Number(candidate.lcscPrice))
-          ? '价格：' + String(candidate.lcscPrice)
-          : '价格：-';
-        tags.textContent = inventoryText + '    ' + priceText;
+        const descCell = document.createElement('td');
+        descCell.className = 'interaction-select-cell interaction-select-cell-desc';
+        descCell.textContent = String(candidate.description || '-');
+        descCell.addEventListener('mouseenter', () => {
+          showCandidatePopup(descCell, candidate);
+        });
+        descCell.addEventListener('mouseleave', () => {
+          hideCandidatePopup();
+        });
 
-        option.appendChild(title);
-        option.appendChild(meta);
-        option.appendChild(tags);
-        list.appendChild(option);
+        const brandCell = document.createElement('td');
+        brandCell.className = 'interaction-select-cell interaction-select-cell-brand';
+        brandCell.textContent = String(candidate.manufacturer || '-');
+        brandCell.title = String(candidate.manufacturer || '');
+
+        row.appendChild(nameCell);
+        row.appendChild(footprintCell);
+        row.appendChild(descCell);
+        row.appendChild(brandCell);
+        tbody.appendChild(row);
       });
-      card.appendChild(list);
+
+      bodyTable.appendChild(tbody);
+      viewport.appendChild(bodyTable);
+      wrapper.appendChild(viewport);
+      card.appendChild(wrapper);
 
       const pagination = document.createElement('div');
       pagination.className = 'interaction-pagination';
@@ -2111,12 +2347,18 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
 
       interactionHostElement.replaceChildren(card);
       interactionHostElement.classList.remove('is-empty');
+      // viewport 已挂载到 DOM，初始化 OverlayScrollbars
+      ensureInteractionScrollbar(viewport);
     }
 
     function renderComponentPlaceInteraction(interaction) {
       if (!interactionHostElement) {
         return;
       }
+
+      // 切换到放置面板时清理选型相关状态
+      destroyInteractionScrollbar();
+      hideCandidatePopup();
 
       const card = createInteractionCard(interaction);
 
@@ -2868,6 +3110,16 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       ensurePageScrollbar();
       ensureStatusLogScrollbar();
       ensureConnectionListScrollbar();
+      if (interactionScrollbar) {
+        interactionScrollbar.options({
+          scrollbars: {
+            theme: getStatusLogScrollbarTheme(),
+            autoHide: 'leave',
+            autoHideSuspend: false
+          }
+        });
+        interactionScrollbar.update(true);
+      }
     }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
     refreshBridgeAddressPreview();

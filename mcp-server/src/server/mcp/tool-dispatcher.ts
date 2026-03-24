@@ -26,6 +26,16 @@ export interface ToolDefinition {
 
 const DEFAULT_BRIDGE_TIMEOUT_MS = 15_000;
 
+const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
+	// 'jlceda_api_index',
+	// 'jlceda_api_search',
+	// 'jlceda_context_get',
+	// 'jlceda_api_invoke',
+	'jlceda_schematic_check',
+	'component_select',
+	'component_place',
+]);
+
 const TOOL_DEFINITIONS = loadToolDefinitions();
 
 // 加载并校验工具定义。
@@ -56,7 +66,7 @@ function loadToolDefinitions(): readonly ToolDefinition[] {
 			inputSchema: item.inputSchema,
 		});
 	}
-	return definitions;
+	return definitions.filter(item => EXPOSED_MCP_TOOL_NAMES.has(item.name));
 }
 
 export class ToolDispatcher {
@@ -75,17 +85,17 @@ export class ToolDispatcher {
 	 */
 	public async dispatch(toolCallParams: ToolCallParams): Promise<unknown> {
 		const args = isPlainObjectRecord(toolCallParams.arguments) ? toolCallParams.arguments : {};
-		if (toolCallParams.name === 'jlceda_api_search') {
-			return this.toToolContent(await this.handleApiSearch(args));
-		}
-		if (toolCallParams.name === 'jlceda_api_invoke') {
-			return this.toToolContent(await this.handleApiInvoke(args));
-		}
-		if (toolCallParams.name === 'jlceda_context_get') {
-			return this.toToolContent(await this.handleContextGet(args));
+		if (!EXPOSED_MCP_TOOL_NAMES.has(toolCallParams.name)) {
+			throw new Error(`未知工具: ${toolCallParams.name}`);
 		}
 		if (toolCallParams.name === 'jlceda_schematic_check') {
 			return this.toToolContent(await this.handleSchematicCheck());
+		}
+		if (toolCallParams.name === 'component_select') {
+			return this.toToolContent(await this.handleComponentSelect(args));
+		}
+		if (toolCallParams.name === 'component_place') {
+			return this.toToolContent(await this.handleComponentPlace(args));
 		}
 
 		throw new Error(`未知工具: ${toolCallParams.name}`);
@@ -151,5 +161,33 @@ export class ToolDispatcher {
 	// 桥接执行原理图完整检查（ERC + 网表提取）。
 	private async handleSchematicCheck(): Promise<unknown> {
 		return await enqueueBridgeRequest('/bridge/jlceda/schematic/check', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
+	}
+
+	// 桥接执行器件搜索。
+	private async handleComponentSelect(argumentsObject: Record<string, unknown>): Promise<unknown> {
+		const keyword = String(argumentsObject.keyword ?? '').trim();
+		if (keyword.length === 0) {
+			throw new Error('component_select 缺少 keyword 参数。');
+		}
+
+		const limit = parseBoundedIntegerValue(argumentsObject.limit, 20, 2, 20);
+		return await enqueueBridgeRequest('/bridge/jlceda/component/select', {
+			keyword,
+			limit,
+		}, DEFAULT_BRIDGE_TIMEOUT_MS);
+	}
+
+	// 桥接创建器件交互放置任务。
+	private async handleComponentPlace(argumentsObject: Record<string, unknown>): Promise<unknown> {
+		const components = argumentsObject.components;
+		if (!Array.isArray(components)) {
+			throw new Error('component_place 缺少 components 参数，且其必须为数组。');
+		}
+
+		const timeoutSeconds = parseBoundedIntegerValue(argumentsObject.timeoutSeconds, 60, 30, 180);
+		return await enqueueBridgeRequest('/bridge/jlceda/component/place', {
+			components,
+			timeoutSeconds,
+		}, DEFAULT_BRIDGE_TIMEOUT_MS);
 	}
 }

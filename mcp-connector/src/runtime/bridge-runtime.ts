@@ -16,6 +16,8 @@ import { getConfiguredMcpUrl, getMcpServerUrlChangedTopic } from '../bridge/conf
 import { ConnectorLogDispatchPipeline } from '../logging/log-dispatch.ts';
 import { connectorLogPipeline } from '../logging/log.ts';
 import { handleApiSearchTask } from '../mcp/api-search-handler.ts';
+import { handleComponentPlaceTask } from '../mcp/component-place-handler.ts';
+import { handleComponentSelectTask } from '../mcp/component-select-handler.ts';
 import { handleContextTask } from '../mcp/context-handler.ts';
 import { handleInvokeTask } from '../mcp/invoke-handler.ts';
 import { handleSchematicCheckTask } from '../mcp/schematic-check-handler.ts';
@@ -31,6 +33,8 @@ const CONNECT_SUCCESS_TOAST_TIMER_SECONDS = 3;
 const BRIDGE_TASK_HANDLERS: Record<string, (payload: unknown) => Promise<unknown>> = {
 	'/bridge/jlceda/api/search': handleApiSearchTask,
 	'/bridge/jlceda/api/invoke': handleInvokeTask,
+	'/bridge/jlceda/component/place': handleComponentPlaceTask,
+	'/bridge/jlceda/component/select': handleComponentSelectTask,
 	'/bridge/jlceda/context/get': handleContextTask,
 	'/bridge/jlceda/schematic/check': handleSchematicCheckTask,
 };

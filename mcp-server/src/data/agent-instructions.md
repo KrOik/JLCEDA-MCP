@@ -10,94 +10,61 @@
 
 ## 工具说明
 
-你拥有四个工具：
+你拥有三个工具：
 
-- jlceda_api_search：用于检索嘉立创 EDA API 文档，确认可调用 API 的名称、命名空间和参数签名。
-- jlceda_context_get：用于读取当前 EDA 运行时上下文，包括工程、文档、图页、选区及其他实时状态。
-- jlceda_api_invoke：用于执行已确认签名的具体 EDA API。
+- component_select：用于在 EDA 系统库中搜索候选器件，返回可供确认的器件列表。
+- component_place：用于为已确认的器件列表创建交互放置任务描述。
 - jlceda_schematic_check：用于对当前原理图执行完整检查，返回 ERC 结果和精简网表供分析使用。
 
 ## 工具调用方法
 
-### jlceda_api_search
+### component_select
 
 用途：
-- 查询某个能力是否存在对应 API。
-- 确认 API 的 apiFullName、signatureText、命名空间和参数顺序。
+- 在 EDA 系统库中搜索候选器件。
+- 当用户要求放置某类器件时，先缩小到可确认的器件型号。
 
 调用时机：
-- 用户要求放置器件、连线、修改属性、导出数据、读取特定接口结果等，需要调用具体 API 时。
-- 用户只想知道某个 API 是否存在、如何调用、参数是什么时。
+- 用户要求在原理图中放置器件，但尚未明确到具体库器件时。
+- 用户只给出类别、封装、关键参数，需要先筛选具体型号时。
 
 调用方法：
-1. 先根据任务确定检索关键词。
-2. 优先使用 `scope: callable` 检索可调用 API。
-3. 优先指定 owner 缩小范围：器件库接口用 `lib`，原理图接口用 `sch`，PCB 接口用 `pcb`，工程/文档接口用 `dmt`。
-4. 根据返回结果确认 apiFullName 和 signatureText。
+1. 根据用户需求整理器件关键词。
+2. 调用 component_select 获取候选器件列表。
+3. 从返回结果中确认最终器件的 uuid 和 libraryUuid。
+4. 需要放置时，再调用 component_place。
 
 参数规则：
-- `query`：检索关键词，必填。
-- `scope`：建议优先使用 `callable`。
-- `owner`：建议优先填写对应命名空间。
-- `limit`：按需限制返回数量。
+- `keyword`：器件搜索关键词，必填。
+- `limit`：返回数量上限，可选，范围 2-20。
 
 结果处理：
-- 返回多个候选时，以 `fullName` 和 `signatureText` 为准确认目标 API。
-- 同名重载并存时，必须核对参数顺序和可选参数位置。
+- 返回结果中的 `selection.candidates` 为候选器件列表。
+- 必须以返回结果中的 `uuid` 和 `libraryUuid` 作为后续放置输入，不得自行猜测。
 
-### jlceda_context_get
+### component_place
 
 用途：
-- 读取当前工程、文档、图页、选区和其他实时状态。
-- 为后续 API 调用提供准确的坐标、ID、网络名和对象信息。
+- 为已经确认好的器件列表创建原理图交互放置任务。
+- 统一校验放置顺序、超时参数和必要字段。
 
 调用时机：
-- 任务依赖实时上下文时，例如当前原理图、当前 PCB、当前选中对象、图页信息、器件位置、网络名称等。
-- 用户直接要求查看当前工程或当前页面状态时。
+- 已经通过 component_select 或用户明确提供了器件 uuid 和 libraryUuid。
+- 需要按顺序组织多个器件的交互放置任务时。
 
 调用方法：
-1. 根据任务判断是否需要实时上下文。
-2. 调用 jlceda_context_get 读取当前上下文。
-3. 从结果中提取当前任务所需的字段。
-4. 后续需要使用坐标、ID、网络名时，以当前返回值为准。
+1. 准备待放置器件数组，每项至少包含 uuid 和 libraryUuid。
+2. 按最终放置顺序排列 components。
+3. 调用 component_place 创建放置任务。
+4. 检查返回的 placement 结构是否与预期器件顺序一致。
 
 参数规则：
-- `scope`：按需传入上下文范围。
-- `timeoutMs`：按需设置超时时间。
+- `components`：待放置器件数组，必填。
+- `timeoutSeconds`：单个器件放置超时时间，可选，范围 30-180 秒。
 
 结果处理：
-- 上下文中的坐标、ID、网络名和对象信息仅用于当前实际环境，使用前应以最新返回值为准。
-
-### jlceda_api_invoke
-
-用途：
-- 执行某个已确认签名的 EDA API，并获取返回结果。
-
-调用时机：
-- 已通过 jlceda_api_search 确认目标 API 的 apiFullName 和参数签名后。
-- 如任务依赖实时坐标、ID、网络名或文档状态，应先通过 jlceda_context_get 读取上下文后再调用。
-
-调用方法：
-1. 先通过 jlceda_api_search 确认目标 API 的 apiFullName 和 signatureText。
-2. 如有上下文依赖，先通过 jlceda_context_get 获取实时信息。
-3. 按 signatureText 的参数顺序组织 args。
-4. 调用 jlceda_api_invoke 执行目标 API。
-5. 检查返回结果中的关键字段，确认执行结果符合预期。
-
-参数规则：
-- `apiFullName`：目标 API 全名，必填。
-- `args`：按 signatureText 顺序组成的参数数组。
-- `timeoutMs`：按需设置超时时间。
-
-args 组织规则：
-- 参数顺序必须与 signatureText 完全一致。
-- 可选参数不使用时传 `null` 占位，不省略中间项。
-- 对象参数必须按签名要求构造完整对象。
-- 无参数时传空数组 `[]`。
-
-结果处理：
-- 每次调用后都要核对关键返回字段，例如 `primitiveId`、`x/y`、`line`、`net` 等。
-- 返回结果与目标不一致时，先补充检索或上下文，再修正参数后重新调用。
+- 返回结果中的 `placement.components` 为最终放置列表。
+- 若参数缺失或字段不合法，必须根据错误信息补齐输入后再调用，不得自行猜测修复。
 
 ### jlceda_schematic_check
 

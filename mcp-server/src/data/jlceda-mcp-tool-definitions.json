@@ -95,5 +95,83 @@
       "properties": {},
       "additionalProperties": false
     }
+  },
+  {
+    "name": "component_select",
+    "description": "在 EDA 系统库中搜索候选器件并返回选型结果。上层应先确认具体器件型号，再使用返回的 uuid 和 libraryUuid 继续执行放置。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "keyword": {
+          "type": "string",
+          "description": "器件搜索关键词（必填）。关键词必须使用空格分隔，优先使用常用简称 + 封装/大小 + 关键参数。"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 20,
+          "default": 20,
+          "description": "返回候选数量上限，范围 2-20，默认 20。"
+        }
+      },
+      "required": [
+        "keyword"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "component_place",
+    "description": "校验并创建原理图交互放置任务。必须传入已确认好的器件列表，工具会返回按顺序放置所需的结构化任务描述。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "components": {
+          "type": "array",
+          "description": "待放置器件数组（必填），按最终放置顺序排列。每项必须提供 uuid 和 libraryUuid。",
+          "items": {
+            "type": "object",
+            "properties": {
+              "uuid": {
+                "type": "string",
+                "description": "器件 UUID。"
+              },
+              "libraryUuid": {
+                "type": "string",
+                "description": "器件所属库 UUID。"
+              },
+              "name": {
+                "type": "string",
+                "description": "器件名称（可选）。"
+              },
+              "footprintName": {
+                "type": "string",
+                "description": "封装名称（可选）。"
+              },
+              "subPartName": {
+                "type": "string",
+                "description": "多子部件器件的子部件名称（可选）。"
+              }
+            },
+            "required": [
+              "uuid",
+              "libraryUuid"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 180,
+          "default": 60,
+          "description": "单个器件放置超时时间，单位秒，范围 30-180，默认 60。"
+        }
+      },
+      "required": [
+        "components"
+      ],
+      "additionalProperties": false
+    }
   }
 ]

@@ -25,6 +25,10 @@ import { DEBUG_SWITCH, updateDebugSwitch } from '../debug';
 import type { UnifiedLogLevel } from '../logging/server-log';
 import { RuntimeLogPipeline, type RuntimeLogExtra } from '../logging/runtime-log';
 import { STATUS_FILE_FLAG, writeRuntimeStatusSnapshot } from '../state/runtime-status';
+import {
+	clearSidebarInteractionRequest,
+	clearSidebarInteractionResponse,
+} from '../state/sidebar-interaction';
 import { ServerStateManager } from '../state/server-state-manager';
 import type { BridgeDisconnectSnapshot, ConnectorVersionMismatch, RuntimeStatus, RuntimeStatusSnapshot } from '../state/status';
 import { RpcHandler } from './mcp/rpc-handler';
@@ -35,6 +39,8 @@ import { startBridgeWebSocketServer } from './core/transports/bridge-server';
 
 const HOST_FLAG = '--host';
 const PORT_FLAG = '--port';
+const STORAGE_DIRECTORY_FLAG = '--storage-directory';
+const SESSION_ID_FLAG = '--session-id';
 const STATUS_FILE_PATH_FLAG = STATUS_FILE_FLAG;
 const EXTENSION_VERSION_FLAG = '--extension-version';
 const AGENT_INSTRUCTIONS_FLAG = '--agent-instructions';
@@ -300,6 +306,24 @@ function getStatusFilePath(): string {
 	return statusFilePath;
 }
 
+// 读取扩展全局存储目录参数。
+function getStorageDirectoryPath(): string {
+	const storageDirectoryPath = String(getArgValue(STORAGE_DIRECTORY_FLAG) ?? '').trim();
+	if (storageDirectoryPath.length === 0) {
+		throw new Error(`缺少扩展存储目录参数: ${STORAGE_DIRECTORY_FLAG}`);
+	}
+	return storageDirectoryPath;
+}
+
+// 读取宿主会话标识参数。
+function getSessionId(): string {
+	const sessionId = String(getArgValue(SESSION_ID_FLAG) ?? '').trim();
+	if (sessionId.length === 0) {
+		throw new Error(`缺少宿主会话参数: ${SESSION_ID_FLAG}`);
+	}
+	return sessionId;
+}
+
 // 读取扩展版本参数。
 function getExtensionVersion(): string {
 	const extensionVersion = String(getArgValue(EXTENSION_VERSION_FLAG) ?? '').trim();
@@ -321,12 +345,16 @@ function startRuntimeServer(): void {
 	});
 	const { host, port } = getServerConfig();
 	const statusFilePath = getStatusFilePath();
+	const storageDirectoryPath = getStorageDirectoryPath();
+	const sessionId = getSessionId();
 	const extensionVersion = getExtensionVersion();
 	const agentInstructionsB64 = getArgValue(AGENT_INSTRUCTIONS_FLAG) ?? '';
 	const agentInstructions = agentInstructionsB64.length > 0
 		? Buffer.from(agentInstructionsB64, 'base64').toString('utf8')
 		: '';
-	const toolDispatcher = new ToolDispatcher();
+	clearSidebarInteractionRequest(storageDirectoryPath, sessionId);
+	clearSidebarInteractionResponse(storageDirectoryPath, sessionId);
+	const toolDispatcher = new ToolDispatcher(storageDirectoryPath, sessionId);
 	const rpcHandler = new RpcHandler(toolDispatcher, extensionVersion, agentInstructions);
 	setServerVersion(extensionVersion);
 	const runtimeServer = new McpRuntimeServer(host, port, rpcHandler, statusFilePath);

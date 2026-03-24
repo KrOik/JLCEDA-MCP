@@ -15,6 +15,8 @@ import { DEBUG_SWITCH } from '../../debug';
 import { getRuntimeStatusFilePath, STATUS_FILE_FLAG } from '../../state/runtime-status';
 import type { ServerConfig } from '../../state/status';
 
+const STORAGE_DIRECTORY_FLAG = '--storage-directory';
+const SESSION_ID_FLAG = '--session-id';
 const EXTENSION_VERSION_FLAG = '--extension-version';
 const AGENT_INSTRUCTIONS_FLAG = '--agent-instructions';
 const DEBUG_ENABLE_SYSTEM_LOG_FLAG = '--enable-system-log';
@@ -47,6 +49,10 @@ function getRuntimeArgs(extensionPath: string, storageDirectoryPath: string, ses
   const statusFilePath = getRuntimeStatusFilePath(storageDirectoryPath, config, sessionId);
   const args = [
     getRuntimeScriptPath(extensionPath),
+    STORAGE_DIRECTORY_FLAG,
+    storageDirectoryPath,
+    SESSION_ID_FLAG,
+    sessionId,
     '--host',
     config.host,
     '--port',

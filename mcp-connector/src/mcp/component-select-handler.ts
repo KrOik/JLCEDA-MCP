@@ -94,11 +94,12 @@ export async function handleComponentSelectTask(payload: unknown): Promise<unkno
 	}
 
 	const limit = parseBoundedIntegerValue(payload.limit, COMPONENT_SELECT_DEFAULT_LIMIT, 2, 20);
+	const page = parseBoundedIntegerValue(payload.page, 1, 1, 9999);
 	const libDevice = getLibDeviceApi();
 
 	let rawResults: unknown[];
 	try {
-		rawResults = await libDevice.search(keyword, undefined, undefined, undefined, limit, 1);
+		rawResults = await libDevice.search(keyword, undefined, undefined, undefined, limit, page);
 	}
 	catch (error: unknown) {
 		throw new Error(`器件搜索失败：${toSafeErrorMessage(error)}`);
@@ -128,7 +129,7 @@ export async function handleComponentSelectTask(payload: unknown): Promise<unkno
 		description: `以下是立创商城中“${keyword}”的搜索结果，请先确认具体型号后再继续放置。`,
 		candidates,
 		pageSize: limit,
-		currentPage: 1,
+		currentPage: page,
 	};
 
 	return {

@@ -226,6 +226,10 @@ export function activate(context: vscode.ExtensionContext): void {
       await stopManualStdioRuntimeProcessFromSidebar();
     }
   );
+  sidebarProvider.startInteractionSyncLoop();
+  context.subscriptions.push(new vscode.Disposable(() => {
+    sidebarProvider.dispose();
+  }));
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(McpSidebarViewProvider.viewId, sidebarProvider)
   );

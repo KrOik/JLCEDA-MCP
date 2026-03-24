@@ -11,6 +11,7 @@
 
 import type { ServerConfig, ServerStatus } from '../state/status';
 import type { UnifiedLogEntry, UnifiedLogFieldSchema } from '../logging/server-log';
+import type { SidebarInteractionRequest, SidebarInteractionResponse } from '../state/sidebar-interaction';
 
 export type SidebarStatusLogEntry = UnifiedLogEntry;
 
@@ -36,7 +37,8 @@ export type SidebarCommand =
   | { command: 'openEditor' }
   | { command: 'startStdioRuntime' }
   | { command: 'stopStdioRuntime' }
-  | { command: 'setCloseSidebarOnOpenEditor'; payload: boolean };
+  | { command: 'setCloseSidebarOnOpenEditor'; payload: boolean }
+  | { command: 'interactionAction'; payload: SidebarInteractionResponse };
 
 /**
  * 扩展宿主发送到侧边栏的消息结构。
@@ -48,4 +50,5 @@ export type SidebarWebviewMessage =
   | { type: 'logSchema'; payload: UnifiedLogFieldSchema }
   | { type: 'logs'; payload: SidebarStatusLogEntry[] }
   | { type: 'clients'; payload: SidebarConnectedClientEntry[] }
-  | { type: 'closeSidebarOnOpenEditor'; payload: boolean };
+  | { type: 'closeSidebarOnOpenEditor'; payload: boolean }
+  | { type: 'interaction'; payload: SidebarInteractionRequest | null };

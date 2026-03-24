@@ -171,9 +171,36 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       width: 100%;
       max-width: none;
       min-width: 0;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
-    .config-block > .card,
-    .config-block > .status-actions {
+    .main-stack,
+    .bottom-dock {
+      width: 100%;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .main-stack {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    .bottom-dock {
+      position: sticky;
+      bottom: 0;
+      margin-top: auto;
+      padding-top: 12px;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 0%, transparent) 0%, var(--bg) 20px);
+      z-index: 2;
+    }
+    .main-stack > .card,
+    .main-stack > .status-actions,
+    .main-stack > .interaction-host,
+    .bottom-dock > .card,
+    .bottom-dock > .toggle-row {
       width: 100%;
       max-width: none;
       box-sizing: border-box;
@@ -216,8 +243,8 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       width: 100%;
       display: flex;
       justify-content: stretch;
-      margin-top: 14px;
-      margin-bottom: 10px;
+      margin-top: 0;
+      margin-bottom: 0;
       padding: 0 8px;
       box-sizing: border-box;
     }
@@ -225,11 +252,11 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       margin-top: 0;
     }
     .bridge-config-card {
-      margin-top: 10px;
+      margin-top: 0;
     }
     .log-card {
       width: 100%;
-      margin-top: 10px;
+      margin-top: 0;
       box-sizing: border-box;
     }
     .status-actions button {
@@ -391,7 +418,182 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       outline-offset: 0;
     }
     .ai-instructions-card {
+      margin-top: 0;
+    }
+    .interaction-host {
+      display: none;
+    }
+    .interaction-host:not(.is-empty) {
+      display: block;
+    }
+    .interaction-card {
+      background: var(--panel-status-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--panel-radius);
+      box-shadow: var(--panel-shadow);
+      padding: 10px;
+    }
+    .interaction-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .interaction-description {
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .interaction-notice {
+      margin-bottom: 8px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--vscode-inputValidation-warningBackground, #a96a10) 18%, transparent);
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .interaction-select-list,
+    .interaction-place-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .interaction-select-option,
+    .interaction-place-row {
+      width: 100%;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--panel-status-bg) 92%, var(--bg));
+      box-sizing: border-box;
+    }
+    .interaction-select-option {
+      padding: 8px 10px;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      height: auto;
+    }
+    .interaction-select-option:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--text) 6%, var(--panel-status-bg));
+    }
+    .interaction-select-option.is-selected {
+      border-color: var(--btn-primary-bg);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--btn-primary-bg) 48%, transparent);
+    }
+    .interaction-option-title,
+    .interaction-place-row-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .interaction-option-meta,
+    .interaction-place-row-detail {
+      font-size: 11px;
+      line-height: 1.45;
+      color: var(--muted);
+      word-break: break-word;
+    }
+    .interaction-option-tags {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .interaction-pagination,
+    .interaction-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       margin-top: 10px;
+    }
+    .interaction-pagination {
+      justify-content: space-between;
+    }
+    .interaction-page-label {
+      flex: 1 1 auto;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .interaction-actions button,
+    .interaction-pagination button {
+      height: 26px;
+      min-width: 72px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .interaction-actions {
+      justify-content: flex-end;
+    }
+    .interaction-place-summary {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--panel-status-bg) 84%, var(--bg));
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .interaction-place-summary strong {
+      color: var(--text);
+    }
+    .interaction-place-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 8px 10px;
+    }
+    .interaction-place-row-main {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .interaction-place-row-status {
+      flex: none;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.4;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .interaction-place-row.is-active {
+      border-color: color-mix(in srgb, var(--btn-primary-bg) 55%, var(--panel-border));
+      background: color-mix(in srgb, var(--btn-primary-bg) 12%, var(--panel-status-bg));
+    }
+    .interaction-place-row.is-success {
+      border-color: color-mix(in srgb, var(--ok) 60%, var(--panel-border));
+      background: color-mix(in srgb, var(--ok) 12%, var(--panel-status-bg));
+    }
+    .interaction-place-row.is-timeout {
+      border-color: color-mix(in srgb, var(--status-waiting-fg) 55%, var(--panel-border));
+      background: color-mix(in srgb, var(--status-waiting-fg) 12%, var(--panel-status-bg));
+    }
+    .interaction-place-row.is-error {
+      border-color: color-mix(in srgb, var(--danger) 60%, var(--panel-border));
+      background: color-mix(in srgb, var(--danger) 12%, var(--panel-status-bg));
+    }
+    .interaction-place-row.is-active .interaction-place-row-status {
+      color: var(--btn-primary-bg);
+    }
+    .interaction-place-row.is-success .interaction-place-row-status {
+      color: var(--ok);
+    }
+    .interaction-place-row.is-timeout .interaction-place-row-status {
+      color: var(--status-waiting-fg);
+    }
+    .interaction-place-row.is-error .interaction-place-row-status {
+      color: var(--danger);
     }
     .status-log-filter-select {
       height: 24px;
@@ -976,33 +1178,37 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
   ${iconsSpriteMarkup}
   <div class="wrap" data-overlayscrollbars-initialize>
     <div class="config-block">
-      <div class="card status-card">
-        <div class="card-inner status-panel">
-          <div class="status-inner">
-            <div class="section-header">
-              <div class="section-title">运行状态</div>
-              <div class="section-description">查看 stdio 运行情况和 EDA 接入状态。</div>
-            </div>
-            <div class="section-divider"></div>
-            <div class="status-section">
-              <div class="hint status-title">stdio 状态</div>
-              <div id="runtimeStatus" class="status idle">已就绪。</div>
-            </div>
-            <div class="status-section">
-              <div class="hint status-title">EDA 连接</div>
-              <div id="bridgeStatus" class="status waiting">桥接客户端未连接。</div>
+      <div class="main-stack">
+        <div class="card status-card">
+          <div class="card-inner status-panel">
+            <div class="status-inner">
+              <div class="section-header">
+                <div class="section-title">运行状态</div>
+                <div class="section-description">查看 stdio 运行情况和 EDA 接入状态。</div>
+              </div>
+              <div class="section-divider"></div>
+              <div class="status-section">
+                <div class="hint status-title">stdio 状态</div>
+                <div id="runtimeStatus" class="status idle">已就绪。</div>
+              </div>
+              <div class="status-section">
+                <div class="hint status-title">EDA 连接</div>
+                <div id="bridgeStatus" class="status waiting">桥接客户端未连接。</div>
+              </div>
             </div>
           </div>
         </div>
+        <div class="status-actions">
+          <button id="openEditor" class="open-editor-button">
+            <span class="open-editor-button-label">打开嘉立创 EDA</span>
+            <svg class="open-editor-button-icon" viewBox="0 0 490 490" focusable="false" aria-hidden="true">
+              <use href="#icon-right-arrow"></use>
+            </svg>
+          </button>
+        </div>
+        <div id="interactionHost" class="interaction-host is-empty"></div>
       </div>
-      <div class="status-actions">
-        <button id="openEditor" class="open-editor-button">
-          <span class="open-editor-button-label">打开嘉立创 EDA</span>
-          <svg class="open-editor-button-icon" viewBox="0 0 490 490" focusable="false" aria-hidden="true">
-            <use href="#icon-right-arrow"></use>
-          </svg>
-        </button>
-      </div>
+      <div class="bottom-dock">
       <div class="card bridge-config-card">
         <div class="card-inner config-panel">
           <div id="bridgeConfigToggle" class="section-header status-log-toggle" role="button" tabindex="0" aria-expanded="false" aria-controls="bridgeConfigContent">
@@ -1076,6 +1282,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
           <span class="toggle-thumb"></span>
         </button>
       </div>
+      </div>
     </div>
   </div>
   <div id="statusLogContextMenu" class="status-log-context-menu" role="menu" aria-label="日志右键菜单">
@@ -1096,6 +1303,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     const spinUpButton = document.querySelector('.number-spinner .spin-up');
     const spinDownButton = document.querySelector('.number-spinner .spin-down');
     const pageScrollElement = document.querySelector('.wrap');
+    const interactionHostElement = document.getElementById('interactionHost');
     const copyBridgeAddressButton = document.getElementById('copyBridgeAddress');
     const openEditorButton = document.getElementById('openEditor');
     const startStdioRuntimeButton = document.getElementById('startStdioRuntime');
@@ -1160,6 +1368,9 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     let statusLogLevelFilter = 'all';
     let statusLogSourceFilter = 'all';
     let preserveStatusLogTableOnClear = false;
+    let currentInteraction = null;
+    let currentInteractionSelectionKey = '';
+    let pendingInteractionActionKey = '';
 
     const STATUS_LOG_LEVEL_FILTER_VALUES = new Set(['all', 'info', 'success', 'warning', 'error']);
     const STATUS_LOG_SOURCE_FILTER_VALUES = new Set(['all', 'server', 'client']);
@@ -1691,6 +1902,323 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       const changed = isInstructionsChanged();
       saveInstructionsButton.disabled = !changed;
       saveInstructionsButton.classList.toggle('enabled', changed);
+    }
+
+    function getInteractionCandidateKey(candidate) {
+      if (!candidate || typeof candidate !== 'object') {
+        return '';
+      }
+
+      return String(candidate.libraryUuid || '').trim() + '::' + String(candidate.uuid || '').trim();
+    }
+
+    function setInteractionHostEmptyState(isEmpty) {
+      if (!interactionHostElement) {
+        return;
+      }
+
+      interactionHostElement.classList.toggle('is-empty', isEmpty);
+      if (isEmpty) {
+        interactionHostElement.replaceChildren();
+      }
+    }
+
+    function postInteractionAction(payload) {
+      pendingInteractionActionKey = String(payload.requestId || '') + ':' + String(payload.action || '');
+      vscode.postMessage({ command: 'interactionAction', payload });
+      renderInteractionPanel(currentInteraction);
+    }
+
+    function isInteractionActionPending(requestId, action) {
+      return pendingInteractionActionKey === String(requestId || '') + ':' + String(action || '');
+    }
+
+    function createInteractionCard(interaction) {
+      const card = document.createElement('div');
+      card.className = 'interaction-card';
+
+      const title = document.createElement('div');
+      title.className = 'interaction-title';
+      title.textContent = String(interaction && interaction.title ? interaction.title : '交互面板');
+      card.appendChild(title);
+
+      const description = document.createElement('div');
+      description.className = 'interaction-description';
+      description.textContent = String(interaction && interaction.description ? interaction.description : '');
+      card.appendChild(description);
+
+      if (interaction && String(interaction.noticeText || '').trim().length > 0) {
+        const notice = document.createElement('div');
+        notice.className = 'interaction-notice';
+        notice.textContent = String(interaction.noticeText || '').trim();
+        card.appendChild(notice);
+      }
+
+      return card;
+    }
+
+    function renderComponentSelectInteraction(interaction) {
+      if (!interactionHostElement) {
+        return;
+      }
+
+      const candidateKeys = Array.isArray(interaction.candidates)
+        ? interaction.candidates.map((candidate) => getInteractionCandidateKey(candidate))
+        : [];
+      if (!candidateKeys.includes(currentInteractionSelectionKey)) {
+        currentInteractionSelectionKey = '';
+      }
+
+      const card = createInteractionCard(interaction);
+      const list = document.createElement('div');
+      list.className = 'interaction-select-list';
+
+      interaction.candidates.forEach((candidate) => {
+        const candidateKey = getInteractionCandidateKey(candidate);
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = 'interaction-select-option' + (candidateKey === currentInteractionSelectionKey ? ' is-selected' : '');
+        option.disabled = pendingInteractionActionKey.length > 0;
+        option.addEventListener('click', () => {
+          currentInteractionSelectionKey = candidateKey;
+          renderInteractionPanel(currentInteraction);
+        });
+
+        const title = document.createElement('div');
+        title.className = 'interaction-option-title';
+        title.textContent = String(candidate.name || candidate.uuid || '未命名器件');
+
+        const meta = document.createElement('div');
+        meta.className = 'interaction-option-meta';
+        const metaParts = [];
+        if (String(candidate.footprintName || '').trim().length > 0) {
+          metaParts.push('封装：' + String(candidate.footprintName || '').trim());
+        }
+        if (String(candidate.symbolName || '').trim().length > 0) {
+          metaParts.push('符号：' + String(candidate.symbolName || '').trim());
+        }
+        if (String(candidate.manufacturer || '').trim().length > 0) {
+          metaParts.push('品牌：' + String(candidate.manufacturer || '').trim());
+        }
+        if (String(candidate.description || '').trim().length > 0) {
+          metaParts.push(String(candidate.description || '').trim());
+        }
+        meta.textContent = metaParts.join('  ');
+
+        const tags = document.createElement('div');
+        tags.className = 'interaction-option-tags';
+        const inventoryText = Number.isFinite(Number(candidate.lcscInventory))
+          ? '库存：' + String(candidate.lcscInventory)
+          : '库存：-';
+        const priceText = Number.isFinite(Number(candidate.lcscPrice))
+          ? '价格：' + String(candidate.lcscPrice)
+          : '价格：-';
+        tags.textContent = inventoryText + '    ' + priceText;
+
+        option.appendChild(title);
+        option.appendChild(meta);
+        option.appendChild(tags);
+        list.appendChild(option);
+      });
+      card.appendChild(list);
+
+      const pagination = document.createElement('div');
+      pagination.className = 'interaction-pagination';
+
+      const prevButton = document.createElement('button');
+      prevButton.type = 'button';
+      prevButton.className = 'secondary';
+      prevButton.textContent = '上一页';
+      prevButton.disabled = interaction.currentPage <= 1 || pendingInteractionActionKey.length > 0;
+      prevButton.addEventListener('click', () => {
+        if (prevButton.disabled) {
+          return;
+        }
+        postInteractionAction({
+          requestId: interaction.requestId,
+          action: 'change-page',
+          page: interaction.currentPage - 1,
+        });
+      });
+
+      const pageLabel = document.createElement('div');
+      pageLabel.className = 'interaction-page-label';
+      pageLabel.textContent = '第 ' + String(interaction.currentPage) + ' 页';
+
+      const nextButton = document.createElement('button');
+      nextButton.type = 'button';
+      nextButton.className = 'secondary';
+      nextButton.textContent = '下一页';
+      nextButton.disabled = interaction.candidates.length < interaction.pageSize || pendingInteractionActionKey.length > 0;
+      nextButton.addEventListener('click', () => {
+        if (nextButton.disabled) {
+          return;
+        }
+        postInteractionAction({
+          requestId: interaction.requestId,
+          action: 'change-page',
+          page: interaction.currentPage + 1,
+        });
+      });
+
+      pagination.appendChild(prevButton);
+      pagination.appendChild(pageLabel);
+      pagination.appendChild(nextButton);
+      card.appendChild(pagination);
+
+      const actions = document.createElement('div');
+      actions.className = 'interaction-actions';
+
+      const cancelButton = document.createElement('button');
+      cancelButton.type = 'button';
+      cancelButton.className = 'secondary';
+      cancelButton.textContent = '取消';
+      cancelButton.disabled = pendingInteractionActionKey.length > 0;
+      cancelButton.addEventListener('click', () => {
+        if (cancelButton.disabled) {
+          return;
+        }
+        postInteractionAction({
+          requestId: interaction.requestId,
+          action: 'cancel',
+        });
+      });
+
+      const confirmButton = document.createElement('button');
+      confirmButton.type = 'button';
+      confirmButton.textContent = isInteractionActionPending(interaction.requestId, 'confirm-selection') ? '提交中' : '确定';
+      confirmButton.disabled = currentInteractionSelectionKey.length < 1 || pendingInteractionActionKey.length > 0;
+      confirmButton.addEventListener('click', () => {
+        if (confirmButton.disabled) {
+          return;
+        }
+        const selectedCandidate = interaction.candidates.find((candidate) => {
+          return getInteractionCandidateKey(candidate) === currentInteractionSelectionKey;
+        });
+        if (!selectedCandidate) {
+          return;
+        }
+        postInteractionAction({
+          requestId: interaction.requestId,
+          action: 'confirm-selection',
+          candidate: selectedCandidate,
+        });
+      });
+
+      actions.appendChild(cancelButton);
+      actions.appendChild(confirmButton);
+      card.appendChild(actions);
+
+      interactionHostElement.replaceChildren(card);
+      interactionHostElement.classList.remove('is-empty');
+    }
+
+    function renderComponentPlaceInteraction(interaction) {
+      if (!interactionHostElement) {
+        return;
+      }
+
+      const card = createInteractionCard(interaction);
+
+      const summary = document.createElement('div');
+      summary.className = 'interaction-place-summary';
+      const progress = document.createElement('div');
+      progress.innerHTML = '<strong>进度：</strong>' + String(interaction.placedCount) + ' / ' + String(interaction.totalCount);
+      const statusText = document.createElement('div');
+      statusText.textContent = String(interaction.statusText || '等待开始');
+      summary.appendChild(progress);
+      summary.appendChild(statusText);
+      card.appendChild(summary);
+
+      const list = document.createElement('div');
+      list.className = 'interaction-place-list';
+      interaction.rows.forEach((row) => {
+        const rowElement = document.createElement('div');
+        rowElement.className = 'interaction-place-row is-' + String(row.status || 'pending');
+
+        const main = document.createElement('div');
+        main.className = 'interaction-place-row-main';
+
+        const title = document.createElement('div');
+        title.className = 'interaction-place-row-title';
+        title.textContent = String(row.title || '');
+
+        const detail = document.createElement('div');
+        detail.className = 'interaction-place-row-detail';
+        detail.textContent = String(row.detail || '');
+
+        const status = document.createElement('div');
+        status.className = 'interaction-place-row-status';
+        status.textContent = String(row.statusText || '');
+
+        main.appendChild(title);
+        main.appendChild(detail);
+        rowElement.appendChild(main);
+        rowElement.appendChild(status);
+        list.appendChild(rowElement);
+      });
+      card.appendChild(list);
+
+      const actions = document.createElement('div');
+      actions.className = 'interaction-actions';
+
+      const cancelButton = document.createElement('button');
+      cancelButton.type = 'button';
+      cancelButton.className = 'secondary';
+      cancelButton.textContent = isInteractionActionPending(interaction.requestId, 'cancel') ? '提交中' : (interaction.started ? '取消任务' : '取消');
+      cancelButton.disabled = !interaction.canCancel || pendingInteractionActionKey.length > 0;
+      cancelButton.addEventListener('click', () => {
+        if (cancelButton.disabled) {
+          return;
+        }
+        postInteractionAction({
+          requestId: interaction.requestId,
+          action: 'cancel',
+        });
+      });
+
+      const startButton = document.createElement('button');
+      startButton.type = 'button';
+      startButton.textContent = isInteractionActionPending(interaction.requestId, 'start-placement') ? '提交中' : '开始放置';
+      startButton.disabled = !interaction.canStart || pendingInteractionActionKey.length > 0;
+      startButton.addEventListener('click', () => {
+        if (startButton.disabled) {
+          return;
+        }
+        postInteractionAction({
+          requestId: interaction.requestId,
+          action: 'start-placement',
+        });
+      });
+
+      actions.appendChild(cancelButton);
+      actions.appendChild(startButton);
+      card.appendChild(actions);
+
+      interactionHostElement.replaceChildren(card);
+      interactionHostElement.classList.remove('is-empty');
+    }
+
+    function renderInteractionPanel(interaction) {
+      currentInteraction = interaction || null;
+      if (!interactionHostElement) {
+        return;
+      }
+
+      if (!interaction) {
+        currentInteractionSelectionKey = '';
+        pendingInteractionActionKey = '';
+        setInteractionHostEmptyState(true);
+        return;
+      }
+
+      if (interaction.kind === 'component-select') {
+        renderComponentSelectInteraction(interaction);
+        return;
+      }
+
+      currentInteractionSelectionKey = '';
+      renderComponentPlaceInteraction(interaction);
     }
 
     function scheduleScrollStatusLogsToBottom() {
@@ -2308,6 +2836,10 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       }
       if (message.type === 'closeSidebarOnOpenEditor') {
         setCloseSidebarToggleState(message.payload);
+      }
+      if (message.type === 'interaction') {
+        pendingInteractionActionKey = '';
+        renderInteractionPanel(message.payload || null);
       }
     });
 

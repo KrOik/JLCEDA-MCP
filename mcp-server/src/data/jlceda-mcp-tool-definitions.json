@@ -98,7 +98,7 @@
   },
   {
     "name": "component_select",
-    "description": "在 EDA 系统库中搜索候选器件并返回选型结果。上层应先确认具体器件型号，再使用返回的 uuid 和 libraryUuid 继续执行放置。",
+    "description": "在 EDA 系统库中搜索候选器件，并在 VS Code 左侧边栏中显示交互选型面板；工具会等待用户确认或取消后，再返回最终选型结果。",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -122,7 +122,7 @@
   },
   {
     "name": "component_place",
-    "description": "校验并创建原理图交互放置任务。必须传入已确认好的器件列表，工具会返回按顺序放置所需的结构化任务描述。",
+    "description": "校验已确认好的器件列表，并在 VS Code 左侧边栏中显示交互放置面板；工具会等待用户启动并完成放置流程后，再返回最终放置结果。",
     "inputSchema": {
       "type": "object",
       "properties": {

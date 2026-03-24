@@ -14,6 +14,11 @@ import { DEBUG_SWITCH } from '../debug';
 import { SidebarLogPipeline } from '../logging/sidebar-log';
 import type { ServerConfigStore } from '../server/core/config';
 import { getRuntimeStatusFilePath, isRuntimeStatusSnapshotStale, readRuntimeStatusSnapshot } from '../state/runtime-status';
+import {
+  readSidebarInteractionRequest,
+  writeSidebarInteractionResponse,
+  type SidebarInteractionRequest,
+} from '../state/sidebar-interaction';
 import { ServerStateManager } from '../state/server-state-manager';
 import type { ConnectorVersionMismatch, ServerConfig, ServerStatus } from '../state/status';
 import {
@@ -29,6 +34,8 @@ import type {
 
 // 侧边栏状态轮询间隔，单位毫秒。
 const SIDEBAR_STATUS_REFRESH_INTERVAL_MS = 1000;
+// 侧边栏交互状态轮询间隔，单位毫秒。
+const SIDEBAR_INTERACTION_REFRESH_INTERVAL_MS = 250;
 const serverStateManager = new ServerStateManager();
 
 // 根据当前配置生成默认接入状态文案。
@@ -92,10 +99,18 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
   private view: vscode.WebviewView | undefined;
   // 侧边栏状态轮询定时器。
   private statusRefreshTimer: NodeJS.Timeout | undefined;
+  // 侧边栏交互轮询定时器。
+  private interactionRefreshTimer: NodeJS.Timeout | undefined;
   // 调试卡片状态缓存与去重逻辑。
   private readonly logPipeline = new SidebarLogPipeline();
   // 已弹出过版本不一致提示的去重键，格式为 "connectorVersion|serverVersion"。
   private lastNotifiedVersionMismatch = '';
+  // 当前待处理的侧边栏交互请求。
+  private currentInteraction: SidebarInteractionRequest | null = null;
+  // 当前交互请求的序列化签名，用于去重推送。
+  private currentInteractionSignature = '';
+  // 已尝试拉起侧边栏的交互请求 ID，防止同一请求反复抢焦点。
+  private lastRevealedInteractionRequestId = '';
 
   public constructor(
     private readonly extensionUri: vscode.Uri,
@@ -139,6 +154,8 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     const config = this.configStore.getConfig();
     this.postConfig(config);
     this.postInstructions();
+    this.postCloseSidebarOnOpenEditor();
+    this.postInteraction();
     if (DEBUG_SWITCH.enableSystemLog) {
       this.postLogSchema();
       this.postLogs();
@@ -218,6 +235,11 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
         );
         return;
       }
+
+      if (message.command === 'interactionAction') {
+        writeSidebarInteractionResponse(this.storageDirectoryPath, this.sessionId, message.payload);
+        return;
+      }
     } catch (error) {
       const messageText = error instanceof Error ? error.message : String(error);
       // 仅在影响运行时状态的命令出错时才刷新状态，
@@ -259,6 +281,37 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
 
     clearInterval(this.statusRefreshTimer);
     this.statusRefreshTimer = undefined;
+  }
+
+  /**
+   * 启动侧边栏交互状态轮询。
+   */
+  public startInteractionSyncLoop(): void {
+    this.stopInteractionSyncLoop();
+    this.syncInteractionState();
+    this.interactionRefreshTimer = setInterval(() => {
+      this.syncInteractionState();
+    }, SIDEBAR_INTERACTION_REFRESH_INTERVAL_MS);
+  }
+
+  /**
+   * 停止侧边栏交互状态轮询。
+   */
+  public stopInteractionSyncLoop(): void {
+    if (!this.interactionRefreshTimer) {
+      return;
+    }
+
+    clearInterval(this.interactionRefreshTimer);
+    this.interactionRefreshTimer = undefined;
+  }
+
+  /**
+   * 释放侧边栏提供器资源。
+   */
+  public dispose(): void {
+    this.stopStatusRefreshLoop();
+    this.stopInteractionSyncLoop();
   }
 
   private postConfig(config: ServerConfig): void {
@@ -368,6 +421,52 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
+  private postInteraction(): void {
+    this.postMessage({
+      type: 'interaction',
+      payload: this.currentInteraction
+    });
+  }
+
+  // 从共享状态文件同步当前待处理交互，并在需要时拉起侧边栏。
+  private syncInteractionState(): void {
+    const nextInteraction = readSidebarInteractionRequest(this.storageDirectoryPath, this.sessionId) ?? null;
+    const nextSignature = nextInteraction ? JSON.stringify(nextInteraction) : '';
+    if (nextSignature === this.currentInteractionSignature) {
+      return;
+    }
+
+    this.currentInteraction = nextInteraction;
+    this.currentInteractionSignature = nextSignature;
+
+    if (nextInteraction) {
+      if (nextInteraction.requestId !== this.lastRevealedInteractionRequestId) {
+        this.lastRevealedInteractionRequestId = nextInteraction.requestId;
+        void this.revealSidebarForInteraction();
+      }
+    }
+    else {
+      this.lastRevealedInteractionRequestId = '';
+    }
+
+    this.postInteraction();
+  }
+
+  // 尽量将当前交互面板对应的侧边栏拉起到前台。
+  private async revealSidebarForInteraction(): Promise<void> {
+    if (this.view) {
+      this.view.show(false);
+      return;
+    }
+
+    try {
+      await vscode.commands.executeCommand('workbench.view.extension.jlcMcpControl');
+    }
+    catch {
+      // 命令不可用时保持静默，等待用户手动打开侧边栏。
+    }
+  }
+
   /**
    * 外部通知：「打开 EDA 时关闭侧边栏」设置已变更，同步到侧边栏开关。
    */
@@ -402,6 +501,9 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     this.view.webview.html = buildSidebarHtml(this.view.webview, this.extensionUri);
     const config = this.configStore.getConfig();
     this.postConfig(config);
+    this.postInstructions();
+    this.postCloseSidebarOnOpenEditor();
+    this.postInteraction();
     if (DEBUG_SWITCH.enableSystemLog) {
       this.postLogSchema();
       this.postLogs();

@@ -1215,14 +1215,19 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
       margin: 10px 0 8px 0;
     }
-    /* 底部开关行 */
+    /* 底部开关行：固定在滚动容器底部，不随内容滚动 */
     .toggle-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 10px 8px 6px 8px;
-      margin-top: 6px;
+      margin-top: 0;
       gap: 8px;
+      position: sticky;
+      bottom: 0;
+      background: var(--bg);
+      border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+      z-index: 1;
     }
     .toggle-label {
       font-size: 12px;

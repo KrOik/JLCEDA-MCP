@@ -1,7 +1,7 @@
 [
   {
     "name": "jlceda_api_index",
-    "description": "【托底工具 · 低优先级】仅在 schematic_check、component_select、component_place 均无法满足需求时才使用。调用任何 EDA API 前必须先调用此工具（第一步）。获取原理图常用可调用 API 索引表，每项包含完整路径（fullName）和功能描述（summary）。从索引中锁定目标 API 路径后，再依次执行第二步（jlceda_api_search 查询完整签名）和第三步（jlceda_api_invoke 执行调用）。禁止跳过此步骤直接调用 API。",
+    "description": "查询可调用 EDA API 索引。",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -15,7 +15,7 @@
   },
   {
     "name": "jlceda_api_search",
-    "description": "【托底工具 · 低优先级】仅在 schematic_check、component_select、component_place 均无法满足需求时才使用。API 调用流程第二步。必须在 jlceda_api_index 返回索引并确认目标 API 路径后，调用此工具查询该路径的完整参数签名（signatureText）。禁止在未执行第一步前直接检索。查询到签名后，才可进入第三步 jlceda_api_invoke 执行调用。",
+    "description": "检索 EDA API 签名与说明。",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -53,7 +53,7 @@
   },
   {
     "name": "jlceda_api_invoke",
-    "description": "【托底工具 · 低优先级】仅在 schematic_check、component_select、component_place 均无法满足需求时才使用。API 调用流程第三步（最终执行步骤）。必须严格在第一步（jlceda_api_index 已返回含目标路径的索引）和第二步（jlceda_api_search 已确认完整参数签名）全部完成后，才能调用此工具。禁止跳过任意步骤直接执行 API。",
+    "description": "调用指定的 EDA API。",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -82,7 +82,7 @@
   },
   {
     "name": "jlceda_context_get",
-    "description": "【托底工具 · 低优先级】仅在 schematic_check、component_select、component_place 均无法满足需求时才使用。获取 EDA 运行时上下文快照（工程、文档、选区等）。",
+    "description": "获取当前 EDA 运行时上下文。",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -103,7 +103,7 @@
   },
   {
     "name": "schematic_check",
-    "description": "对当前原理图执行完整检查：ERC 电气规则检查 + 构建器件布局图（含每个器件的位号、坐标、旋转、镜像、封装，及每个引脚的名称、编号、类型、坐标、方向、引脚长度、连接状态），返回 ERC 结果与器件布局图供 AI 分析。无需传入任何参数。输出报告按以下结构组织：一、ERC 基础检查；二、元件清单；三、电路功能分析；四、各模块分析；五、连接性检查；六、功能性判断；七、总体结论。",
+    "description": "执行原理图完整检查并返回分析结果。",
     "inputSchema": {
       "type": "object",
       "properties": {},
@@ -112,7 +112,7 @@
   },
   {
     "name": "component_select",
-    "description": "在 EDA 系统库中搜索候选器件，并在 VS Code 左侧边栏中显示交互选型面板；工具会等待用户确认或取消后，再返回最终选型结果。用户一旦确认某个候选器件，该结果就是最终结果；即使与 AI 预期不一致，也不得要求用户重新选型或自行改选，除非用户明确要求更换器件。仅对电阻、电容、电感这类带阻值/容值/感值的器件，若关键词包含数值参数则必须带单位符号，例如 1kΩ、100nF、10uH，禁止使用 1k、100n、10u 这类缺少单位的写法。",
+    "description": "搜索候选器件并等待用户确认选型结果。",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -136,7 +136,7 @@
   },
   {
     "name": "component_place",
-    "description": "校验已确认好的器件列表，并在 VS Code 左侧边栏中显示交互放置面板；工具会等待用户启动并完成放置流程后，再返回最终放置结果。电源符号和地符号（VCC、VDD、+3.3V、+5V、GND、AGND、DGND 等）禁止通过此工具自动放置，必须由用户手动添加。",
+    "description": "引导用户交互放置已确认的器件列表。",
     "inputSchema": {
       "type": "object",
       "properties": {

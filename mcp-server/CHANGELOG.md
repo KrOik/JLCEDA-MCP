@@ -1,3 +1,18 @@
+## [1.3.1] - 2026-03-25
+
+### 新增
+
+- 新增 `jlceda_api_index` 工具，获取原理图常用可调用 API 索引表，每项包含完整路径与功能描述，作为 API 调用流程第一步。
+- 启用 `jlceda_api_search`、`jlceda_context_get`、`jlceda_api_invoke` 工具，用于专用功能工具无法覆盖的操作场景。
+
+### 优化
+
+- 工具优先级规则：`schematic_check`、`component_select`、`component_place` 为高优先级专用工具，四个 API 通用工具为托底工具，仅在专用工具均无法满足需求时才允许使用。
+- 新增 API 调用三步顺序强制规则：必须先用 `jlceda_api_index` 获取索引，再用 `jlceda_api_search` 确认签名，最后才能用 `jlceda_api_invoke` 执行调用，禁止跳过任意步骤。
+- 工具定义补充完整约束，包括 API 路径格式说明、scope 枚举限制、电源地符号禁止自动放置等。
+
+---
+
 ## [1.3.0] - 2026-03-24
 
 ### 新增

@@ -1,7 +1,7 @@
 /**
  * ------------------------------------------------------------------------
  * 名称：桥接原理图检查任务处理
- * 说明：固定执行 ERC + 器件布局图提取，将结果返回给 AI 分析。
+ * 说明：固定执行 ERC + 原理图拓扑快照提取，将结果返回给 AI 分析。
  * 作者：Lion
  * 邮箱：chengbin@3578.cn
  * 日期：2026-03-21
@@ -23,8 +23,8 @@ function sg<T>(obj: unknown, method: string, fallback: T): T {
 	return fallback;
 }
 
-// 按当前原理图器件图元构建器件布局图，包含连线所需的全量坐标、旋转、引脚类型与连接状态。
-async function extractComponentLayout(): Promise<{ ok: true; data: string } | { ok: false; error: string }> {
+// 按当前原理图器件图元构建原理图拓扑快照，包含连线分析所需的器件、引脚与几何信息。
+async function extractSchematicTopology(): Promise<{ ok: true; data: string } | { ok: false; error: string }> {
 	const componentListRaw = await safeCall<unknown>(() => Promise.resolve(eda.sch_PrimitiveComponent.getAll(undefined, true)));
 	if (!Array.isArray(componentListRaw)) {
 		return { ok: false, error: '器件列表获取失败，sch_PrimitiveComponent.getAll 未返回数组。' };
@@ -114,15 +114,15 @@ async function extractComponentLayout(): Promise<{ ok: true; data: string } | { 
 /**
  * 处理原理图检查任务。
  * @param _payload 任务参数（当前未使用）。
- * @returns 检查结果，含 ERC 状态与器件布局图。
+ * @returns 检查结果，含 ERC 状态与原理图拓扑快照。
  */
 export async function handleSchematicCheckTask(_payload: unknown): Promise<unknown> {
 	// 第一步：ERC 电气规则检查。
 	const ercRaw = await safeCall<unknown>(() => Promise.resolve(eda.sch_Drc.check(false, false, true)));
 	const ercPassed = ercRaw === true;
 
-	// 第二步：构建器件布局图，包含连线所需的全量坐标与引脚信息。
-	const extracted = await extractComponentLayout();
+	// 第二步：构建原理图拓扑快照，包含连线分析所需的器件与引脚信息。
+	const extracted = await extractSchematicTopology();
 	if (!extracted.ok) {
 		return {
 			ok: false,
@@ -134,6 +134,6 @@ export async function handleSchematicCheckTask(_payload: unknown): Promise<unkno
 	return {
 		ok: true,
 		erc: { passed: ercPassed, rawResult: ercRaw },
-		componentLayout: extracted.data,
+		schematicTopology: extracted.data,
 	};
 }

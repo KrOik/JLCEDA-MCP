@@ -2,8 +2,7 @@
 
 ### 新增
 
-- 新增 `jlceda_api_index` 工具，获取原理图常用可调用 API 索引表，每项包含完整路径与功能描述，作为 API 调用流程第一步。
-- 启用 `jlceda_api_search`、`jlceda_context_get`、`jlceda_api_invoke` 工具，用于专用功能工具无法覆盖的操作场景。
+- 新增 `jlceda_api_index` 工具实现，获取原理图常用可调用 API 索引表，每项包含完整路径与功能描述，作为 API 调用流程第一步。当前暂未对模型暴露，后续按需启用。
 
 ### 优化
 

@@ -2,7 +2,7 @@
 
 ### 新增
 
-- 新增 `/bridge/jlceda/api/index` 桥接路由，对应 `jlceda_api_index` 工具，提供原理图常用可调用 API 静态索引，支持按命名空间过滤。
+- 新增 `/bridge/jlceda/api/index` 桥接路由，对应 `jlceda_api_index` 工具，提供原理图常用可调用 API 静态索引，支持按命名空间过滤；该工具当前暂未对模型暴露，后续按需启用。
 
 ---
 

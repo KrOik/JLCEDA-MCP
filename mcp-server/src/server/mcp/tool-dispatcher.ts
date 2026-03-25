@@ -43,10 +43,10 @@ const SIDEBAR_INTERACTION_POLL_INTERVAL_MS = 250;
 const COMPONENT_PLACE_CHECK_INTERVAL_MS = 400;
 
 const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
-	'jlceda_api_index',
-	'jlceda_api_search',
-	'jlceda_context_get',
-	'jlceda_api_invoke',
+	// 'jlceda_api_index',
+	// 'jlceda_api_search',
+	// 'jlceda_context_get',
+	// 'jlceda_api_invoke',
 	'schematic_check',
 	'component_select',
 	'component_place',

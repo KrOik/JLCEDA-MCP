@@ -43,10 +43,10 @@ const SIDEBAR_INTERACTION_POLL_INTERVAL_MS = 250;
 const COMPONENT_PLACE_CHECK_INTERVAL_MS = 400;
 
 const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
-	// 'jlceda_api_index',
-	// 'jlceda_api_search',
-	// 'jlceda_context_get',
-	// 'jlceda_api_invoke',
+	'jlceda_api_index',
+	'jlceda_api_search',
+	'jlceda_context_get',
+	'jlceda_api_invoke',
 	'schematic_topology_scan',
 	'schematic_netlist_analyze',
 	'component_select',
@@ -159,7 +159,7 @@ export class ToolDispatcher {
 	public constructor(
 		private readonly storageDirectoryPath: string,
 		private readonly sessionId: string,
-	) {}
+	) { }
 
 	/**
 	 * 返回工具定义列表。
@@ -713,16 +713,16 @@ export class ToolDispatcher {
 						break;
 					}
 
-						if (skippedByUser) {
-							skippedComponents.push(component);
-							interaction.rows[index].status = 'skipped';
-							interaction.rows[index].statusText = '已跳过';
-							interaction.statusText = `已跳过第 ${String(index + 1)} 个器件，继续下一个。`;
-							interaction.noticeText = '';
-							writePlaceInteraction();
-							placedCurrentComponent = true;
-							break;
-						}
+					if (skippedByUser) {
+						skippedComponents.push(component);
+						interaction.rows[index].status = 'skipped';
+						interaction.rows[index].statusText = '已跳过';
+						interaction.statusText = `已跳过第 ${String(index + 1)} 个器件，继续下一个。`;
+						interaction.noticeText = '';
+						writePlaceInteraction();
+						placedCurrentComponent = true;
+						break;
+					}
 
 					interaction.rows[index].status = 'error';
 					interaction.rows[index].statusText = '超时失败';

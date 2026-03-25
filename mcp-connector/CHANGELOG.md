@@ -2,6 +2,7 @@
 
 ### 变更
 
+- `jlceda_schematic_check` 工具拆分为两个专用工具：`schematic_topology_scan`（ERC + 器件拓扑提取，为自动连线准备数据）和 `schematic_netlist_analyze`（完整网表提取，供 AI 功能性分析）。
 - `jlceda_schematic_check` 返回字段由 `componentLayout` 更名为 `schematicTopology`，避免将功能性检查误解为布局检查。
 - 原理图检查相关说明统一改为“原理图拓扑快照”表述，强调连接关系与结构分析语义。
 

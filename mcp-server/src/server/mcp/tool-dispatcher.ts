@@ -47,7 +47,8 @@ const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
 	// 'jlceda_api_search',
 	// 'jlceda_context_get',
 	// 'jlceda_api_invoke',
-	'schematic_check',
+	'schematic_topology_scan',
+	'schematic_netlist_analyze',
 	'component_select',
 	'component_place',
 ]);
@@ -178,8 +179,11 @@ export class ToolDispatcher {
 		if (!EXPOSED_MCP_TOOL_NAMES.has(toolCallParams.name)) {
 			throw new Error(`未知工具: ${toolCallParams.name}`);
 		}
-		if (toolCallParams.name === 'schematic_check') {
-			return this.toToolContent(await this.handleSchematicCheck());
+		if (toolCallParams.name === 'schematic_topology_scan') {
+			return this.toToolContent(await this.handleSchematicTopologyScan());
+		}
+		if (toolCallParams.name === 'schematic_netlist_analyze') {
+			return this.toToolContent(await this.handleSchematicNetlistAnalyze());
 		}
 		if (toolCallParams.name === 'component_select') {
 			return this.toToolContent(await this.handleComponentSelect(args));
@@ -266,9 +270,14 @@ export class ToolDispatcher {
 		return await enqueueBridgeRequest('/bridge/jlceda/context/get', { scope }, timeoutMs);
 	}
 
-	// 桥接执行原理图完整检查（ERC + 网表提取）。
-	private async handleSchematicCheck(): Promise<unknown> {
-		return await enqueueBridgeRequest('/bridge/jlceda/schematic/check', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
+	// 桥接执行原理图 ERC + 拓扑快照提取（为自动连线准备数据）。
+	private async handleSchematicTopologyScan(): Promise<unknown> {
+		return await enqueueBridgeRequest('/bridge/jlceda/schematic/topology/scan', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
+	}
+
+	// 桥接获取原理图完整网表（供 AI 功能性分析）。
+	private async handleSchematicNetlistAnalyze(): Promise<unknown> {
+		return await enqueueBridgeRequest('/bridge/jlceda/schematic/netlist/analyze', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
 	}
 
 	private writeInteractionRequest(request: SidebarInteractionRequest): void {

@@ -1,11 +1,11 @@
 /**
  * ------------------------------------------------------------------------
- * 名称：桥接原理图检查任务处理
- * 说明：固定执行 ERC + 原理图拓扑快照提取，将结果返回给 AI 分析。
+ * 名称：桥接原理图拓扑扫描任务处理
+ * 说明：提取当前原理图器件拓扑信息（含坐标、引脚详情），为自动连线分析提供数据基础。
  * 作者：Lion
  * 邮箱：chengbin@3578.cn
- * 日期：2026-03-21
- * 备注：仅处理 schematic/check 任务。
+ * 日期：2026-03-25
+ * 备注：无
  * ------------------------------------------------------------------------
  */
 
@@ -19,7 +19,8 @@ function sg<T>(obj: unknown, method: string, fallback: T): T {
 			const result: unknown = (fn as () => unknown).call(obj);
 			return result as T;
 		}
-	} catch (_e: unknown) { /* ignore */ }
+	}
+	catch { /* ignore */ }
 	return fallback;
 }
 
@@ -56,7 +57,8 @@ async function extractSchematicTopology(): Promise<{ ok: true; data: string } | 
 	for (const rawComponent of componentListRaw) {
 		const reference = sg<string>(rawComponent, 'getState_Designator', '');
 		// 跳过没有位号的虚拟器件。
-		if (!reference) continue;
+		if (!reference)
+			continue;
 
 		const primitiveId = sg<string>(rawComponent, 'getState_PrimitiveId', '');
 		const footprintRaw = await safeCall<unknown>(() => Promise.resolve((rawComponent as any).getState_Footprint()));
@@ -112,28 +114,19 @@ async function extractSchematicTopology(): Promise<{ ok: true; data: string } | 
 }
 
 /**
- * 处理原理图检查任务。
+ * 处理原理图拓扑扫描任务。
  * @param _payload 任务参数（当前未使用）。
- * @returns 检查结果，含 ERC 状态与原理图拓扑快照。
+ * @returns 扫描结果，含原理图拓扑快照。
  */
-export async function handleSchematicCheckTask(_payload: unknown): Promise<unknown> {
-	// 第一步：ERC 电气规则检查。
-	const ercRaw = await safeCall<unknown>(() => Promise.resolve(eda.sch_Drc.check(false, false, true)));
-	const ercPassed = ercRaw === true;
-
-	// 第二步：构建原理图拓扑快照，包含连线分析所需的器件与引脚信息。
+export async function handleSchematicTopologyScanTask(_payload: unknown): Promise<unknown> {
+	// 构建原理图拓扑快照，包含连线分析所需的器件与引脚信息。
 	const extracted = await extractSchematicTopology();
 	if (!extracted.ok) {
-		return {
-			ok: false,
-			error: extracted.error,
-			erc: { passed: ercPassed, rawResult: ercRaw },
-		};
+		return { ok: false, error: extracted.error };
 	}
 
 	return {
 		ok: true,
-		erc: { passed: ercPassed, rawResult: ercRaw },
 		schematicTopology: extracted.data,
 	};
 }

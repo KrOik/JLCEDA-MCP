@@ -26,7 +26,8 @@ import {
 import { handleComponentSelectTask } from '../mcp/component-select-handler.ts';
 import { handleContextTask } from '../mcp/context-handler.ts';
 import { handleInvokeTask } from '../mcp/invoke-handler.ts';
-import { handleSchematicCheckTask } from '../mcp/schematic-check-handler.ts';
+import { handleSchematicNetlistAnalyzeTask } from '../mcp/schematic-netlist-analyze-handler.ts';
+import { handleSchematicTopologyScanTask } from '../mcp/schematic-topology-scan-handler.ts';
 import { ConnectorStateManager } from '../state/state-manager.ts';
 import { BridgeStatusReporter } from '../state/status-reporter.ts';
 import { safeCall, toSafeErrorMessage, toSerializableAsync } from '../utils';
@@ -46,7 +47,8 @@ const BRIDGE_TASK_HANDLERS: Record<string, (payload: unknown) => Promise<unknown
 	'/bridge/jlceda/component/place': handleComponentPlaceTask,
 	'/bridge/jlceda/component/select': handleComponentSelectTask,
 	'/bridge/jlceda/context/get': handleContextTask,
-	'/bridge/jlceda/schematic/check': handleSchematicCheckTask,
+	'/bridge/jlceda/schematic/topology/scan': handleSchematicTopologyScanTask,
+	'/bridge/jlceda/schematic/netlist/analyze': handleSchematicNetlistAnalyzeTask,
 };
 
 let started = false;

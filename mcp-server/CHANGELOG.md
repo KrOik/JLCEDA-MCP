@@ -2,6 +2,7 @@
 
 ### 变更
 
+- `schematic_check` 工具拆分为两个专用工具：`schematic_topology_scan`（ERC + 器件拓扑提取，为自动连线准备数据）和 `schematic_netlist_analyze`（完整网表提取，供 AI 功能性分析）。
 - 内置 AI 助手指令中，原理图检查流程描述由“器件布局”语义调整为“原理图拓扑快照”语义，减少功能性检查误判。
 
 ---

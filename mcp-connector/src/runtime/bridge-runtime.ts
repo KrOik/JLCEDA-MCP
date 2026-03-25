@@ -15,6 +15,7 @@ import extensionConfig from '../../extension.json';
 import { getConfiguredMcpUrl, getMcpServerUrlChangedTopic } from '../bridge/config.ts';
 import { ConnectorLogDispatchPipeline } from '../logging/log-dispatch.ts';
 import { connectorLogPipeline } from '../logging/log.ts';
+import { handleApiIndexTask } from '../mcp/api-index-handler.ts';
 import { handleApiSearchTask } from '../mcp/api-search-handler.ts';
 import {
 	handleComponentPlaceCheckTask,
@@ -36,6 +37,7 @@ const CONTEXT_SYNC_INTERVAL_MS = 1000;
 const CONNECT_SUCCESS_TOAST_TIMER_SECONDS = 3;
 
 const BRIDGE_TASK_HANDLERS: Record<string, (payload: unknown) => Promise<unknown>> = {
+	'/bridge/jlceda/api/index': handleApiIndexTask,
 	'/bridge/jlceda/api/search': handleApiSearchTask,
 	'/bridge/jlceda/api/invoke': handleInvokeTask,
 	'/bridge/jlceda/component/place/check': handleComponentPlaceCheckTask,

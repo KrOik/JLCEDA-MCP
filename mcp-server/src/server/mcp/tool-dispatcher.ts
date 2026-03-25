@@ -43,10 +43,10 @@ const SIDEBAR_INTERACTION_POLL_INTERVAL_MS = 250;
 const COMPONENT_PLACE_CHECK_INTERVAL_MS = 400;
 
 const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
-	// 'jlceda_api_index',
-	// 'jlceda_api_search',
-	// 'jlceda_context_get',
-	// 'jlceda_api_invoke',
+	'jlceda_api_index',
+	'jlceda_api_search',
+	'jlceda_context_get',
+	'jlceda_api_invoke',
 	'schematic_check',
 	'component_select',
 	'component_place',
@@ -187,6 +187,18 @@ export class ToolDispatcher {
 		if (toolCallParams.name === 'component_place') {
 			return this.toToolContent(await this.handleComponentPlace(args));
 		}
+		if (toolCallParams.name === 'jlceda_api_index') {
+			return this.toToolContent(await this.handleApiIndex(args));
+		}
+		if (toolCallParams.name === 'jlceda_api_search') {
+			return this.toToolContent(await this.handleApiSearch(args));
+		}
+		if (toolCallParams.name === 'jlceda_api_invoke') {
+			return this.toToolContent(await this.handleApiInvoke(args));
+		}
+		if (toolCallParams.name === 'jlceda_context_get') {
+			return this.toToolContent(await this.handleContextGet(args));
+		}
 
 		throw new Error(`未知工具: ${toolCallParams.name}`);
 	}
@@ -200,6 +212,12 @@ export class ToolDispatcher {
 			}],
 			structuredContent: result,
 		};
+	}
+
+	// 桥接执行 API 索引查询。
+	private async handleApiIndex(argumentsObject: Record<string, unknown>): Promise<unknown> {
+		const owner = String(argumentsObject.owner ?? '').trim();
+		return await enqueueBridgeRequest('/bridge/jlceda/api/index', { owner }, DEFAULT_BRIDGE_TIMEOUT_MS);
 	}
 
 	// 桥接执行离线文档检索。

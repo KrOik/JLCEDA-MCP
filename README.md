@@ -19,8 +19,8 @@ VS Code / Cursor（mcp-server）
 
 | 工具 | 说明 |
 |------|------|
-| `schematic_topology_scan` | 提取当前原理图器件拓扑信息（含坐标、引脚详情），为自动连线分析提供数据基础 |
-| `schematic_netlist_analyze` | 执行 ERC 检查并提取完整网表，供 AI 进行功能性审查与电路分析 |
+| `schematic_topology` | 提取当前原理图器件拓扑信息（含坐标、引脚详情），为自动连线分析提供数据基础 |
+| `schematic_netlist` | 执行 ERC 检查并提取完整网表，供 AI 进行功能性审查与电路分析 |
 | `component_select` | 在 EDA 系统库中搜索候选器件，并在 VS Code / Cursor 侧边栏中由用户确认具体型号 |
 | `component_place` | 按顺序启动器件交互放置流程，在侧边栏中提示当前进度并等待用户完成放置 |
 
@@ -116,7 +116,7 @@ npm run build
 
 ### 开发约定
 
-1. 新增或变更工具定义时，同步更新 `mcp-server/resources/jlceda-mcp-tool-definitions.json`、对应 README 与 CHANGELOG。
+1. 新增或变更工具定义时，同步更新 `mcp-server/resources/mcp-tool-definitions.json`、对应 README 与 CHANGELOG。
 2. 新增或变更桥接任务路径时，必须同时修改 mcp-server 与 mcp-connector 两端处理逻辑。
 3. 调整桥接地址、端口、协议字段或角色模型时，同步更新相关 README 与 CHANGELOG。
 4. 发布前执行两端构建，确认 VSIX 与 EEXT 均可成功生成。

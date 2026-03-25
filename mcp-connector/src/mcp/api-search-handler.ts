@@ -191,7 +191,7 @@ export async function handleApiSearchTask(payload: unknown): Promise<unknown> {
 
 	const query = String(payload.query ?? '').trim();
 	if (query.length === 0) {
-		throw new Error('jlceda_api_search 缺少 query 参数。');
+		throw new Error('api_search 缺少 query 参数。');
 	}
 
 	const scope = String(payload.scope ?? 'all').trim().toLowerCase();

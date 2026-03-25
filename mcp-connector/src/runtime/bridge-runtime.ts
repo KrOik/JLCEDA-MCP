@@ -24,10 +24,10 @@ import {
 	handleComponentPlaceTask,
 } from '../mcp/component-place-handler.ts';
 import { handleComponentSelectTask } from '../mcp/component-select-handler.ts';
-import { handleContextTask } from '../mcp/context-handler.ts';
-import { handleInvokeTask } from '../mcp/invoke-handler.ts';
-import { handleSchematicNetlistAnalyzeTask } from '../mcp/schematic-netlist-analyze-handler.ts';
-import { handleSchematicTopologyScanTask } from '../mcp/schematic-topology-scan-handler.ts';
+import { handleEdaContextTask } from '../mcp/context-handler.ts';
+import { handleApiInvokeTask } from '../mcp/invoke-handler.ts';
+import { handleSchematicNetlistTask } from '../mcp/schematic-netlist-handler.ts';
+import { handleSchematicTopologyTask } from '../mcp/schematic-topology-handler.ts';
 import { ConnectorStateManager } from '../state/state-manager.ts';
 import { BridgeStatusReporter } from '../state/status-reporter.ts';
 import { safeCall, toSafeErrorMessage, toSerializableAsync } from '../utils';
@@ -40,15 +40,15 @@ const CONNECT_SUCCESS_TOAST_TIMER_SECONDS = 3;
 const BRIDGE_TASK_HANDLERS: Record<string, (payload: unknown) => Promise<unknown>> = {
 	'/bridge/jlceda/api/index': handleApiIndexTask,
 	'/bridge/jlceda/api/search': handleApiSearchTask,
-	'/bridge/jlceda/api/invoke': handleInvokeTask,
+	'/bridge/jlceda/api/invoke': handleApiInvokeTask,
 	'/bridge/jlceda/component/place/check': handleComponentPlaceCheckTask,
 	'/bridge/jlceda/component/place/close': handleComponentPlaceCloseTask,
 	'/bridge/jlceda/component/place/start': handleComponentPlaceStartTask,
 	'/bridge/jlceda/component/place': handleComponentPlaceTask,
 	'/bridge/jlceda/component/select': handleComponentSelectTask,
-	'/bridge/jlceda/context/get': handleContextTask,
-	'/bridge/jlceda/schematic/topology/scan': handleSchematicTopologyScanTask,
-	'/bridge/jlceda/schematic/netlist/analyze': handleSchematicNetlistAnalyzeTask,
+	'/bridge/jlceda/context': handleEdaContextTask,
+	'/bridge/jlceda/schematic/topology': handleSchematicTopologyTask,
+	'/bridge/jlceda/schematic/netlist': handleSchematicNetlistTask,
 };
 
 let started = false;

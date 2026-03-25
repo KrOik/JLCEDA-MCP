@@ -43,7 +43,7 @@ async function buildContextSnapshot(scope: string): Promise<Record<string, unkno
  * @param payload 任务参数。
  * @returns 当前上下文快照。
  */
-export async function handleContextTask(payload: unknown): Promise<unknown> {
+export async function handleEdaContextTask(payload: unknown): Promise<unknown> {
 	const scope = isPlainObjectRecord(payload) ? String(payload.scope ?? '').trim() : '';
 	return await buildContextSnapshot(scope);
 }

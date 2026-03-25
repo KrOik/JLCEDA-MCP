@@ -80,7 +80,7 @@ function resolveApiCallable(apiFullName: string): { callable: (...args: unknown[
  * @param payload 任务参数。
  * @returns 调用结果。
  */
-export async function handleInvokeTask(payload: unknown): Promise<unknown> {
+export async function handleApiInvokeTask(payload: unknown): Promise<unknown> {
 	if (!isPlainObjectRecord(payload)) {
 		throw new Error('invoke 任务参数必须为对象。');
 	}

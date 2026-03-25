@@ -24,7 +24,7 @@ import {
 	writeSidebarInteractionRequest,
 } from '../../state/sidebar-interaction';
 import { isPlainObjectRecord, parseBoundedIntegerValue, toSafeErrorMessage } from '../../utils';
-import _rawToolDefinitions from '../../data/jlceda-mcp-tool-definitions.json';
+import _rawToolDefinitions from '../../data/mcp-tool-definitions.json';
 
 export interface ToolCallParams {
 	name: string;
@@ -43,12 +43,12 @@ const SIDEBAR_INTERACTION_POLL_INTERVAL_MS = 250;
 const COMPONENT_PLACE_CHECK_INTERVAL_MS = 400;
 
 const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
-	'jlceda_api_index',
-	'jlceda_api_search',
-	'jlceda_context_get',
-	'jlceda_api_invoke',
-	'schematic_topology_scan',
-	'schematic_netlist_analyze',
+	'api_index',
+	'api_search',
+	'eda_context',
+	'api_invoke',
+	'schematic_topology',
+	'schematic_netlist',
 	'component_select',
 	'component_place',
 ]);
@@ -179,11 +179,11 @@ export class ToolDispatcher {
 		if (!EXPOSED_MCP_TOOL_NAMES.has(toolCallParams.name)) {
 			throw new Error(`未知工具: ${toolCallParams.name}`);
 		}
-		if (toolCallParams.name === 'schematic_topology_scan') {
-			return this.toToolContent(await this.handleSchematicTopologyScan());
+		if (toolCallParams.name === 'schematic_topology') {
+			return this.toToolContent(await this.handleSchematicTopology());
 		}
-		if (toolCallParams.name === 'schematic_netlist_analyze') {
-			return this.toToolContent(await this.handleSchematicNetlistAnalyze());
+		if (toolCallParams.name === 'schematic_netlist') {
+			return this.toToolContent(await this.handleSchematicNetlist());
 		}
 		if (toolCallParams.name === 'component_select') {
 			return this.toToolContent(await this.handleComponentSelect(args));
@@ -191,17 +191,17 @@ export class ToolDispatcher {
 		if (toolCallParams.name === 'component_place') {
 			return this.toToolContent(await this.handleComponentPlace(args));
 		}
-		if (toolCallParams.name === 'jlceda_api_index') {
+		if (toolCallParams.name === 'api_index') {
 			return this.toToolContent(await this.handleApiIndex(args));
 		}
-		if (toolCallParams.name === 'jlceda_api_search') {
+		if (toolCallParams.name === 'api_search') {
 			return this.toToolContent(await this.handleApiSearch(args));
 		}
-		if (toolCallParams.name === 'jlceda_api_invoke') {
+		if (toolCallParams.name === 'api_invoke') {
 			return this.toToolContent(await this.handleApiInvoke(args));
 		}
-		if (toolCallParams.name === 'jlceda_context_get') {
-			return this.toToolContent(await this.handleContextGet(args));
+		if (toolCallParams.name === 'eda_context') {
+			return this.toToolContent(await this.handleEdaContext(args));
 		}
 
 		throw new Error(`未知工具: ${toolCallParams.name}`);
@@ -228,7 +228,7 @@ export class ToolDispatcher {
 	private async handleApiSearch(argumentsObject: Record<string, unknown>): Promise<unknown> {
 		const query = String(argumentsObject.query ?? '').trim();
 		if (query.length === 0) {
-			throw new Error('jlceda_api_search 缺少 query 参数。');
+			throw new Error('api_search 缺少 query 参数。');
 		}
 
 		const scope = String(argumentsObject.scope ?? 'all').trim().toLowerCase();
@@ -250,7 +250,7 @@ export class ToolDispatcher {
 	private async handleApiInvoke(argumentsObject: Record<string, unknown>): Promise<unknown> {
 		const apiFullName = String(argumentsObject.apiFullName ?? '').trim();
 		if (apiFullName.length === 0) {
-			throw new Error('jlceda_api_invoke 缺少 apiFullName 参数。');
+			throw new Error('api_invoke 缺少 apiFullName 参数。');
 		}
 
 		const timeoutMs = parseBoundedIntegerValue(argumentsObject.timeoutMs, DEFAULT_BRIDGE_TIMEOUT_MS, 1000, 120000);
@@ -263,21 +263,21 @@ export class ToolDispatcher {
 	}
 
 	// 桥接读取上下文。
-	private async handleContextGet(argumentsObject: Record<string, unknown>): Promise<unknown> {
+	private async handleEdaContext(argumentsObject: Record<string, unknown>): Promise<unknown> {
 		const timeoutMs = parseBoundedIntegerValue(argumentsObject.timeoutMs, DEFAULT_BRIDGE_TIMEOUT_MS, 1000, 120000);
 		const scope = String(argumentsObject.scope ?? '').trim();
 		// context-handler 返回的结构已包含 scope 字段，无需再次包装。
-		return await enqueueBridgeRequest('/bridge/jlceda/context/get', { scope }, timeoutMs);
+		return await enqueueBridgeRequest('/bridge/jlceda/context', { scope }, timeoutMs);
 	}
 
 	// 桥接执行原理图 ERC + 拓扑快照提取（为自动连线准备数据）。
-	private async handleSchematicTopologyScan(): Promise<unknown> {
-		return await enqueueBridgeRequest('/bridge/jlceda/schematic/topology/scan', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
+	private async handleSchematicTopology(): Promise<unknown> {
+		return await enqueueBridgeRequest('/bridge/jlceda/schematic/topology', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
 	}
 
 	// 桥接获取原理图完整网表（供 AI 功能性分析）。
-	private async handleSchematicNetlistAnalyze(): Promise<unknown> {
-		return await enqueueBridgeRequest('/bridge/jlceda/schematic/netlist/analyze', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
+	private async handleSchematicNetlist(): Promise<unknown> {
+		return await enqueueBridgeRequest('/bridge/jlceda/schematic/netlist', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
 	}
 
 	private writeInteractionRequest(request: SidebarInteractionRequest): void {

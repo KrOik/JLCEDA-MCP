@@ -118,7 +118,7 @@ async function extractSchematicTopology(): Promise<{ ok: true; data: string } | 
  * @param _payload 任务参数（当前未使用）。
  * @returns 扫描结果，含原理图拓扑快照。
  */
-export async function handleSchematicTopologyScanTask(_payload: unknown): Promise<unknown> {
+export async function handleSchematicTopologyTask(_payload: unknown): Promise<unknown> {
 	// 构建原理图拓扑快照，包含连线分析所需的器件与引脚信息。
 	const extracted = await extractSchematicTopology();
 	if (!extracted.ok) {

@@ -1,6 +1,6 @@
 [
   {
-    "name": "jlceda_api_index",
+    "name": "api_index",
     "description": "获取可调用 EDA API 索引列表。",
     "inputSchema": {
       "type": "object",
@@ -14,7 +14,7 @@
     }
   },
   {
-    "name": "jlceda_api_search",
+    "name": "api_search",
     "description": "搜索 EDA API 签名与说明信息。",
     "inputSchema": {
       "type": "object",
@@ -52,14 +52,14 @@
     }
   },
   {
-    "name": "jlceda_api_invoke",
+    "name": "api_invoke",
     "description": "调用指定的 EDA API 接口。",
     "inputSchema": {
       "type": "object",
       "properties": {
         "apiFullName": {
           "type": "string",
-          "description": "要调用的 API 全名，格式为 eda.模块名.方法名（最少三段路径），例如 eda.sch_Drc.check。必须通过 jlceda_api_index 或 jlceda_api_search 确认后再填写，禁止凭空猜测。"
+          "description": "要调用的 API 全名，格式为 eda.模块名.方法名（最少三段路径），例如 eda.sch_Drc.check。必须通过 api_index 或 api_search 确认后再填写，禁止凭空猜测。"
         },
         "args": {
           "type": "array",
@@ -81,7 +81,7 @@
     }
   },
   {
-    "name": "jlceda_context_get",
+    "name": "eda_context",
     "description": "获取当前 EDA 运行时上下文信息。",
     "inputSchema": {
       "type": "object",
@@ -102,7 +102,7 @@
     }
   },
   {
-    "name": "schematic_topology_scan",
+    "name": "schematic_topology",
     "description": "获取原理图器件拓扑信息。",
     "inputSchema": {
       "type": "object",
@@ -111,7 +111,7 @@
     }
   },
   {
-    "name": "schematic_netlist_analyze",
+    "name": "schematic_netlist",
     "description": "获取原理图网表数据。",
     "inputSchema": {
       "type": "object",

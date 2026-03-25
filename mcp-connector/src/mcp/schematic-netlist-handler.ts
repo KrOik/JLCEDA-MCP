@@ -16,7 +16,7 @@ import { safeCall } from '../utils';
  * @param _payload 任务参数（当前未使用）。
  * @returns 分析结果，含 ERC 状态与完整网表文本。
  */
-export async function handleSchematicNetlistAnalyzeTask(_payload: unknown): Promise<unknown> {
+export async function handleSchematicNetlistTask(_payload: unknown): Promise<unknown> {
 	// 第一步：ERC 电气规则检查。
 	const ercRaw = await safeCall<unknown>(() => Promise.resolve(eda.sch_Drc.check(false, false, true)));
 	const ercPassed = ercRaw === true;

@@ -2,7 +2,7 @@
 
 ### 变更
 
-- `jlceda_schematic_check` 工具拆分为两个专用工具：`schematic_topology_scan`（ERC + 器件拓扑提取，为自动连线准备数据）和 `schematic_netlist_analyze`（完整网表提取，供 AI 功能性分析）。
+- `jlceda_schematic_check` 工具拆分为两个专用工具：`schematic_topology`（ERC + 器件拓扑提取，为自动连线准备数据）和 `schematic_netlist`（完整网表提取，供 AI 功能性分析）。
 - `jlceda_schematic_check` 返回字段由 `componentLayout` 更名为 `schematicTopology`，避免将功能性检查误解为布局检查。
 - 原理图检查相关说明统一改为“原理图拓扑快照”表述，强调连接关系与结构分析语义。
 
@@ -20,7 +20,7 @@
 
 ### 新增
 
-- 新增 `/bridge/jlceda/api/index` 桥接路由，对应 `jlceda_api_index` 工具，提供原理图常用可调用 API 静态索引，支持按命名空间过滤；该工具当前暂未对模型暴露，后续按需启用。
+- 新增 `/bridge/jlceda/api/index` 桥接路由，对应 `api_index` 工具，提供原理图常用可调用 API 静态索引，支持按命名空间过滤；该工具当前暂未对模型暴露，后续按需启用。
 
 ---
 

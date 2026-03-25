@@ -2,7 +2,7 @@
 
 ### 变更
 
-- `schematic_check` 工具拆分为两个专用工具：`schematic_topology_scan`（ERC + 器件拓扑提取，为自动连线准备数据）和 `schematic_netlist_analyze`（完整网表提取，供 AI 功能性分析）。
+- `schematic_check` 工具拆分为两个专用工具：`schematic_topology`（ERC + 器件拓扑提取，为自动连线准备数据）和 `schematic_netlist`（完整网表提取，供 AI 功能性分析）。
 - 内置 AI 助手指令中，原理图检查流程描述由“器件布局”语义调整为“原理图拓扑快照”语义，减少功能性检查误判。
 
 ---
@@ -20,12 +20,12 @@
 
 ### 新增
 
-- 新增 `jlceda_api_index` 工具实现，获取原理图常用可调用 API 索引表，每项包含完整路径与功能描述，作为 API 调用流程第一步。当前暂未对模型暴露，后续按需启用。
+- 新增 `api_index` 工具实现，获取原理图常用可调用 API 索引表，每项包含完整路径与功能描述，作为 API 调用流程第一步。当前暂未对模型暴露，后续按需启用。
 
 ### 优化
 
 - 工具优先级规则：`schematic_check`、`component_select`、`component_place` 为高优先级专用工具，四个 API 通用工具为托底工具，仅在专用工具均无法满足需求时才允许使用。
-- 新增 API 调用三步顺序强制规则：必须先用 `jlceda_api_index` 获取索引，再用 `jlceda_api_search` 确认签名，最后才能用 `jlceda_api_invoke` 执行调用，禁止跳过任意步骤。
+- 新增 API 调用三步顺序强制规则：必须先用 `api_index` 获取索引，再用 `api_search` 确认签名，最后才能用 `api_invoke` 执行调用，禁止跳过任意步骤。
 - 工具定义补充完整约束，包括 API 路径格式说明、scope 枚举限制、电源地符号禁止自动放置等。
 
 ---
@@ -121,9 +121,9 @@
 
 **三个 MCP 工具**
 
-- jlceda_api_search：供 AI 检索嘉立创 EDA API 文档。
-- jlceda_api_invoke：供 AI 调用嘉立创 EDA API，执行实际操作。
-- jlceda_context_get：供 AI 获取当前 EDA 运行时状态（当前工程、文档、图页、选中元件等）。
+- api_search：供 AI 检索嘉立创 EDA API 文档。
+- api_invoke：供 AI 调用嘉立创 EDA API，执行实际操作。
+- eda_context：供 AI 获取当前 EDA 运行时状态（当前工程、文档、图页、选中元件等）。
 
 **服务配置**
 

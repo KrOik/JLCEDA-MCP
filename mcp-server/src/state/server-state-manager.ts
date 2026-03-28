@@ -56,7 +56,7 @@ export class ServerStateManager {
 				waitResultTimeoutReason: '等待桥接回包超时',
 				waitActivePeerTimeoutMessagePrefix: '桥接请求超时（等待活动客户端）',
 				waitResultTimeoutMessagePrefix: '桥接请求超时（等待桥接回包）',
-				buildBridgeReadyTimeoutMessage: (timeoutMs: number) => `EDA 连接器未连接，等待 ${timeoutMs} ms 超时。请在嘉立创 EDA 专业版中打开任意工程后重试。`,
+				buildBridgeReadyTimeoutMessage: (timeoutMs: number) => `EDA Bridge 未连接，等待 ${timeoutMs} ms 超时。请在嘉立创 EDA 专业版中打开任意工程后重试。`,
 			},
 			// 协议校验相关文案：用于消息结构校验与类型分派错误。
 			protocol: {

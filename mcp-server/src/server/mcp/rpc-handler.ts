@@ -17,7 +17,7 @@ import { waitForBridgeReady } from '../bridge/broker';
 const DEFAULT_AGENT_INSTRUCTIONS = _defaultInstructions.trimEnd();
 
 // 工具调用等待桥接就绪的最长时间（毫秒）。
-// 该值需覆盖连接器侧空闲检测超时（5s）+ 重连间隔（1.2s）+ 连接握手的最坏时序。
+// 该值需覆盖 Bridge 侧空闲检测超时（5s）+ 重连间隔（1.2s）+ 连接握手的最坏时序。
 const BRIDGE_READY_TIMEOUT_MS = 10000;
 
 interface RpcRequest {

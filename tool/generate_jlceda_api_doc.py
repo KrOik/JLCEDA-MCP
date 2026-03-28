@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------
+﻿# ------------------------------------------------------------------------
 # 名称：嘉立创EDA API类型文档生成器
 # 说明：将官方 index.d.ts 完整提取为可供大模型检索的 JSON API 文档
 # 作者：Lion
@@ -53,12 +53,12 @@ def parse_args() -> GeneratorConfig:
     )
     parser.add_argument(
         "--input",
-      default=r"D:\GitCode\JLCEDA-MCP\mcp-connector\node_modules\@jlceda\pro-api-types\index.d.ts",
+      default=r"D:\GitCode\JLCEDA-MCP\mcp-bridge\node_modules\@jlceda\pro-api-types\index.d.ts",
         help="官方类型定义文件路径",
     )
     parser.add_argument(
         "--output",
-      default=r"D:\GitCode\JLCEDA-MCP\mcp-connector\resources\jlceda-pro-api-doc.json",
+      default=r"D:\GitCode\JLCEDA-MCP\mcp-bridge\resources\jlceda-pro-api-doc.json",
         help="主输出 JSON 文件路径",
     )
     parser.add_argument(
@@ -69,7 +69,7 @@ def parse_args() -> GeneratorConfig:
     )
     parser.add_argument(
         "--typescript-module",
-      default=r"D:\GitCode\JLCEDA-MCP\mcp-connector\node_modules\typescript\lib\typescript.js",
+      default=r"D:\GitCode\JLCEDA-MCP\mcp-bridge\node_modules\typescript\lib\typescript.js",
         help="TypeScript 模块路径（typescript.js）",
     )
     parser.add_argument(

@@ -13,8 +13,8 @@ import type { BridgeDebugSwitch, BridgeRole, BridgeServerRoleMessage } from '../
 import type { UnifiedLogEntry } from '../logging/log.ts';
 import extensionConfig from '../../extension.json';
 import { getConfiguredMcpUrl, getMcpServerUrlChangedTopic } from '../bridge/config.ts';
-import { ConnectorLogDispatchPipeline } from '../logging/log-dispatch.ts';
-import { connectorLogPipeline } from '../logging/log.ts';
+import { BridgeLogDispatchPipeline } from '../logging/log-dispatch.ts';
+import { bridgeLogPipeline } from '../logging/log.ts';
 import { handleApiIndexTask } from '../mcp/api-index-handler.ts';
 import { handleApiSearchTask } from '../mcp/api-search-handler.ts';
 import {
@@ -28,7 +28,7 @@ import { handleEdaContextTask } from '../mcp/context-handler.ts';
 import { handleApiInvokeTask } from '../mcp/invoke-handler.ts';
 import { handleSchematicNetlistTask } from '../mcp/schematic-netlist-handler.ts';
 import { handleSchematicTopologyTask } from '../mcp/schematic-topology-handler.ts';
-import { ConnectorStateManager } from '../state/state-manager.ts';
+import { BridgeStateManager } from '../state/state-manager.ts';
 import { BridgeStatusReporter } from '../state/status-reporter.ts';
 import { safeCall, toSafeErrorMessage, toSerializableAsync } from '../utils.ts';
 import { BridgeTransport } from './bridge-transport.ts';
@@ -66,11 +66,11 @@ let currentActiveClientId = '';
 let socketSequence = 0;
 
 const statusReporter = new BridgeStatusReporter();
-const connectorLogDispatchPipeline = new ConnectorLogDispatchPipeline();
-const CONNECTOR_STATUS_TEXT = ConnectorStateManager.text;
+const bridgeLogDispatchPipeline = new BridgeLogDispatchPipeline();
+const BRIDGE_STATUS_TEXT = BridgeStateManager.text;
 
 function writeRuntimeWarningLog(event: string, summary: string, message: string, detail = '', errorCode = ''): void {
-	const logEntry = connectorLogPipeline.append(connectorLogPipeline.createEntry({
+	const logEntry = bridgeLogPipeline.append(bridgeLogPipeline.createEntry({
 		level: 'warning',
 		module: 'bridge-runtime',
 		event,
@@ -82,30 +82,30 @@ function writeRuntimeWarningLog(event: string, summary: string, message: string,
 		detail,
 		errorCode,
 	}));
-	console.warn(connectorLogPipeline.format(logEntry));
+	console.warn(bridgeLogPipeline.format(logEntry));
 }
 
 // 显示桥接连接成功提示。
 function showConnectSuccessToast(): void {
 	try {
-		eda.sys_Message.showToastMessage(CONNECTOR_STATUS_TEXT.connection.connectSuccessToast, ESYS_ToastMessageType.SUCCESS, CONNECT_SUCCESS_TOAST_TIMER_SECONDS);
+		eda.sys_Message.showToastMessage(BRIDGE_STATUS_TEXT.connection.connectSuccessToast, ESYS_ToastMessageType.SUCCESS, CONNECT_SUCCESS_TOAST_TIMER_SECONDS);
 	}
 	catch (error: unknown) {
 		const message = toSafeErrorMessage(error);
-		writeRuntimeWarningLog('status.connected.toast.failed', CONNECTOR_STATUS_TEXT.runtime.connectedToastFailedSummary, message, message, 'status_connected_toast_failed');
+		writeRuntimeWarningLog('status.connected.toast.failed', BRIDGE_STATUS_TEXT.runtime.connectedToastFailedSummary, message, message, 'status_connected_toast_failed');
 	}
 }
 
 // 应用服务端下发的调试开关。
 function applyDebugSwitch(debugSwitch: BridgeDebugSwitch): void {
-	connectorLogDispatchPipeline.setDebugSwitch(debugSwitch);
-	connectorLogDispatchPipeline.flushToTransport(transport);
+	bridgeLogDispatchPipeline.setDebugSwitch(debugSwitch);
+	bridgeLogDispatchPipeline.flushToTransport(transport);
 }
 
 // 追加客户端日志并尝试派发到服务端。
-function enqueueConnectorLog(logEntry: UnifiedLogEntry): void {
-	connectorLogDispatchPipeline.enqueue(logEntry);
-	connectorLogDispatchPipeline.flushToTransport(transport);
+function enqueueBridgeLog(logEntry: UnifiedLogEntry): void {
+	bridgeLogDispatchPipeline.enqueue(logEntry);
+	bridgeLogDispatchPipeline.flushToTransport(transport);
 }
 
 // 生成稳定的客户端标识。
@@ -114,7 +114,7 @@ function getClientId(): string {
 		return clientId;
 	}
 
-	clientId = `connector_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+	clientId = `bridge_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 	return clientId;
 }
 
@@ -163,14 +163,14 @@ function enqueueTask(task: { requestId: string; path: string; payload: unknown; 
 	taskChain = taskChain.then(async () => {
 		if (currentRole !== 'active') {
 			currentTransport.completeTask(task.requestId, task.leaseTerm, undefined, {
-				message: CONNECTOR_STATUS_TEXT.runtime.taskRejectedStandby,
+				message: BRIDGE_STATUS_TEXT.runtime.taskRejectedStandby,
 			});
 			return;
 		}
 
 		if (task.leaseTerm !== currentLeaseTerm) {
 			currentTransport.completeTask(task.requestId, task.leaseTerm, undefined, {
-				message: CONNECTOR_STATUS_TEXT.runtime.taskLeaseExpired,
+				message: BRIDGE_STATUS_TEXT.runtime.taskLeaseExpired,
 			});
 			return;
 		}
@@ -178,7 +178,7 @@ function enqueueTask(task: { requestId: string; path: string; payload: unknown; 
 		const handler = BRIDGE_TASK_HANDLERS[task.path];
 		if (!handler) {
 			currentTransport.completeTask(task.requestId, task.leaseTerm, undefined, {
-				message: `${CONNECTOR_STATUS_TEXT.runtime.taskPathUnsupportedPrefix}${task.path}`,
+				message: `${BRIDGE_STATUS_TEXT.runtime.taskPathUnsupportedPrefix}${task.path}`,
 			});
 			return;
 		}
@@ -198,7 +198,7 @@ function enqueueTask(task: { requestId: string; path: string; payload: unknown; 
 		currentTransport.completeTask(task.requestId, task.leaseTerm, result, taskError);
 	}).catch((error: unknown) => {
 		const message = toSafeErrorMessage(error);
-		writeRuntimeWarningLog('bridge.task.failed', CONNECTOR_STATUS_TEXT.runtime.taskFailedSummary, message, message, 'bridge_task_failed');
+		writeRuntimeWarningLog('bridge.task.failed', BRIDGE_STATUS_TEXT.runtime.taskFailedSummary, message, message, 'bridge_task_failed');
 	});
 }
 
@@ -235,7 +235,7 @@ async function ensureConnected(): Promise<void> {
 	});
 
 	try {
-		connectorLogDispatchPipeline.resetHandshakeState();
+	bridgeLogDispatchPipeline.resetHandshakeState();
 		await instance.connect();
 		if (!started) {
 			instance.close();
@@ -243,7 +243,7 @@ async function ensureConnected(): Promise<void> {
 		}
 
 		transport = instance;
-		connectorLogDispatchPipeline.flushToTransport(transport);
+	bridgeLogDispatchPipeline.flushToTransport(transport);
 		// 只有运行时确认握手完成并接管实例后，才通知服务端允许调度任务。
 		transport.reportReady();
 		showConnectSuccessToast();
@@ -347,8 +347,8 @@ export function startBridgeRuntime(): void {
 	}
 
 	started = true;
-	connectorLogPipeline.setListener((logEntry) => {
-		enqueueConnectorLog(logEntry);
+	bridgeLogPipeline.setListener((logEntry) => {
+		enqueueBridgeLog(logEntry);
 	});
 	subscribeConfigChange();
 	startContextSync();

@@ -1,6 +1,6 @@
 /**
  * ------------------------------------------------------------------------
- * 名称：连接器日志派发管道
+ * 名称：Bridge 日志派发管道
  * 说明：统一处理日志去重、噪音抑制、队列缓存与向服务端派发。
  * 作者：Lion
  * 邮箱：chengbin@3578.cn
@@ -11,11 +11,11 @@
 
 import type { BridgeDebugSwitch } from '../bridge/protocol.ts';
 import type { UnifiedLogEntry } from './log.ts';
-import { connectorLogPipeline } from './log.ts';
+import { bridgeLogPipeline } from './log.ts';
 
-const CONNECTOR_LOG_QUEUE_LIMIT = 200;
-const CONNECTOR_LOG_DUP_WINDOW_MS = 1500;
-const CONNECTOR_LOG_NOISE_WINDOW_MS = 8000;
+const BRIDGE_LOG_QUEUE_LIMIT = 200;
+const BRIDGE_LOG_DUP_WINDOW_MS = 1500;
+const BRIDGE_LOG_NOISE_WINDOW_MS = 8000;
 const DEFAULT_DEBUG_SWITCH: BridgeDebugSwitch = {
 	enableSystemLog: true,
 	enableConnectionList: true,
@@ -37,9 +37,9 @@ interface LogReportTransport {
 }
 
 /**
- * 连接器日志派发管道。
+ * Bridge 日志派发管道。
  */
-export class ConnectorLogDispatchPipeline {
+export class BridgeLogDispatchPipeline {
 	private currentDebugSwitch: BridgeDebugSwitch = { ...DEFAULT_DEBUG_SWITCH };
 	private hasReceivedDebugSwitch = false;
 	private readonly pendingLogs: UnifiedLogEntry[] = [];
@@ -92,7 +92,7 @@ export class ConnectorLogDispatchPipeline {
 
 		const now = Date.now();
 		const lastReportAt = this.logReportAtByKey.get(logKey) ?? 0;
-		const throttleWindow = this.isNoiseLog(logEntry) ? CONNECTOR_LOG_NOISE_WINDOW_MS : CONNECTOR_LOG_DUP_WINDOW_MS;
+		const throttleWindow = this.isNoiseLog(logEntry) ? BRIDGE_LOG_NOISE_WINDOW_MS : BRIDGE_LOG_DUP_WINDOW_MS;
 		if (lastReportAt > 0 && now - lastReportAt < throttleWindow) {
 			return true;
 		}
@@ -100,7 +100,7 @@ export class ConnectorLogDispatchPipeline {
 		this.logReportAtByKey.set(logKey, now);
 		if (this.logReportAtByKey.size > 800) {
 			for (const [key, timestamp] of this.logReportAtByKey.entries()) {
-				if (now - timestamp > CONNECTOR_LOG_NOISE_WINDOW_MS * 2) {
+				if (now - timestamp > BRIDGE_LOG_NOISE_WINDOW_MS * 2) {
 					this.logReportAtByKey.delete(key);
 				}
 			}
@@ -132,7 +132,7 @@ export class ConnectorLogDispatchPipeline {
 		}
 
 		if (!this.currentDebugSwitch.enableConnectionList && this.pendingLogs.length > 0) {
-			const filteredLogs = this.pendingLogs.filter(logEntry => !connectorLogPipeline.isConnectionInfoLog(logEntry));
+			const filteredLogs = this.pendingLogs.filter(logEntry => !bridgeLogPipeline.isConnectionInfoLog(logEntry));
 			this.pendingLogs.splice(0, this.pendingLogs.length, ...filteredLogs);
 		}
 	}
@@ -146,7 +146,7 @@ export class ConnectorLogDispatchPipeline {
 			return;
 		}
 
-		if (!this.currentDebugSwitch.enableConnectionList && connectorLogPipeline.isConnectionInfoLog(logEntry)) {
+		if (!this.currentDebugSwitch.enableConnectionList && bridgeLogPipeline.isConnectionInfoLog(logEntry)) {
 			return;
 		}
 
@@ -155,8 +155,8 @@ export class ConnectorLogDispatchPipeline {
 		}
 
 		this.pendingLogs.push(logEntry);
-		if (this.pendingLogs.length > CONNECTOR_LOG_QUEUE_LIMIT) {
-			this.pendingLogs.splice(0, this.pendingLogs.length - CONNECTOR_LOG_QUEUE_LIMIT);
+		if (this.pendingLogs.length > BRIDGE_LOG_QUEUE_LIMIT) {
+			this.pendingLogs.splice(0, this.pendingLogs.length - BRIDGE_LOG_QUEUE_LIMIT);
 		}
 	}
 

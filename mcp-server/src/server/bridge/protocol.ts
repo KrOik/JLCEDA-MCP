@@ -1,7 +1,7 @@
 /**
  * ------------------------------------------------------------------------
  * 名称：桥接协议定义
- * 说明：统一定义服务端与 EDA 连接器之间的桥接协议模型。
+ * 说明：统一定义服务端与 EDA Bridge 之间的桥接协议模型。
  * 作者：Lion
  * 邮箱：chengbin@3578.cn
  * 日期：2026-03-12
@@ -21,7 +21,7 @@ export interface BridgeDebugSwitch {
 export interface BridgeClientHelloMessage {
 	type: 'bridge/hello';
 	clientId: string;
-	connectorVersion?: string;
+	bridgeVersion?: string;
 }
 
 export interface BridgeClientHeartbeatMessage {

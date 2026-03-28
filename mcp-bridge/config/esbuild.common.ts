@@ -1,6 +1,6 @@
 import type esbuild from 'esbuild';
 
-// 连接器通用 esbuild 构建配置。
+// Bridge 通用 esbuild 构建配置。
 export default {
 	entryPoints: {
 		index: './src/index',

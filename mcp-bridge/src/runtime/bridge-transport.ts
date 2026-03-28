@@ -17,8 +17,8 @@ import type {
 	BridgeServerRoleMessage,
 } from '../bridge/protocol.ts';
 import type { UnifiedLogEntry } from '../logging/log.ts';
-import { connectorLogPipeline } from '../logging/log.ts';
-import { ConnectorStateManager } from '../state/state-manager.ts';
+import { bridgeLogPipeline } from '../logging/log.ts';
+import { BridgeStateManager } from '../state/state-manager.ts';
 import { isPlainObjectRecord, toSafeErrorMessage } from '../utils.ts';
 
 // 底层 WebSocket 连接建立超时（从 register 到 onOpen 回调触发）。
@@ -32,7 +32,7 @@ const HEARTBEAT_INTERVAL_MS = 1000;
 const SERVER_IDLE_TIMEOUT_MS = 5000;
 // 检查服务端无活动状态的轮询间隔。
 const SERVER_IDLE_CHECK_INTERVAL_MS = 500;
-const CONNECTOR_STATUS_TEXT = ConnectorStateManager.text;
+const BRIDGE_STATUS_TEXT = BridgeStateManager.text;
 
 interface BridgeTransportCallbacks {
 	onRoleChanged: (message: BridgeServerRoleMessage) => void;
@@ -66,7 +66,7 @@ async function decodeMessageData(data: unknown): Promise<string> {
 		return new TextDecoder().decode(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
 	}
 
-	throw new Error(CONNECTOR_STATUS_TEXT.transport.unknownMessageFormat);
+	throw new Error(BRIDGE_STATUS_TEXT.transport.unknownMessageFormat);
 }
 
 // 服务端允许发出的消息类型白名单。
@@ -84,16 +84,16 @@ async function parseServerMessage(data: unknown): Promise<BridgeServerMessage> {
 	const text = await decodeMessageData(data);
 	const parsed = JSON.parse(text) as unknown;
 	if (!isPlainObjectRecord(parsed)) {
-		throw new Error(CONNECTOR_STATUS_TEXT.transport.invalidMessageRoot);
+		throw new Error(BRIDGE_STATUS_TEXT.transport.invalidMessageRoot);
 	}
 
 	const messageType = String(parsed.type ?? '').trim();
 	if (messageType.length === 0) {
-		throw new Error(CONNECTOR_STATUS_TEXT.transport.missingType);
+		throw new Error(BRIDGE_STATUS_TEXT.transport.missingType);
 	}
 
 	if (!VALID_SERVER_MESSAGE_TYPES.has(messageType)) {
-		throw new Error(`${CONNECTOR_STATUS_TEXT.transport.unknownTypePrefix}${messageType}。`);
+		throw new Error(`${BRIDGE_STATUS_TEXT.transport.unknownTypePrefix}${messageType}。`);
 	}
 
 	return parsed as unknown as BridgeServerMessage;
@@ -118,7 +118,7 @@ export class BridgeTransport {
 		private readonly bridgeWebSocketUrl: string,
 		private readonly socketId: string,
 		private readonly clientId: string,
-		private readonly connectorVersion: string,
+		private readonly bridgeVersion: string,
 		private readonly callbacks: BridgeTransportCallbacks,
 	) {
 		this.readyPromise = new Promise<void>((resolve, reject) => {
@@ -132,7 +132,7 @@ export class BridgeTransport {
 	 */
 	public async connect(): Promise<void> {
 		if (this.closed) {
-			throw new Error(CONNECTOR_STATUS_TEXT.transport.closed);
+			throw new Error(BRIDGE_STATUS_TEXT.transport.closed);
 		}
 
 		// 先启动连接建立超时；握手超时在 onOpen 触发后才开始计时。
@@ -150,7 +150,7 @@ export class BridgeTransport {
 			);
 		}
 		catch (error: unknown) {
-			this.fail(`${CONNECTOR_STATUS_TEXT.transport.connectFailedPrefix}${toSafeErrorMessage(error)}`, error);
+			this.fail(`${BRIDGE_STATUS_TEXT.transport.connectFailedPrefix}${toSafeErrorMessage(error)}`, error);
 		}
 
 		await this.readyPromise;
@@ -187,7 +187,7 @@ export class BridgeTransport {
 	}
 
 	/**
-	 * 上报连接器执行链路已就绪。
+	 * 上报 Bridge 执行链路已就绪。
 	 */
 	public reportReady(): void {
 		this.sendMessage({
@@ -207,9 +207,9 @@ export class BridgeTransport {
 
 		this.closed = true;
 		this.stopTimers();
-		this.rejectReadyOnce(new Error(CONNECTOR_STATUS_TEXT.transport.closed));
+		this.rejectReadyOnce(new Error(BRIDGE_STATUS_TEXT.transport.closed));
 		try {
-			eda.sys_WebSocket.close(this.socketId, 1000, CONNECTOR_STATUS_TEXT.transport.closeReason);
+			eda.sys_WebSocket.close(this.socketId, 1000, BRIDGE_STATUS_TEXT.transport.closeReason);
 		}
 		catch {
 			// 主动关闭时忽略底层重复关闭异常。
@@ -226,7 +226,7 @@ export class BridgeTransport {
 		this.sendMessage({
 			type: 'bridge/hello',
 			clientId: this.clientId,
-			connectorVersion: this.connectorVersion,
+			bridgeVersion: this.bridgeVersion,
 		});
 	}
 
@@ -287,27 +287,27 @@ export class BridgeTransport {
 			}
 
 			if (message.type === 'bridge/error') {
-				const logEntry = connectorLogPipeline.append(connectorLogPipeline.createEntry({
+				const logEntry = bridgeLogPipeline.append(bridgeLogPipeline.createEntry({
 					level: 'warning',
 					module: 'bridge-transport',
 					event: 'bridge.server.error',
-					summary: CONNECTOR_STATUS_TEXT.runtime.serverErrorSummary,
-					message: String(message.message ?? '').trim() || CONNECTOR_STATUS_TEXT.runtime.serverErrorSummary,
+					summary: BRIDGE_STATUS_TEXT.runtime.serverErrorSummary,
+					message: String(message.message ?? '').trim() || BRIDGE_STATUS_TEXT.runtime.serverErrorSummary,
 					detail: String(message.message ?? '').trim(),
 					errorCode: 'bridge_server_error',
 				}));
-				console.warn(connectorLogPipeline.format(logEntry));
+				console.warn(bridgeLogPipeline.format(logEntry));
 			}
 		}
 		catch (error: unknown) {
-			this.fail(`${CONNECTOR_STATUS_TEXT.transport.messageHandleFailedPrefix}${toSafeErrorMessage(error)}`, error);
+			this.fail(`${BRIDGE_STATUS_TEXT.transport.messageHandleFailedPrefix}${toSafeErrorMessage(error)}`, error);
 		}
 	}
 
 	// 向服务端发送协议消息。
 	private sendMessage(message: BridgeClientMessage): void {
 		if (this.closed) {
-			throw new Error(CONNECTOR_STATUS_TEXT.transport.closed);
+			throw new Error(BRIDGE_STATUS_TEXT.transport.closed);
 		}
 		eda.sys_WebSocket.send(this.socketId, JSON.stringify(message));
 	}
@@ -316,7 +316,7 @@ export class BridgeTransport {
 	private startOpenTimer(): void {
 		this.clearOpenTimer();
 		this.openTimer = globalThis.setTimeout(() => {
-			this.fail(CONNECTOR_STATUS_TEXT.transport.waitingStdio, new Error(CONNECTOR_STATUS_TEXT.transport.waitingStdio));
+			this.fail(BRIDGE_STATUS_TEXT.transport.waitingStdio, new Error(BRIDGE_STATUS_TEXT.transport.waitingStdio));
 		}, OPEN_TIMEOUT_MS);
 	}
 
@@ -332,7 +332,7 @@ export class BridgeTransport {
 	private startConnectTimer(): void {
 		this.clearConnectTimer();
 		this.connectTimer = globalThis.setTimeout(() => {
-			this.fail(CONNECTOR_STATUS_TEXT.transport.handshakeTimeout, new Error(CONNECTOR_STATUS_TEXT.transport.handshakeTimeout));
+			this.fail(BRIDGE_STATUS_TEXT.transport.handshakeTimeout, new Error(BRIDGE_STATUS_TEXT.transport.handshakeTimeout));
 		}, HANDSHAKE_TIMEOUT_MS);
 	}
 
@@ -356,7 +356,7 @@ export class BridgeTransport {
 				});
 			}
 			catch (error: unknown) {
-				this.fail(`${CONNECTOR_STATUS_TEXT.transport.heartbeatSendFailedPrefix}${toSafeErrorMessage(error)}`, error);
+				this.fail(`${BRIDGE_STATUS_TEXT.transport.heartbeatSendFailedPrefix}${toSafeErrorMessage(error)}`, error);
 			}
 		}, HEARTBEAT_INTERVAL_MS);
 	}
@@ -381,7 +381,7 @@ export class BridgeTransport {
 				return;
 			}
 
-			this.fail(CONNECTOR_STATUS_TEXT.transport.serverIdleTimeout, new Error(CONNECTOR_STATUS_TEXT.transport.serverIdleTimeout));
+			this.fail(BRIDGE_STATUS_TEXT.transport.serverIdleTimeout, new Error(BRIDGE_STATUS_TEXT.transport.serverIdleTimeout));
 		}, SERVER_IDLE_CHECK_INTERVAL_MS);
 	}
 

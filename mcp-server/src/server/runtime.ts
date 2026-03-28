@@ -11,7 +11,7 @@
 
 import {
 	attachBridgeClientSocket,
-	flushConnectorLogs,
+	flushBridgeLogs,
 	getBridgeStatus,
 	notifyBridgeClientsDisconnect,
 	pumpBridgeBroker,
@@ -30,7 +30,7 @@ import {
 	clearSidebarInteractionResponse,
 } from '../state/sidebar-interaction';
 import { ServerStateManager } from '../state/server-state-manager';
-import type { BridgeDisconnectSnapshot, ConnectorVersionMismatch, RuntimeStatus, RuntimeStatusSnapshot } from '../state/status';
+import type { BridgeDisconnectSnapshot, BridgeVersionMismatch, RuntimeStatus, RuntimeStatusSnapshot } from '../state/status';
 import { RpcHandler } from './mcp/rpc-handler';
 import { ToolDispatcher } from './mcp/tool-dispatcher';
 import { createStdioLineTransport } from './core/transports/line-transport';
@@ -72,7 +72,7 @@ class McpRuntimeServer {
 	private runtimeMessage: string = SERVER_STATUS_TEXT.runtime.starting;
 	private lastErrorMessage = '';
 	private lastDisconnect: BridgeDisconnectSnapshot | null = null;
-	private lastVersionMismatch: ConnectorVersionMismatch | null = null;
+	private lastVersionMismatch: BridgeVersionMismatch | null = null;
 	private readonly runtimeLogPipeline: RuntimeLogPipeline;
 
 	public constructor(
@@ -92,7 +92,7 @@ class McpRuntimeServer {
 		this.writeRuntimeStatus('starting', SERVER_STATUS_TEXT.runtime.starting);
 		setVersionMismatchHandler((event: BridgeVersionMismatchEvent) => {
 			this.lastVersionMismatch = {
-				connectorVersion: event.connectorVersion,
+				bridgeVersion: event.bridgeVersion,
 				serverVersion: event.serverVersion,
 				lowerSide: event.lowerSide,
 			};
@@ -237,8 +237,8 @@ class McpRuntimeServer {
 			runtimeMessage,
 			bridgeClientCount: bridgeStatus.connectedClients,
 			bridgeClientIds: bridgeStatus.clientIds,
-			connectorLogs: DEBUG_SWITCH.enableSystemLog ? flushConnectorLogs() : [],
-			connectorVersionMismatch: this.lastVersionMismatch,
+			bridgeLogs: DEBUG_SWITCH.enableSystemLog ? flushBridgeLogs() : [],
+			bridgeVersionMismatch: this.lastVersionMismatch,
 			lastErrorMessage,
 			lastDisconnect: this.lastDisconnect,
 			updatedAt,

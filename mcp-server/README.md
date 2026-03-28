@@ -1,6 +1,6 @@
-# 嘉立创 EDA MCP
+﻿# 嘉立创 EDA MCP
 
-嘉立创 EDA MCP 是安装在 VS Code 或 Cursor 中的服务端扩展，需要与嘉立创 EDA 侧的 MCP 连接器配套使用。接入后，你可以直接在 Copilot、Cursor Chat 中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
+嘉立创 EDA MCP 是安装在 VS Code 或 Cursor 中的服务端扩展，需要与嘉立创 EDA 侧的 MCP Bridge配套使用。接入后，你可以直接在 Copilot、Cursor Chat 中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
 
 项目地址：https://github.com/sengbin/JLCEDA-MCP
 
@@ -25,18 +25,18 @@
 
 ### 客户端（嘉立创 EDA）
 
-客户端文档：[MCP 连接器 README](https://github.com/sengbin/JLCEDA-MCP/blob/main/mcp-connector/README.md)
+客户端文档：[MCP Bridge README](https://github.com/sengbin/JLCEDA-MCP/blob/main/mcp-bridge/README.md)
 
 **从扩展管理器安装（推荐）：**
 
-打开嘉立创 EDA，进入扩展管理器，搜索"MCP连接器"并安装。
+打开嘉立创 EDA，进入扩展管理器，搜索"MCP Bridge"并安装。
 
 ---
 
 ## 注意事项
 
-1. 本扩展需要与 EDA 侧 MCP 连接器配套安装，单独安装无法在线调用。
-2. 如果修改了监听端口，EDA 连接器中的地址必须同步更新。
+1. 本扩展需要与 EDA 侧 MCP Bridge配套安装，单独安装无法在线调用。
+2. 如果修改了监听端口，EDA MCP Bridge中的地址必须同步更新。
 3. 首次发起聊天后服务才会启动，且仅在原理图或 PCB 页面可连接。
 4. 多页面同时连接时，只有活动角色执行任务，待命角色保持在线等待接管。若当前 EDA 页面与活动客户端不一致，请关闭其他 EDA 页面后刷新当前页。
 5. 电源符号和地符号需要用户手动放置，AI 不会代替用户自动添加。
@@ -52,11 +52,11 @@
 
 ### 文档检索和上下文读取失败？
 
-通常是 EDA 连接器未在线或状态异常，请回到 EDA 连接设置页检查连接状态。
+通常是 EDA MCP Bridge未在线或状态异常，请回到 EDA 连接设置页检查连接状态。
 
 ### 修改端口后为什么失效？
 
-服务端与连接器地址必须完全一致，任何一侧未更新都会导致桥接失败。
+服务端与MCP Bridge地址必须完全一致，任何一侧未更新都会导致桥接失败。
 
 ---
 

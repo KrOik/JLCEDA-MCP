@@ -1,9 +1,9 @@
 {
-	"name": "jlceda-mcp-connector",
+	"name": "jlceda-mcp-bridge",
 	"uuid": "1f41b7a0f9784d6aa5fd77478de4a25c",
-	"displayName": "MCP连接器",
+	"displayName": "MCP Bridge",
 	"description": "将 VSCode/Cursor 中的 AI 助手桥接到嘉立创 EDA MCP 服务。",
-	"version": "1.3.4",
+	"version": "1.4.0",
 	"publisher": "",
 	"engines": {
 		"eda": "^3.0.0"
@@ -30,8 +30,8 @@
 	"headerMenus": {
 		"home": [
 			{
-				"id": "MCP连接器",
-				"title": "MCP连接器",
+				"id": "MCP Bridge",
+				"title": "MCP Bridge",
 				"menuItems": [
 					{
 						"id": "连接设置",
@@ -48,8 +48,8 @@
 		],
 		"sch": [
 			{
-				"id": "MCP连接器",
-				"title": "MCP连接器",
+				"id": "MCP Bridge",
+				"title": "MCP Bridge",
 				"menuItems": [
 					{
 						"id": "连接设置",
@@ -66,8 +66,8 @@
 		],
 		"pcb": [
 			{
-				"id": "MCP连接器",
-				"title": "MCP连接器",
+				"id": "MCP Bridge",
+				"title": "MCP Bridge",
 				"menuItems": [
 					{
 						"id": "连接设置",

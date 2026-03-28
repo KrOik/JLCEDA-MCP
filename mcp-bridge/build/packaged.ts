@@ -90,10 +90,10 @@ function main() {
 	const rootBuildDirectory = path.join(__dirname, '../../build');
 	fs.ensureDirSync(rootBuildDirectory);
 
-	// 仅清理连接器自身历史构建产物，避免影响其他扩展包。
-	const connectorPackagePrefix = `${extensionConfig.name}`;
+	// 仅清理 bridge 自身历史构建产物，避免影响其他扩展包。
+	const bridgePackagePrefix = `${extensionConfig.name}`;
 	for (const fileName of fs.readdirSync(rootBuildDirectory, { encoding: 'utf-8' })) {
-		if (!fileName.startsWith(connectorPackagePrefix) || !fileName.endsWith('.eext')) {
+		if (!fileName.startsWith(bridgePackagePrefix) || !fileName.endsWith('.eext')) {
 			continue;
 		}
 

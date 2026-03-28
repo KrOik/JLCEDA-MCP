@@ -20,7 +20,7 @@ import {
   type SidebarInteractionRequest,
 } from '../state/sidebar-interaction';
 import { ServerStateManager } from '../state/server-state-manager';
-import type { ConnectorVersionMismatch, ServerConfig, ServerStatus } from '../state/status';
+import type { BridgeVersionMismatch, ServerConfig, ServerStatus } from '../state/status';
 import {
   getUnifiedLogFieldSchema,
 } from '../logging/server-log';
@@ -47,7 +47,7 @@ interface SidebarRuntimeSnapshot {
   state: ServerStatus;
   clients: SidebarConnectedClientEntry[];
   logs: SidebarStatusLogEntry[];
-  connectorVersionMismatch?: ConnectorVersionMismatch | null;
+  bridgeVersionMismatch?: BridgeVersionMismatch | null;
 }
 
 // 将运行时状态快照转换为侧边栏展示状态与连接列表。
@@ -85,8 +85,8 @@ function createSidebarRuntimeSnapshot(storageDirectoryPath: string, sessionId: s
       updatedAt: snapshot.updatedAt
     },
     clients,
-    logs: Array.isArray(snapshot.connectorLogs) ? snapshot.connectorLogs : [],
-    connectorVersionMismatch: snapshot.connectorVersionMismatch ?? null
+    logs: Array.isArray(snapshot.bridgeLogs) ? snapshot.bridgeLogs : [],
+    bridgeVersionMismatch: snapshot.bridgeVersionMismatch ?? null
   };
 }
 
@@ -103,7 +103,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
   private interactionRefreshTimer: NodeJS.Timeout | undefined;
   // 调试卡片状态缓存与去重逻辑。
   private readonly logPipeline = new SidebarLogPipeline();
-  // 已弹出过版本不一致提示的去重键，格式为 "connectorVersion|serverVersion"。
+  // 已弹出过版本不一致提示的去重键，格式为 "bridgeVersion|serverVersion"。
   private lastNotifiedVersionMismatch = '';
   // 当前待处理的侧边栏交互请求。
   private currentInteraction: SidebarInteractionRequest | null = null;
@@ -381,20 +381,20 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
   }
 
   private syncState(runtimeSnapshot: SidebarRuntimeSnapshot): void {
-    // 客户端断开时 connectorVersionMismatch 将变为 null，重置去重键使下次重连后可再次弹出。
-    if (!runtimeSnapshot.connectorVersionMismatch) {
+    // 客户端断开时 bridgeVersionMismatch 将变为 null，重置去重键使下次重连后可再次弹出。
+    if (!runtimeSnapshot.bridgeVersionMismatch) {
       this.lastNotifiedVersionMismatch = '';
     }
 
     // 版本不一致时弹出 VS Code 右下角错误气泡，每个不一致组合只弹一次。
-    if (runtimeSnapshot.connectorVersionMismatch) {
-      const mismatch = runtimeSnapshot.connectorVersionMismatch;
-      const notifyKey = `${mismatch.connectorVersion}|${mismatch.serverVersion}`;
+    if (runtimeSnapshot.bridgeVersionMismatch) {
+      const mismatch = runtimeSnapshot.bridgeVersionMismatch;
+      const notifyKey = `${mismatch.bridgeVersion}|${mismatch.serverVersion}`;
       if (notifyKey !== this.lastNotifiedVersionMismatch) {
         this.lastNotifiedVersionMismatch = notifyKey;
-        const message = mismatch.lowerSide === 'connector'
-          ? `EDA 连接器插件版本（${mismatch.connectorVersion}\uff09低于 MCP 服务端版本（${mismatch.serverVersion}\uff09，版本不一致可能导致功能异常，建议将 EDA 连接器插件升级至最新版本。`
-          : `MCP 服务端插件版本（${mismatch.serverVersion}\uff09低于 EDA 连接器版本（${mismatch.connectorVersion}\uff09，版本不一致可能导致功能异常，建议将 MCP 服务端插件升级至最新版本。`;
+        const message = mismatch.lowerSide === 'bridge'
+          ? `EDA Bridge 插件版本（${mismatch.bridgeVersion}\uff09低于 MCP 服务端版本（${mismatch.serverVersion}\uff09，版本不一致可能导致功能异常，建议将 EDA Bridge 插件升级至最新版本。`
+          : `MCP 服务端插件版本（${mismatch.serverVersion}\uff09低于 EDA Bridge 版本（${mismatch.bridgeVersion}\uff09，版本不一致可能导致功能异常，建议将 MCP 服务端插件升级至最新版本。`;
         void vscode.window.showErrorMessage(message);
       }
     }

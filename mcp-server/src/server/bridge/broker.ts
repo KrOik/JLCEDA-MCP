@@ -17,7 +17,7 @@ import {
 	type BridgeServerMessage,
 } from './protocol';
 import { DEBUG_SWITCH } from '../../debug';
-import { ConnectorLogPipeline } from '../../logging/connector-log';
+import { BridgeLogPipeline } from '../../logging/bridge-log';
 import type { UnifiedLogEntry } from '../../logging/server-log';
 import { isUnifiedLogEntry } from '../../logging/server-log';
 import { ServerStateManager } from '../../state/server-state-manager';
@@ -97,7 +97,7 @@ const peersByClientId = new Map<string, BridgePeerState>();
 const clientIdBySocket = new Map<WebSocket, string>();
 const pendingRequests = new Map<string, PendingRequest>();
 const pendingActiveWaiters = new Set<PendingActiveWaiter>();
-const connectorLogPipeline = new ConnectorLogPipeline();
+const bridgeLogPipeline = new BridgeLogPipeline();
 let disconnectEventHandler: ((event: BridgeDisconnectEvent) => void) | undefined;
 let versionMismatchHandler: ((event: BridgeVersionMismatchEvent) => void) | undefined;
 let serverVersion = '';
@@ -351,11 +351,11 @@ export function setServerVersion(version: string): void {
 	serverVersion = String(version ?? '').trim();
 }
 
-// 连接器与服务端版本不一致事件。
+// 客户端与服务端版本不一致事件。
 export interface BridgeVersionMismatchEvent {
-	connectorVersion: string;
+	bridgeVersion: string;
 	serverVersion: string;
-	lowerSide: 'connector' | 'server';
+	lowerSide: 'bridge' | 'server';
 }
 
 /**
@@ -461,19 +461,19 @@ function compareSemver(a: string, b: string): number {
 	return 0;
 }
 
-// 检查连接器版本与服务端是否一致，不一致时触发回调。
-function checkVersionMismatch(connectorVer: string): void {
-	if (!serverVersion || !connectorVer || !versionMismatchHandler) {
+// 检查客户端版本与服务端是否一致，不一致时触发回调。
+function checkVersionMismatch(bridgeVer: string): void {
+	if (!serverVersion || !bridgeVer || !versionMismatchHandler) {
 		return;
 	}
-	const cmp = compareSemver(connectorVer, serverVersion);
+	const cmp = compareSemver(bridgeVer, serverVersion);
 	if (cmp === 0) {
 		return;
 	}
 	versionMismatchHandler({
-		connectorVersion: connectorVer,
+		bridgeVersion: bridgeVer,
 		serverVersion,
-		lowerSide: cmp < 0 ? 'connector' : 'server',
+		lowerSide: cmp < 0 ? 'bridge' : 'server',
 	});
 }
 
@@ -582,8 +582,8 @@ async function handleClientMessage(socket: WebSocket, data: RawData): Promise<vo
 	const message = parseClientMessage(data);
 	if (message.type === 'bridge/hello') {
 		const peer = await registerClient(message.clientId, socket);
-		const connectorVer = String(message.connectorVersion ?? '').trim();
-		checkVersionMismatch(connectorVer.length > 0 ? connectorVer : BRIDGE_BROKER_TEXT.version.legacyClientWithoutVersion);
+		const bridgeVer = String(message.bridgeVersion ?? '').trim();
+		checkVersionMismatch(bridgeVer.length > 0 ? bridgeVer : BRIDGE_BROKER_TEXT.version.legacyClientWithoutVersion);
 		await sendBridgeMessage(peer.socket, {
 			type: 'bridge/welcome',
 			clientId: peer.clientId,
@@ -633,7 +633,7 @@ async function handleClientMessage(socket: WebSocket, data: RawData): Promise<vo
 			throw new Error(BRIDGE_BROKER_TEXT.protocol.invalidClientLogEntry);
 		}
 
-		connectorLogPipeline.appendFromClient(message.log, getBridgeDebugSwitch());
+		bridgeLogPipeline.appendFromClient(message.log, getBridgeDebugSwitch());
 		return;
 	}
 
@@ -780,11 +780,11 @@ export function getBridgeStatus(): { connectedClients: number; pendingRequests: 
 }
 
 /**
- * 取走当前心跳周期内积累的连接器日志并清空缓冲区。
+ * 取走当前心跳周期内积累的客户端日志并清空缓冲区。
  * @returns 本周期产生的日志数组。
  */
-export function flushConnectorLogs(): UnifiedLogEntry[] {
-	return connectorLogPipeline.flush();
+export function flushBridgeLogs(): UnifiedLogEntry[] {
+	return bridgeLogPipeline.flush();
 }
 
 /**

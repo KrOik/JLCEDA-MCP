@@ -64,8 +64,8 @@ function isRuntimeStatusSnapshot(value: unknown): value is RuntimeStatusSnapshot
 
   const snapshot = value as Partial<RuntimeStatusSnapshot>;
   const runtimeStatus = String(snapshot.runtimeStatus ?? '').trim();
-  const hasValidConnectorLogs = snapshot.connectorLogs === undefined
-    || (Array.isArray(snapshot.connectorLogs) && snapshot.connectorLogs.every((entry) => isUnifiedLogEntry(entry)));
+  const hasValidBridgeLogs = snapshot.bridgeLogs === undefined
+    || (Array.isArray(snapshot.bridgeLogs) && snapshot.bridgeLogs.every((entry) => isUnifiedLogEntry(entry)));
   return typeof snapshot.host === 'string'
     && snapshot.host.trim().length > 0
     && Number.isInteger(snapshot.port)
@@ -75,7 +75,7 @@ function isRuntimeStatusSnapshot(value: unknown): value is RuntimeStatusSnapshot
     && Array.isArray(snapshot.bridgeClientIds)
     && Number.isInteger(snapshot.bridgeClientCount)
     && Number(snapshot.bridgeClientCount) >= 0
-    && hasValidConnectorLogs
+    && hasValidBridgeLogs
     && typeof snapshot.lastErrorMessage === 'string'
     && isBridgeDisconnectSnapshot(snapshot.lastDisconnect ?? null)
     && typeof snapshot.updatedAt === 'string'

@@ -1,7 +1,7 @@
 /**
  * ------------------------------------------------------------------------
- * 名称：连接器日志管道
- * 说明：统一管理桥接侧连接器日志缓冲、过滤与冲刷。
+ * 名称：Bridge 日志管道
+ * 说明：统一管理桥接侧 Bridge 日志缓冲、过滤与冲刷。
  * 作者：Lion
  * 邮箱：chengbin@3578.cn
  * 日期：2026-03-20
@@ -13,14 +13,14 @@ import type { BridgeDebugSwitch } from '../server/bridge/protocol';
 import type { UnifiedLogEntry } from './server-log';
 import { isConnectionInfoLog } from './server-log';
 
-// 连接器日志缓冲上限。
-const BRIDGE_CONNECTOR_LOG_LIMIT = 200;
+// 桥接日志缓冲上限。
+const BRIDGE_LOG_LIMIT = 200;
 
 /**
- * 连接器日志管道。
+ * 桥接日志管道。
  */
-export class ConnectorLogPipeline {
-	private readonly pendingConnectorLogs: UnifiedLogEntry[] = [];
+export class BridgeLogPipeline {
+	private readonly pendingBridgeLogs: UnifiedLogEntry[] = [];
 
 	/**
 	 * 追加一条客户端日志。
@@ -36,9 +36,9 @@ export class ConnectorLogPipeline {
 			return;
 		}
 
-		this.pendingConnectorLogs.push(logEntry);
-		if (this.pendingConnectorLogs.length > BRIDGE_CONNECTOR_LOG_LIMIT) {
-			this.pendingConnectorLogs.splice(0, this.pendingConnectorLogs.length - BRIDGE_CONNECTOR_LOG_LIMIT);
+		this.pendingBridgeLogs.push(logEntry);
+		if (this.pendingBridgeLogs.length > BRIDGE_LOG_LIMIT) {
+			this.pendingBridgeLogs.splice(0, this.pendingBridgeLogs.length - BRIDGE_LOG_LIMIT);
 		}
 	}
 
@@ -47,8 +47,8 @@ export class ConnectorLogPipeline {
 	 * @returns 增量日志数组。
 	 */
 	public flush(): UnifiedLogEntry[] {
-		const flushed = this.pendingConnectorLogs.slice();
-		this.pendingConnectorLogs.splice(0, this.pendingConnectorLogs.length);
+		const flushed = this.pendingBridgeLogs.slice();
+		this.pendingBridgeLogs.splice(0, this.pendingBridgeLogs.length);
 		return flushed;
 	}
 }

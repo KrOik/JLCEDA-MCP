@@ -40,12 +40,12 @@ export interface BridgeDisconnectSnapshot {
 }
 
 /**
- * 连接器与服务端版本不一致快照。
+ * 客户端与服务端版本不一致快照。
  */
-export interface ConnectorVersionMismatch {
-  connectorVersion: string;
+export interface BridgeVersionMismatch {
+  bridgeVersion: string;
   serverVersion: string;
-  lowerSide: 'connector' | 'server';
+  lowerSide: 'bridge' | 'server';
 }
 
 /**
@@ -58,8 +58,8 @@ export interface RuntimeStatusSnapshot {
   runtimeMessage: string;
   bridgeClientCount: number;
   bridgeClientIds: string[];
-  connectorLogs?: UnifiedLogEntry[];
-  connectorVersionMismatch?: ConnectorVersionMismatch | null;
+  bridgeLogs?: UnifiedLogEntry[];
+  bridgeVersionMismatch?: BridgeVersionMismatch | null;
   lastErrorMessage: string;
   lastDisconnect: BridgeDisconnectSnapshot | null;
   updatedAt: string;

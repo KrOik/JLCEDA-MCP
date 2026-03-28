@@ -1,7 +1,7 @@
-/**
+﻿/**
  * ------------------------------------------------------------------------
- * 名称：连接器状态管理器
- * 说明：统一维护连接器状态文案与状态快照构建逻辑。
+ * 名称：Bridge 状态管理器
+ * 说明：统一维护 Bridge 状态文案与状态快照构建逻辑。
  * 作者：Lion
  * 邮箱：chengbin@3578.cn
  * 日期：2026-03-20
@@ -13,9 +13,9 @@ import type { BridgeRole } from '../bridge/protocol.ts';
 import type { ConnectionStatusSnapshot } from './status-store.ts';
 
 /**
- * 连接器状态管理器。
+ * Bridge 状态管理器。
  */
-export class ConnectorStateManager {
+export class BridgeStateManager {
 	public static readonly text = {
 		// 连接状态文案：用于连接过程、角色显示与失败提示。
 		connection: {
@@ -80,9 +80,9 @@ export class ConnectorStateManager {
 	public createConnectingSnapshot(): ConnectionStatusSnapshot {
 		return {
 			bridgeType: 'connecting',
-			bridgeText: ConnectorStateManager.text.connection.connectingWaiting,
+			bridgeText: BridgeStateManager.text.connection.connectingWaiting,
 			websocketType: 'connecting',
-			websocketText: ConnectorStateManager.text.connection.websocketConnecting,
+			websocketText: BridgeStateManager.text.connection.websocketConnecting,
 			updatedAt: new Date().toISOString(),
 		};
 	}
@@ -96,13 +96,13 @@ export class ConnectorStateManager {
 	 */
 	public createRoleSnapshot(role: BridgeRole, displayClientId: string, displayActiveClientId: string): ConnectionStatusSnapshot {
 		const websocketText = displayClientId.length > 0
-			? `${ConnectorStateManager.text.connection.currentClientPrefix}${displayClientId}`
-			: ConnectorStateManager.text.connection.connected;
+			? `${BridgeStateManager.text.connection.currentClientPrefix}${displayClientId}`
+			: BridgeStateManager.text.connection.connected;
 
 		if (role === 'active') {
 			return {
 				bridgeType: 'connected',
-				bridgeText: ConnectorStateManager.text.connection.connected,
+				bridgeText: BridgeStateManager.text.connection.connected,
 				websocketType: 'connected',
 				websocketText,
 				updatedAt: new Date().toISOString(),
@@ -110,8 +110,8 @@ export class ConnectorStateManager {
 		}
 
 		const activeLabel = displayActiveClientId.length > 0
-			? `${ConnectorStateManager.text.connection.activeClientPrefix}${displayActiveClientId}`
-			: ConnectorStateManager.text.connection.standby;
+			? `${BridgeStateManager.text.connection.activeClientPrefix}${displayActiveClientId}`
+			: BridgeStateManager.text.connection.standby;
 		return {
 			bridgeType: 'connecting',
 			bridgeText: activeLabel,
@@ -127,10 +127,10 @@ export class ConnectorStateManager {
 	 * @returns 连接状态快照。
 	 */
 	public createFailedSnapshot(detail: string): ConnectionStatusSnapshot {
-		const normalizedDetail = String(detail ?? '').trim() || ConnectorStateManager.text.connection.connectFailedRetryDetail;
+		const normalizedDetail = String(detail ?? '').trim() || BridgeStateManager.text.connection.connectFailedRetryDetail;
 		return {
 			bridgeType: 'error',
-			bridgeText: ConnectorStateManager.text.connection.connectFailed,
+			bridgeText: BridgeStateManager.text.connection.connectFailed,
 			websocketType: 'error',
 			websocketText: normalizedDetail,
 			updatedAt: new Date().toISOString(),
@@ -144,9 +144,9 @@ export class ConnectorStateManager {
 	public createNotEditablePageSnapshot(): ConnectionStatusSnapshot {
 		return {
 			bridgeType: 'connecting',
-			bridgeText: ConnectorStateManager.text.connection.disconnected,
+			bridgeText: BridgeStateManager.text.connection.disconnected,
 			websocketType: 'connecting',
-			websocketText: ConnectorStateManager.text.connection.disconnected,
+			websocketText: BridgeStateManager.text.connection.disconnected,
 			updatedAt: new Date().toISOString(),
 		};
 	}
@@ -158,8 +158,8 @@ export class ConnectorStateManager {
 	 * @returns 展示文本。
 	 */
 	public getBridgeDisplayText(bridgeType: ConnectionStatusSnapshot['bridgeType'], bridgeText: string): string {
-		if (bridgeType === 'connected' && bridgeText === ConnectorStateManager.text.connection.connected) {
-			return `${ConnectorStateManager.text.connection.connected}。`;
+		if (bridgeType === 'connected' && bridgeText === BridgeStateManager.text.connection.connected) {
+			return `${BridgeStateManager.text.connection.connected}。`;
 		}
 
 		return bridgeText;
@@ -172,7 +172,7 @@ export class ConnectorStateManager {
 	 * @returns 是否为等待文案。
 	 */
 	public isBridgeWaitingMessage(bridgeType: ConnectionStatusSnapshot['bridgeType'], bridgeText: string): boolean {
-		return bridgeType === 'connecting' && bridgeText === ConnectorStateManager.text.connection.connectingWaiting;
+		return bridgeType === 'connecting' && bridgeText === BridgeStateManager.text.connection.connectingWaiting;
 	}
 
 	/**
@@ -182,6 +182,6 @@ export class ConnectorStateManager {
 	 * @returns 是否为等待文案。
 	 */
 	public isSocketWaitingMessage(websocketType: ConnectionStatusSnapshot['websocketType'], websocketText: string): boolean {
-		return websocketType === 'connecting' && websocketText === ConnectorStateManager.text.connection.websocketConnecting;
+		return websocketType === 'connecting' && websocketText === BridgeStateManager.text.connection.websocketConnecting;
 	}
 }

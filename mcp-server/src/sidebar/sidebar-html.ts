@@ -1328,7 +1328,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
                 </svg>
               </div>
             </div>
-            <div class="section-description">设置桥接监听地址，并将当前桥接地址提供给 EDA 连接器。</div>
+            <div class="section-description">设置桥接监听地址，并将当前桥接地址提供给 EDA Bridge。</div>
           </div>
           <div id="bridgeConfigContent" class="status-log-content">
             <div class="section-divider"></div>
@@ -1626,7 +1626,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         return 'server';
       }
 
-      if (sourceText === 'connector' || sourceText === 'client' || sourceText === '客户端') {
+      if (sourceText === 'bridge' || sourceText === 'client' || sourceText === '客户端') {
         return 'client';
       }
 

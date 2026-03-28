@@ -1,7 +1,7 @@
 /**
  * ------------------------------------------------------------------------
- * 名称：连接器日志主管道
- * 说明：统一管理连接器日志结构、字段模型、缓存与监听分发。
+ * 名称：Bridge 日志主管道
+ * 说明：统一管理 Bridge 日志结构、字段模型、缓存与监听分发。
  * 作者：Lion
  * 邮箱：chengbin@3578.cn
  * 日期：2026-03-20
@@ -33,7 +33,7 @@ export interface UnifiedLogEntry {
 	fields: Record<string, string>;
 }
 
-export interface ConnectorLogBuildInput {
+export interface BridgeLogBuildInput {
 	level: UnifiedLogLevel;
 	module: string;
 	event: string;
@@ -53,7 +53,7 @@ export interface ConnectorLogBuildInput {
 	errorCode?: string;
 }
 
-type ConnectorLogListener = (logEntry: UnifiedLogEntry) => void;
+type BridgeLogListener = (logEntry: UnifiedLogEntry) => void;
 
 const LOG_FIELD_ORDER = [
 	'timestamp',
@@ -99,7 +99,7 @@ const LOG_FIELD_LABELS: Record<string, string> = {
 	errorCode: '错误码',
 };
 
-const CONNECTOR_LOG_LIMIT = 200;
+const BRIDGE_LOG_LIMIT = 200;
 
 // 统一规范文本输入，避免空值与两端空白影响日志结果。
 function normalizeText(value: unknown): string {
@@ -146,11 +146,11 @@ function compactFields(fields: Record<string, string | undefined>): Record<strin
 }
 
 /**
- * 连接器日志主管道。
+ * Bridge 日志主管道。
  */
-export class ConnectorLogPipeline {
+export class BridgeLogPipeline {
 	private readonly logs: UnifiedLogEntry[] = [];
-	private listener: ConnectorLogListener | undefined;
+	private listener: BridgeLogListener | undefined;
 
 	/**
 	 * 获取统一日志字段定义。
@@ -165,18 +165,18 @@ export class ConnectorLogPipeline {
 	}
 
 	/**
-	 * 构造连接器日志。
+	 * 构造 Bridge 日志。
 	 * @param input 构造参数。
 	 * @returns 统一日志记录。
 	 */
-	public createEntry(input: ConnectorLogBuildInput): UnifiedLogEntry {
+	public createEntry(input: BridgeLogBuildInput): UnifiedLogEntry {
 		const now = new Date();
 		const timestamp = now.toISOString();
 		const displayTime = formatBeijingTimeOnly(now);
 		const fields = compactFields({
 			timestamp: displayTime,
 			level: input.level,
-			source: 'connector',
+			source: 'bridge',
 			module: input.module,
 			event: input.event,
 			summary: input.summary,
@@ -210,8 +210,8 @@ export class ConnectorLogPipeline {
 	 */
 	public append(logEntry: UnifiedLogEntry): UnifiedLogEntry {
 		this.logs.push(logEntry);
-		if (this.logs.length > CONNECTOR_LOG_LIMIT) {
-			this.logs.splice(0, this.logs.length - CONNECTOR_LOG_LIMIT);
+		if (this.logs.length > BRIDGE_LOG_LIMIT) {
+			this.logs.splice(0, this.logs.length - BRIDGE_LOG_LIMIT);
 		}
 
 		if (this.listener) {
@@ -230,7 +230,7 @@ export class ConnectorLogPipeline {
 	 * 设置日志监听器。
 	 * @param listener 监听回调。
 	 */
-	public setListener(listener: ConnectorLogListener | undefined): void {
+	public setListener(listener: BridgeLogListener | undefined): void {
 		this.listener = listener;
 	}
 
@@ -292,4 +292,4 @@ export class ConnectorLogPipeline {
 	}
 }
 
-export const connectorLogPipeline = new ConnectorLogPipeline();
+export const bridgeLogPipeline = new BridgeLogPipeline();

@@ -17,8 +17,8 @@ import {
 	normalizeMcpUrl,
 	saveConfiguredMcpUrl,
 } from '../bridge/config.ts';
-import { connectorLogPipeline } from '../logging/log.ts';
-import { ConnectorStateManager } from '../state/state-manager.ts';
+import { bridgeLogPipeline } from '../logging/log.ts';
+import { BridgeStateManager } from '../state/state-manager.ts';
 import {
 	isConnectionStatusSnapshot,
 	readConnectionStatus,
@@ -32,8 +32,8 @@ const CONFIG_TOAST_TIMER_SECONDS = 3;
 let savedServerUrlValue = '';
 // 当前是否处于保存中，避免重复提交。
 let savingServerConfig = false;
-const connectorStateManager = new ConnectorStateManager();
-const CONNECTOR_STATUS_TEXT = ConnectorStateManager.text;
+const bridgeStateManager = new BridgeStateManager();
+const BRIDGE_STATUS_TEXT = BridgeStateManager.text;
 
 // 统一显示配置保存相关的弹层提示。
 function showConfigToast(message: string, messageType: ESYS_ToastMessageType): void {
@@ -41,7 +41,7 @@ function showConfigToast(message: string, messageType: ESYS_ToastMessageType): v
 }
 
 function writeSettingsWarningLog(event: string, summary: string, message: string, detail = '', errorCode = ''): void {
-	const logEntry = connectorLogPipeline.append(connectorLogPipeline.createEntry({
+	const logEntry = bridgeLogPipeline.append(bridgeLogPipeline.createEntry({
 		level: 'warning',
 		module: 'settings-page',
 		event,
@@ -51,7 +51,7 @@ function writeSettingsWarningLog(event: string, summary: string, message: string
 		detail,
 		errorCode,
 	}));
-	console.warn(connectorLogPipeline.format(logEntry));
+	console.warn(bridgeLogPipeline.format(logEntry));
 }
 
 // 获取页面元素并进行类型校验。
@@ -80,12 +80,12 @@ function setStatus(
 	const bridgeStatusText = getElement('bridgeStatusText', HTMLParagraphElement, '桥接状态展示');
 	const socketStatusText = getElement('socketStatusText', HTMLParagraphElement, 'WebSocket 状态展示');
 	bridgeStatusText.className = `status-text status-${bridgeType}`;
-	bridgeStatusText.textContent = connectorStateManager.getBridgeDisplayText(bridgeType, bridgeText);
-	bridgeStatusText.classList.toggle('is-waiting-message', connectorStateManager.isBridgeWaitingMessage(bridgeType, bridgeText));
+	bridgeStatusText.textContent = bridgeStateManager.getBridgeDisplayText(bridgeType, bridgeText);
+	bridgeStatusText.classList.toggle('is-waiting-message', bridgeStateManager.isBridgeWaitingMessage(bridgeType, bridgeText));
 
 	socketStatusText.className = `status-text status-${websocketType}`;
 	socketStatusText.textContent = websocketText;
-	socketStatusText.classList.toggle('is-waiting-message', connectorStateManager.isSocketWaitingMessage(websocketType, websocketText));
+	socketStatusText.classList.toggle('is-waiting-message', bridgeStateManager.isSocketWaitingMessage(websocketType, websocketText));
 }
 
 // 将快照内容渲染到页面。
@@ -130,9 +130,9 @@ async function saveServerConfig(): Promise<void> {
 		}
 		catch (error: unknown) {
 			const message = toSafeErrorMessage(error);
-			writeSettingsWarningLog('settings.config.publish.failed', CONNECTOR_STATUS_TEXT.settings.settingsPublishFailedSummary, message, message, 'settings_publish_failed');
+			writeSettingsWarningLog('settings.config.publish.failed', BRIDGE_STATUS_TEXT.settings.settingsPublishFailedSummary, message, message, 'settings_publish_failed');
 		}
-		showConfigToast(CONNECTOR_STATUS_TEXT.settings.configSaved, ESYS_ToastMessageType.SUCCESS);
+		showConfigToast(BRIDGE_STATUS_TEXT.settings.configSaved, ESYS_ToastMessageType.SUCCESS);
 	}
 	catch (error: unknown) {
 		showConfigToast(`保存失败：${toSafeErrorMessage(error)}`, ESYS_ToastMessageType.ERROR);
@@ -167,14 +167,14 @@ function bootstrapPage(): void {
 		}
 		catch (error: unknown) {
 			const message = toSafeErrorMessage(error);
-			writeSettingsWarningLog('settings.status.init.failed', CONNECTOR_STATUS_TEXT.settings.settingsInitFailedSummary, message, message, 'settings_init_failed');
-			setStatus('error', CONNECTOR_STATUS_TEXT.settings.statusInitFailed, 'error', message);
+			writeSettingsWarningLog('settings.status.init.failed', BRIDGE_STATUS_TEXT.settings.settingsInitFailedSummary, message, message, 'settings_init_failed');
+			setStatus('error', BRIDGE_STATUS_TEXT.settings.statusInitFailed, 'error', message);
 		}
 	}
 	catch (error: unknown) {
 		const message = toSafeErrorMessage(error);
-		writeSettingsWarningLog('settings.config.invalid', CONNECTOR_STATUS_TEXT.settings.settingsConfigInvalidSummary, message, message, 'settings_config_invalid');
-		setStatus('error', CONNECTOR_STATUS_TEXT.settings.configInvalid, 'error', message);
+		writeSettingsWarningLog('settings.config.invalid', BRIDGE_STATUS_TEXT.settings.settingsConfigInvalidSummary, message, message, 'settings_config_invalid');
+		setStatus('error', BRIDGE_STATUS_TEXT.settings.configInvalid, 'error', message);
 	}
 }
 

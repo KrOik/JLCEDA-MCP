@@ -10,17 +10,17 @@
  */
 
 import type { BridgeRole } from '../bridge/protocol.ts';
-import { ConnectorStateManager } from './state-manager.ts';
+import { BridgeStateManager } from './state-manager.ts';
 import { saveConnectionStatus } from './status-store.ts';
 
-const connectorStateManager = new ConnectorStateManager();
+const bridgeStateManager = new BridgeStateManager();
 
 export class BridgeStatusReporter {
 	/**
 	 * 标记连接初始化中。
 	 */
 	public markConnecting(): void {
-		saveConnectionStatus(connectorStateManager.createConnectingSnapshot());
+		saveConnectionStatus(bridgeStateManager.createConnectingSnapshot());
 	}
 
 	/**
@@ -30,7 +30,7 @@ export class BridgeStatusReporter {
 	 * @param displayActiveClientId 服务端分配的活动客户端展示标识。
 	 */
 	public markRole(role: BridgeRole, displayClientId: string, displayActiveClientId: string): void {
-		saveConnectionStatus(connectorStateManager.createRoleSnapshot(role, displayClientId, displayActiveClientId));
+		saveConnectionStatus(bridgeStateManager.createRoleSnapshot(role, displayClientId, displayActiveClientId));
 	}
 
 	/**
@@ -38,13 +38,13 @@ export class BridgeStatusReporter {
 	 * @param detail 失败说明。
 	 */
 	public markFailed(detail: string): void {
-		saveConnectionStatus(connectorStateManager.createFailedSnapshot(detail));
+		saveConnectionStatus(bridgeStateManager.createFailedSnapshot(detail));
 	}
 
 	/**
 	 * 标记当前页面不是原理图或 PCB 编辑页，连接已暂停。
 	 */
 	public markNotOnEditablePage(): void {
-		saveConnectionStatus(connectorStateManager.createNotEditablePageSnapshot());
+		saveConnectionStatus(bridgeStateManager.createNotEditablePageSnapshot());
 	}
 }

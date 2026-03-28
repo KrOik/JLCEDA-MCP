@@ -17,13 +17,13 @@ import type { RuntimeStatusSnapshot, ServerConfig, ServerStatus } from './status
  */
 export class ServerStateManager {
 	public static readonly text = {
-		// 运行时阶段文案：用于 stdio 生命周期状态展示。
+		// 运行时阶段文案：用于 MCP 服务生命周期状态展示。
 		runtime: {
 			ready: '已就绪。',
-			running: '运行中...',
-			starting: 'stdio 运行时正在启动。',
-			stopped: 'stdio 会话已结束，等待宿主再次拉起本地运行时。',
-			error: 'stdio 运行时异常退出。',
+			running: '运行中！',
+			starting: 'MCP 服务正在启动。',
+			stopped: 'MCP 服务已停止，等待宿主再次拉起运行时。',
+			error: 'MCP 运行时异常退出。',
 		},
 		// 桥接状态文案：用于桥接连接状态与关闭通知。
 		bridge: {
@@ -43,7 +43,7 @@ export class ServerStateManager {
 			errorFallback: '连接异常',
 			connected: '桥接在线',
 			starting: '运行时启动中',
-			stopped: 'stdio 会话结束',
+			stopped: 'MCP 服务停止',
 			waiting: '等待桥接',
 			updated: '状态已更新',
 		},

@@ -1292,11 +1292,11 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
             <div class="status-inner">
               <div class="section-header">
                 <div class="section-title">运行状态</div>
-                <div class="section-description">查看 stdio 运行情况和 EDA 接入状态。</div>
+                <div class="section-description">查看 MCP 服务运行情况和 EDA 接入状态。</div>
               </div>
               <div class="section-divider"></div>
               <div class="status-section">
-                <div class="hint status-title">stdio 状态</div>
+                <div class="hint status-title">服务状态</div>
                 <div id="runtimeStatus" class="status idle">已就绪。</div>
               </div>
               <div class="status-section">

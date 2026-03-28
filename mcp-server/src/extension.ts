@@ -124,12 +124,12 @@ function stopManualStdioRuntimeProcess(): void {
 async function stopManualStdioRuntimeProcessFromSidebar(): Promise<void> {
   clearExitedManualStdioRuntimeProcess();
   if (!manualStdioRuntimeProcess) {
-    await vscode.window.showInformationMessage('当前没有手动启动的 stdio 进程。');
+    await vscode.window.showInformationMessage('当前没有手动启动的运行时进程。');
     return;
   }
 
   stopManualStdioRuntimeProcess();
-  await vscode.window.showInformationMessage('已停止手动启动的 stdio 进程。');
+  await vscode.window.showInformationMessage('已停止手动启动的运行时进程。');
 }
 
 // 手动启动 stdio 运行时进程。
@@ -142,7 +142,7 @@ async function startManualStdioRuntimeProcess(
 ): Promise<void> {
   clearExitedManualStdioRuntimeProcess();
   if (hasRunningManualStdioRuntimeProcess()) {
-    await vscode.window.showInformationMessage('stdio 进程已在手动调试模式运行。');
+    await vscode.window.showInformationMessage('运行时进程已在手动调试模式运行。');
     return;
   }
 
@@ -153,13 +153,13 @@ async function startManualStdioRuntimeProcess(
   if (runtimeSnapshot
     && !isRuntimeStatusSnapshotStale(runtimeSnapshot)
     && (runtimeSnapshot.runtimeStatus === 'running' || runtimeSnapshot.runtimeStatus === 'starting')) {
-    await vscode.window.showInformationMessage('stdio 进程当前已在运行，无需重复启动。');
+    await vscode.window.showInformationMessage('运行时进程当前已在运行，无需重复启动。');
     return;
   }
 
   const runtimeScriptPath = path.join(extensionPath, 'out', 'server', 'runtime.js');
   if (!fs.existsSync(runtimeScriptPath)) {
-    throw new Error(`未找到 stdio 运行时入口文件: ${runtimeScriptPath}`);
+    throw new Error(`未找到运行时入口文件: ${runtimeScriptPath}`);
   }
 
   const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort());
@@ -186,7 +186,7 @@ async function startManualStdioRuntimeProcess(
     if (manualStdioRuntimeProcess === manualProcess) {
       manualStdioRuntimeProcess = undefined;
     }
-    void vscode.window.showErrorMessage(`手动启动 stdio 进程失败：${error.message}`);
+    void vscode.window.showErrorMessage(`手动启动运行时进程失败：${error.message}`);
   });
 
   manualProcess.once('exit', () => {
@@ -195,7 +195,7 @@ async function startManualStdioRuntimeProcess(
     }
   });
 
-  await vscode.window.showInformationMessage('已手动触发 stdio 进程启动。');
+  await vscode.window.showInformationMessage('已手动触发运行时进程启动。');
 }
 
 // 扩展激活时自动拉起 stdio 运行时，供 HTTP MCP 客户端连接使用。

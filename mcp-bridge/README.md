@@ -1,6 +1,12 @@
 # MCP Bridge
 
-MCP Bridge 是安装在嘉立创 EDA 中的客户端扩展，需要与 VS Code/Cursor 侧的嘉立创 EDA MCP 服务端配套使用。接入后，你可以直接在 Copilot、Cursor Chat 中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
+本扩展为 AI 设计助手的 MCP 版，使用本地 stdio 协议，在 VS Code / Cursor 内置的 Copilot / Chat 中提供原理图分析、器件选型、交互放置等功能，配合嘉立创 EDA 侧的 MCP 服务端扩展使用。
+
+内置几大工具：
+
+- 原理图分析：检查当前图纸的连线、器件和功能关系。
+- 器件选型：在需要确认具体型号时，辅助筛选合适器件。
+- 交互放置：在需要落图时，按确认结果引导器件放置。
 
 ![演示动画](images/demo.gif)
 

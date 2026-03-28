@@ -171,10 +171,14 @@ class McpRuntimeServer {
 				},
 				onError: (error) => {
 					const detailMessage = toRuntimeErrorMessage(error, '127.0.0.1', this.httpPort);
+					this.stopRuntimeStatusHeartbeat();
+					this.writeRuntimeStatus('error', SERVER_STATUS_TEXT.runtime.error, detailMessage);
 					this.writeLog('error', 'runtime.http.error', 'HTTP MCP 服务异常', detailMessage, {
+						runtimeStatus: '异常',
 						errorCode: 'http_runtime_error',
 						detail: detailMessage,
 					});
+					void shutdown(1, false);
 				},
 			});
 		}

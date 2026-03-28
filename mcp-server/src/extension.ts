@@ -199,12 +199,14 @@ async function startManualStdioRuntimeProcess(
 }
 
 // 扩展激活时自动拉起 stdio 运行时，供 HTTP MCP 客户端连接使用。
+// forceRestart 为 true 时跳过状态文件的过期检查，用于配置变更后强制重启。
 function autoStartStdioRuntime(
   extensionPath: string,
   storageDirectoryPath: string,
   sessionId: string,
   configStore: ServerConfigStore,
-  extensionVersion: string
+  extensionVersion: string,
+  forceRestart = false
 ): void {
   if (configStore.getHttpPort() <= 0) {
     return;
@@ -216,12 +218,14 @@ function autoStartStdioRuntime(
   }
 
   const config = configStore.getConfig();
-  const statusFilePath = getRuntimeStatusFilePath(storageDirectoryPath, config, sessionId);
-  const runtimeSnapshot = readRuntimeStatusSnapshot(statusFilePath);
-  if (runtimeSnapshot
-    && !isRuntimeStatusSnapshotStale(runtimeSnapshot)
-    && (runtimeSnapshot.runtimeStatus === 'running' || runtimeSnapshot.runtimeStatus === 'starting')) {
-    return;
+  if (!forceRestart) {
+    const statusFilePath = getRuntimeStatusFilePath(storageDirectoryPath, config, sessionId);
+    const runtimeSnapshot = readRuntimeStatusSnapshot(statusFilePath);
+    if (runtimeSnapshot
+      && !isRuntimeStatusSnapshotStale(runtimeSnapshot)
+      && (runtimeSnapshot.runtimeStatus === 'running' || runtimeSnapshot.runtimeStatus === 'starting')) {
+      return;
+    }
   }
 
   const runtimeScriptPath = path.join(extensionPath, 'out', 'server', 'runtime.js');
@@ -324,8 +328,16 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // 配置变更时停止旧运行时进程并用新配置重新拉起，确保设置保存后立即生效。
   context.subscriptions.push(configStore.onDidChangeConfig(() => {
+    try {
+      configStore.validateConfig(configStore.getConfig());
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      void vscode.window.showErrorMessage(`配置错误：${msg}`);
+      return;
+    }
+    sidebarProvider.resetRuntimeErrorState();
     stopManualStdioRuntimeProcess();
-    autoStartStdioRuntime(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion);
+    autoStartStdioRuntime(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion, true);
   }));
 }
 

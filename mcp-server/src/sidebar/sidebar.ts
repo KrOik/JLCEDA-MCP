@@ -78,7 +78,9 @@ function createSidebarRuntimeSnapshot(storageDirectoryPath: string, sessionId: s
       host: config.host,
       port: config.port,
       runtimeStatus: snapshot.runtimeStatus,
-      runtimeMessage: snapshot.runtimeMessage,
+      runtimeMessage: snapshot.runtimeStatus === 'error' && snapshot.lastErrorMessage
+        ? snapshot.lastErrorMessage
+        : snapshot.runtimeMessage,
       bridgeStatus: bridgeState.bridgeStatus,
       bridgeMessage: bridgeState.bridgeMessage,
       lastDisconnect: snapshot.lastDisconnect,
@@ -105,6 +107,10 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
   private readonly logPipeline = new SidebarLogPipeline();
   // 已弹出过版本不一致提示的去重键，格式为 "bridgeVersion|serverVersion"。
   private lastNotifiedVersionMismatch = '';
+  // 已弹出过运行时错误提示的去重键，与当前错误消息相同时不重复弹出。
+  private lastNotifiedRuntimeError = '';
+  // resetRuntimeErrorState 被调用时记录的时刻，早于该时刻的状态快照不再触发弹窗。
+  private lastRuntimeErrorResetAt = 0;
   // 当前待处理的侧边栏交互请求。
   private currentInteraction: SidebarInteractionRequest | null = null;
   // 当前交互请求的序列化签名，用于去重推送。
@@ -316,6 +322,15 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     this.stopInteractionSyncLoop();
   }
 
+  /**
+   * 重置运行时错误弹窗去重状态，使下一次 error 必然弹出通知。
+   * 在配置变更强制重启前调用，确保同一错误消息也能再次弹出。
+   */
+  public resetRuntimeErrorState(): void {
+    this.lastNotifiedRuntimeError = '';
+    this.lastRuntimeErrorResetAt = Date.now();
+  }
+
   private postConfig(config: ServerConfig): void {
     // 将配置同步到前端输入框。
     this.postMessage({
@@ -397,6 +412,19 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
           : `MCP 服务端插件版本（${mismatch.serverVersion}\uff09低于 EDA Bridge 版本（${mismatch.bridgeVersion}\uff09，版本不一致可能导致功能异常，建议将 MCP 服务端插件升级至最新版本。`;
         void vscode.window.showErrorMessage(message);
       }
+    }
+
+    // 运行时转入 error 状态时弹出 VS Code 右下角错误通知，相同消息只弹一次。
+    // 同时过滤掉早于上次重置时刻的快照，避免配置修正后旧错误文件再次触发弹窗。
+    if (runtimeSnapshot.state.runtimeStatus === 'error') {
+      const errorMsg = runtimeSnapshot.state.runtimeMessage;
+      const snapshotTime = new Date(runtimeSnapshot.state.updatedAt).getTime();
+      if (errorMsg && errorMsg !== this.lastNotifiedRuntimeError && snapshotTime > this.lastRuntimeErrorResetAt) {
+        this.lastNotifiedRuntimeError = errorMsg;
+        void vscode.window.showErrorMessage(`MCP 运行时错误：${errorMsg}`);
+      }
+    } else {
+      this.lastNotifiedRuntimeError = '';
     }
 
     // 状态变化时先更新日志，再同步当前展示状态与连接列表。

@@ -42,13 +42,14 @@ export class ServerConfigStore implements vscode.Disposable {
 
   /**
    * 读取当前服务配置。
-   * @returns 当前 host 与 port。
+   * @returns 当前 host、port 与 httpPort。
    */
   public getConfig(): ServerConfig {
     const configuration = vscode.workspace.getConfiguration(this.section);
     const host = configuration.get<string>('host', '127.0.0.1');
     const port = configuration.get<number>('port', 8765);
-    return { host, port };
+    const httpPort = configuration.get<number>('httpPort', 7655);
+    return { host, port, httpPort };
   }
 
   /**
@@ -59,6 +60,7 @@ export class ServerConfigStore implements vscode.Disposable {
     const configuration = vscode.workspace.getConfiguration(this.section);
     await configuration.update('host', config.host, vscode.ConfigurationTarget.Global);
     await configuration.update('port', config.port, vscode.ConfigurationTarget.Global);
+    await configuration.update('httpPort', config.httpPort, vscode.ConfigurationTarget.Global);
   }
 
   /**
@@ -66,8 +68,7 @@ export class ServerConfigStore implements vscode.Disposable {
    * @returns HTTP 监听端口，0 表示禁用。
    */
   public getHttpPort(): number {
-    const configuration = vscode.workspace.getConfiguration(this.section);
-    return configuration.get<number>('httpPort', 7655);
+    return this.getConfig().httpPort;
   }
 
   /**
@@ -101,6 +102,11 @@ export class ServerConfigStore implements vscode.Disposable {
     // 端口必须是合法整数范围。
     if (!Number.isInteger(config.port) || config.port < 1 || config.port > 65535) {
       throw new Error('端口必须是 1-65535 的整数。');
+    }
+
+    // HTTP MCP 端口必须是 0（禁用）或合法端口范围。
+    if (!Number.isInteger(config.httpPort) || config.httpPort < 0 || config.httpPort > 65535) {
+      throw new Error('HTTP MCP 端口必须是 0-65535 的整数（0 表示禁用）。');
     }
   }
 

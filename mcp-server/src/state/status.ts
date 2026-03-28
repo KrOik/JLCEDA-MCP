@@ -86,4 +86,5 @@ export interface ServerStatus {
 export interface ServerConfig {
   host: string;
   port: number;
+  httpPort: number;
 }

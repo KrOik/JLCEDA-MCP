@@ -1321,21 +1321,21 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         <div class="card-inner config-panel">
           <div id="bridgeConfigToggle" class="section-header status-log-toggle" role="button" tabindex="0" aria-expanded="false" aria-controls="bridgeConfigContent">
             <div class="section-title-row">
-              <div class="section-title">桥接设置</div>
+              <div class="section-title">服务设置</div>
               <div class="status-log-toggle-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" focusable="false">
                   <use href="#icon-chevron-down"></use>
                 </svg>
               </div>
             </div>
-            <div class="section-description">设置桥接监听地址，并将当前桥接地址提供给 EDA Bridge。</div>
+            <div class="section-description">设置服务监听地址与端口，并将桥接地址提供给 EDA Bridge。</div>
           </div>
           <div id="bridgeConfigContent" class="status-log-content">
             <div class="section-divider"></div>
             <label for="host">监听 IP</label>
             <input id="host" type="text" value="127.0.0.1" />
             <div class="field-gap"></div>
-            <label for="port">监听端口</label>
+            <label for="port">桥接端口</label>
             <div class="number-input-wrapper">
               <input id="port" type="number" min="1" max="65535" value="8765" />
               <div class="number-spinner" aria-hidden="true">
@@ -1343,6 +1343,19 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
                   <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><use href="#icon-chevron-down"></use></svg>
                 </button>
                 <button type="button" class="spin-down" title="减少端口">
+                  <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><use href="#icon-chevron-down"></use></svg>
+                </button>
+              </div>
+            </div>
+            <div class="field-gap"></div>
+            <label for="httpPort">HTTP MCP 端口（0 = 禁用）</label>
+            <div class="number-input-wrapper">
+              <input id="httpPort" type="number" min="0" max="65535" value="7655" />
+              <div class="number-spinner" aria-hidden="true">
+                <button type="button" class="spin-up-http" title="增加端口">
+                  <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><use href="#icon-chevron-down"></use></svg>
+                </button>
+                <button type="button" class="spin-down-http" title="减少端口">
                   <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><use href="#icon-chevron-down"></use></svg>
                 </button>
               </div>
@@ -1359,7 +1372,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
             </div>
             <div id="httpAddressBox" class="bridge-address-box" style="display:none;">
               <div class="bridge-address-header">
-                <div class="hint">HTTP MCP 地址（第三方工具）：</div>
+                <div class="hint">HTTP MCP 地址：</div>
                 <button id="copyHttpAddress" class="secondary">复制</button>
               </div>
               <div id="httpAddress" class="bridge-address-text"></div>
@@ -1415,9 +1428,12 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     };
     const hostInput = document.getElementById('host');
     const portInput = document.getElementById('port');
+    const httpPortInput = document.getElementById('httpPort');
     const saveButton = document.getElementById('save');
     const spinUpButton = document.querySelector('.number-spinner .spin-up');
     const spinDownButton = document.querySelector('.number-spinner .spin-down');
+    const spinUpHttpButton = document.querySelector('.number-spinner .spin-up-http');
+    const spinDownHttpButton = document.querySelector('.number-spinner .spin-down-http');
     const pageScrollElement = document.querySelector('.wrap');
     const interactionHostElement = document.getElementById('interactionHost');
     const copyBridgeAddressButton = document.getElementById('copyBridgeAddress');
@@ -1476,7 +1492,6 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     let isDebugControlCollapsed = false;
     let copyBridgeAddressButtonResetTimer = null;
     let copyHttpAddressButtonResetTimer = null;
-    let currentHttpPort = 0;
     let statusLogScrollFrameId = 0;
     let logFieldSchema = {
       fieldOrder: [],
@@ -2754,7 +2769,8 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     function getConfig() {
       return {
         host: String(hostInput.value || '').trim(),
-        port: Number.parseInt(String(portInput.value || '0'), 10)
+        port: Number.parseInt(String(portInput.value || '0'), 10),
+        httpPort: Number.parseInt(String(httpPortInput ? httpPortInput.value : '0'), 10) || 0
       };
     }
 
@@ -2768,6 +2784,16 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       return 'ws://' + config.host + ':' + config.port + '/bridge/ws';
     }
 
+    // 根据当前 httpPort 输入生成 HTTP MCP 地址预览。
+    function getHttpAddressPreview() {
+      const config = getConfig();
+      if (!Number.isInteger(config.httpPort) || config.httpPort <= 0 || config.httpPort > 65535) {
+        return '';
+      }
+
+      return 'http://127.0.0.1:' + config.httpPort + '/mcp';
+    }
+
     // 刷新保存按钮和桥接地址预览区域。
     function refreshBridgeAddressPreview() {
       const bridgeAddress = getBridgeAddressPreview();
@@ -2778,6 +2804,19 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         : '请先输入有效的监听地址。';
       bridgeAddressElement.classList.toggle('placeholder', !hasBridgeAddress);
       copyBridgeAddressButton.disabled = !hasBridgeAddress;
+
+      // 展示或隐藏 HTTP MCP 地址预览。
+      const httpAddress = getHttpAddressPreview();
+      const hasHttpAddress = httpAddress.length > 0;
+      if (httpAddressBoxElement) {
+        httpAddressBoxElement.style.display = hasHttpAddress ? '' : 'none';
+      }
+      if (httpAddressElement && hasHttpAddress) {
+        httpAddressElement.textContent = httpAddress;
+      }
+      if (copyHttpAddressButton) {
+        copyHttpAddressButton.disabled = !hasHttpAddress;
+      }
     }
 
     // 复制成功后短暂反馈按钮状态。
@@ -2798,7 +2837,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         return false;
       }
       const current = getConfig();
-      return current.host !== savedConfig.host || current.port !== savedConfig.port;
+      return current.host !== savedConfig.host || current.port !== savedConfig.port || current.httpPort !== savedConfig.httpPort;
     }
 
     function refreshSaveButton() {
@@ -2815,12 +2854,14 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       const configToSave = getConfig();
       previousSavedConfig = savedConfig ? {
         host: savedConfig.host,
-        port: savedConfig.port
+        port: savedConfig.port,
+        httpPort: savedConfig.httpPort
       } : null;
       isSaving = true;
       savedConfig = {
         host: configToSave.host,
-        port: configToSave.port
+        port: configToSave.port,
+        httpPort: configToSave.httpPort
       };
       refreshSaveButton();
       vscode.postMessage({ command: 'save', payload: configToSave });
@@ -2885,17 +2926,17 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
 
     if (copyHttpAddressButton) {
       copyHttpAddressButton.addEventListener('click', () => {
-        if (currentHttpPort <= 0) {
+        const httpAddress = getHttpAddressPreview();
+        if (httpAddress.length === 0) {
           return;
         }
 
-        const httpAddress = 'http://127.0.0.1:' + currentHttpPort + '/mcp';
         vscode.postMessage({ command: 'copyBridgeAddress', payload: httpAddress });
         showCopyHttpAddressDoneState();
       });
     }
 
-    // 自定义微调按钮行为：增/减端口值
+    // 自定义微调按钮行为：增/减桥接端口值
     if (spinUpButton && portInput) {
       spinUpButton.addEventListener('click', (ev) => {
         ev.preventDefault();
@@ -2916,6 +2957,34 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         if (!input) return;
         const cur = Number.parseInt(String(input.value || '0'), 10) || 0;
         const min = Number.parseInt(String(input.min || '1'), 10) || 1;
+        if (cur > min) {
+          input.value = String(cur - 1);
+          refreshSaveButton();
+        }
+      });
+    }
+
+    // 自定义微调按钮行为：增/减 HTTP MCP 端口值
+    if (spinUpHttpButton && httpPortInput) {
+      spinUpHttpButton.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const input = /** @type {HTMLInputElement} */ (httpPortInput);
+        if (!input) return;
+        const cur = Number.parseInt(String(input.value || '0'), 10) || 0;
+        const max = Number.parseInt(String(input.max || '65535'), 10) || 65535;
+        if (cur < max) {
+          input.value = String(cur + 1);
+          refreshSaveButton();
+        }
+      });
+    }
+    if (spinDownHttpButton && httpPortInput) {
+      spinDownHttpButton.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const input = /** @type {HTMLInputElement} */ (httpPortInput);
+        if (!input) return;
+        const cur = Number.parseInt(String(input.value || '0'), 10) || 0;
+        const min = 0;
         if (cur > min) {
           input.value = String(cur - 1);
           refreshSaveButton();
@@ -3113,6 +3182,12 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       refreshSaveButton();
     });
 
+    if (httpPortInput) {
+      httpPortInput.addEventListener('input', () => {
+        refreshSaveButton();
+      });
+    }
+
     if (statusLogViewportElement) {
       statusLogViewportElement.addEventListener('scroll', () => {
         hideStatusLogContextMenu();
@@ -3124,9 +3199,13 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       if (message.type === 'config') {
         hostInput.value = message.payload.host;
         portInput.value = String(message.payload.port);
+        if (httpPortInput) {
+          httpPortInput.value = String(typeof message.payload.httpPort === 'number' ? message.payload.httpPort : 0);
+        }
         savedConfig = {
           host: String(message.payload.host || '').trim(),
-          port: Number.parseInt(String(message.payload.port || '0'), 10)
+          port: Number.parseInt(String(message.payload.port || '0'), 10),
+          httpPort: typeof message.payload.httpPort === 'number' ? message.payload.httpPort : 0
         };
         previousSavedConfig = null;
         isSaving = false;
@@ -3136,7 +3215,8 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         if (isSaving && message.payload.runtimeStatus === 'error') {
           savedConfig = previousSavedConfig ? {
             host: previousSavedConfig.host,
-            port: previousSavedConfig.port
+            port: previousSavedConfig.port,
+            httpPort: previousSavedConfig.httpPort
           } : null;
           previousSavedConfig = null;
           isSaving = false;
@@ -3184,15 +3264,6 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       }
       if (message.type === 'closeSidebarOnOpenEditor') {
         setCloseSidebarToggleState(message.payload);
-      }
-      if (message.type === 'httpPort') {
-        currentHttpPort = typeof message.payload === 'number' && message.payload > 0 ? message.payload : 0;
-        if (httpAddressBoxElement) {
-          httpAddressBoxElement.style.display = currentHttpPort > 0 ? '' : 'none';
-        }
-        if (httpAddressElement && currentHttpPort > 0) {
-          httpAddressElement.textContent = 'http://127.0.0.1:' + currentHttpPort + '/mcp';
-        }
       }
       if (message.type === 'interaction') {
         pendingInteractionActionKey = '';

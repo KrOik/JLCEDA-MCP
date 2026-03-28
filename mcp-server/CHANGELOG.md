@@ -3,6 +3,10 @@
 ### 变更
 
 - 配套 EDA 扩展名称由「MCP 连接器」更名为「MCP Bridge」，侧边栏提示与状态文案同步更新。
+- 新增 HTTP MCP 传输（`POST /mcp`），支持通过 `jlcMcpServer.httpPort` 暴露本地 HTTP 入口，便于第三方客户端连接。
+- 运行时启动参数新增 `--http-port`，在同一运行时进程内同时承载 stdio 与 HTTP 两种 MCP 传输。
+- 侧边栏新增 HTTP MCP 地址展示与一键复制能力，便于外部工具快速接入。
+- 调整 stdio 进程接管时序：当 Copilot 即将拉起 stdio 进程时，先停止扩展自动预热进程，再由 VS Code 拉起新进程，避免桥接端口冲突。
 
 ---
 

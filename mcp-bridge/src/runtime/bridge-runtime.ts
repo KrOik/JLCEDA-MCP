@@ -30,7 +30,7 @@ import { handleSchematicNetlistTask } from '../mcp/schematic-netlist-handler.ts'
 import { handleSchematicTopologyTask } from '../mcp/schematic-topology-handler.ts';
 import { ConnectorStateManager } from '../state/state-manager.ts';
 import { BridgeStatusReporter } from '../state/status-reporter.ts';
-import { safeCall, toSafeErrorMessage, toSerializableAsync } from '../utils';
+import { safeCall, toSafeErrorMessage, toSerializableAsync } from '../utils.ts';
 import { BridgeTransport } from './bridge-transport.ts';
 
 const RECONNECT_INTERVAL_MS = 1200;

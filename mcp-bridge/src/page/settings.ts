@@ -9,21 +9,21 @@
  * ------------------------------------------------------------------------
  */
 
-import type { ConnectionStatusSnapshot } from '../state/status-store';
+import type { ConnectionStatusSnapshot } from '../state/status-store.ts';
 import {
 	DEFAULT_MCP_WS_URL,
 	getConfiguredMcpUrl,
 	getMcpServerUrlChangedTopic,
 	normalizeMcpUrl,
 	saveConfiguredMcpUrl,
-} from '../bridge/config';
+} from '../bridge/config.ts';
 import { connectorLogPipeline } from '../logging/log.ts';
 import { ConnectorStateManager } from '../state/state-manager.ts';
 import {
 	isConnectionStatusSnapshot,
 	readConnectionStatus,
-} from '../state/status-store';
-import { toSafeErrorMessage } from '../utils';
+} from '../state/status-store.ts';
+import { toSafeErrorMessage } from '../utils.ts';
 
 // 配置保存提示展示时长，单位秒。
 const CONFIG_TOAST_TIMER_SECONDS = 3;

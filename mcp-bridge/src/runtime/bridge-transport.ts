@@ -15,11 +15,11 @@ import type {
 	BridgeQueueTask,
 	BridgeServerMessage,
 	BridgeServerRoleMessage,
-} from '../bridge/protocol';
+} from '../bridge/protocol.ts';
 import type { UnifiedLogEntry } from '../logging/log.ts';
 import { connectorLogPipeline } from '../logging/log.ts';
 import { ConnectorStateManager } from '../state/state-manager.ts';
-import { isPlainObjectRecord, toSafeErrorMessage } from '../utils';
+import { isPlainObjectRecord, toSafeErrorMessage } from '../utils.ts';
 
 // 底层 WebSocket 连接建立超时（从 register 到 onOpen 回调触发）。
 // 用于等待 stdio 进程与桥接通道启动就绪，再进入后续工具调用流程。

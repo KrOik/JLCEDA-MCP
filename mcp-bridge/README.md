@@ -1,8 +1,8 @@
 # MCP Bridge
 
-本扩展为 AI 设计助手的 MCP 版，使用本地 stdio 协议，在 VS Code / Cursor 内置的 Copilot / Chat 中提供原理图分析、器件选型、交互放置等功能，配合嘉立创 EDA 侧的 MCP 服务端扩展使用。
+本扩展为嘉立创 EDA **AI 设计助手** 的 MCP 版，支持双协议连接（ stdio / http），在 VS Code / Cursor 内的聊天工具（Copilot/Chat/Claude Code/Codex等）中提供原理图分析、器件选型、交互放置等功能，配合嘉立创 EDA 侧的 MCP 服务端扩展使用。
 
-内置几大工具：
+内置专用工具：
 
 - 原理图分析：检查当前图纸的连线、器件和功能关系。
 - 器件选型：在需要确认具体型号时，辅助筛选合适器件。
@@ -10,7 +10,7 @@
 
 ![演示动画](images/demo.gif)
 
-> 这套方案的链路是：EDA -> WebSocket (Bridge) -> stdio (MCP) -> 内置 AI 助手（Copilot / Cursor Chat）。
+> 这套方案的链路是：EDA -> WebSocket (Bridge) -> stdio (MCP) -> AI 助手（Copilot / Cursor Chat/Claude Code/Codex）。
 
 > B 站演示视频：https://www.bilibili.com/video/BV11QwuzxEDy/
 
@@ -19,8 +19,6 @@
 ## 安装
 
 **服务端**和**客户端**两个扩展都需要安装。
-
-> 目前仅支持 VS Code 内置 Copilot 和 Cursor 内置 Chat，其他第三方聊天工具暂不支持。
 
 > 初次安装时，先确认 VS Code/Cursor 与嘉立创 EDA 两侧扩展都已安装，再检查聊天工具的 MCP 服务配置是否正确。
 
@@ -49,9 +47,7 @@
 - **第一行（桥接状态）**：活动页面显示"已连接"；待命页面显示"当前活动客户端：xxx"；连接失败显示"连接失败"。
 - **第二行（WebSocket 状态）**：正在连接时显示"连接中"；连接成功后显示"当前客户端：xxx"；连接失败时显示具体错误原因。
 
-连接失败后系统会自动重试。
-
-首次发起聊天后服务才会启动，且仅在原理图或 PCB 页面可连接。
+仅在原理图或 PCB 页面可连接，连接失败后系统会自动重试。
 
 ## 交互说明
 

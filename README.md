@@ -8,12 +8,12 @@ JLCEDA MCP 是一套面向嘉立创 EDA 的本地 MCP 双扩展方案，由 mcp-
 嘉立创 EDA（mcp-bridge）
     ↕ WebSocket 桥接
 VS Code / Cursor（mcp-server）
-    ↕ stdio MCP 协议
+    ↕ stdio/http MCP 协议
 内置 AI 助手（Copilot / Cursor Chat）
 ```
 
 - **mcp-bridge**：EDA 侧扩展，建立到 mcp-server 的 WebSocket 连接，负责让 AI 在嘉立创 EDA 中读取当前图纸信息并执行相关操作。
-- **mcp-server**：VS Code/Cursor 侧扩展，通过 stdio 将多项 MCP 工具能力暴露给 AI 助手，并托管桥接 WebSocket 服务接收 Bridge 连接。
+- **mcp-server**：VS Code/Cursor 侧扩展，通过 stdio/http MCP 协议将多项 MCP 工具能力暴露给 AI 助手，并托管桥接 WebSocket 服务接收 Bridge 连接。
 
 ## 可用工具
 

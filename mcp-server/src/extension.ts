@@ -321,6 +321,12 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // HTTP MCP 传输已启用时，扩展激活阶段自动拉起运行时，确保外部工具可立即连接。
   autoStartStdioRuntime(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion);
+
+  // 配置变更时停止旧运行时进程并用新配置重新拉起，确保设置保存后立即生效。
+  context.subscriptions.push(configStore.onDidChangeConfig(() => {
+    stopManualStdioRuntimeProcess();
+    autoStartStdioRuntime(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion);
+  }));
 }
 
 /**

@@ -45,7 +45,7 @@ function getRuntimeScriptPath(extensionPath: string): string {
 }
 
 // 统一构造 stdio 运行时启动参数。
-function getRuntimeArgs(extensionPath: string, storageDirectoryPath: string, sessionId: string, config: ServerConfig, extensionVersion: string, agentInstructions: string): string[] {
+function getRuntimeArgs(extensionPath: string, storageDirectoryPath: string, sessionId: string, config: ServerConfig, extensionVersion: string, agentInstructions: string, httpPort: number): string[] {
   const statusFilePath = getRuntimeStatusFilePath(storageDirectoryPath, config, sessionId);
   const args = [
     getRuntimeScriptPath(extensionPath),
@@ -69,6 +69,9 @@ function getRuntimeArgs(extensionPath: string, storageDirectoryPath: string, ses
   if (agentInstructions.trim().length > 0) {
     args.push(AGENT_INSTRUCTIONS_FLAG, Buffer.from(agentInstructions, 'utf8').toString('base64'));
   }
+  if (httpPort > 0) {
+    args.push('--http-port', String(httpPort));
+  }
   return args;
 }
 
@@ -77,6 +80,7 @@ function getRuntimeArgs(extensionPath: string, storageDirectoryPath: string, ses
  * @param extensionPath 扩展目录绝对路径。
  * @param config 当前桥接监听配置。
  * @param version 服务定义版本号。
+ * @param httpPort HTTP MCP 传输监听端口，0 表示禁用。
  * @returns VS Code stdio MCP 服务定义。
  */
 export function createVscodeStdioServerDefinition(
@@ -85,12 +89,13 @@ export function createVscodeStdioServerDefinition(
   sessionId: string,
   config: ServerConfig,
   version: string,
-  agentInstructions: string
+  agentInstructions: string,
+  httpPort: number
 ): vscode.McpStdioServerDefinition {
   const definition = new vscode.McpStdioServerDefinition(
     '嘉立创 EDA',
     getRuntimeCommand(),
-    getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, agentInstructions),
+    getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, agentInstructions, httpPort),
     {},
     version
   );
@@ -103,6 +108,7 @@ export function createVscodeStdioServerDefinition(
  * @param extensionPath 扩展目录绝对路径。
  * @param config 当前桥接监听配置。
  * @param version 服务定义版本号。
+ * @param httpPort HTTP MCP 传输监听端口，0 表示禁用。
  * @returns Cursor stdio MCP 服务定义。
  */
 export function createCursorStdioServerConfig(
@@ -111,13 +117,14 @@ export function createCursorStdioServerConfig(
   sessionId: string,
   config: ServerConfig,
   version: string,
-  agentInstructions: string
+  agentInstructions: string,
+  httpPort: number
 ): CursorStdioServerConfig {
   return {
     name: JLC_MCP_SERVER_NAME,
     server: {
       command: getRuntimeCommand(),
-      args: getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, agentInstructions),
+      args: getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, agentInstructions, httpPort),
       env: {}
     }
   };

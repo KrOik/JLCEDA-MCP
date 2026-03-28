@@ -64,7 +64,7 @@ function registerCursorMcpServer(
   const config = configStore.getConfig();
   configStore.validateConfig(config);
   cursorMcpApi.unregisterServer(JLC_MCP_SERVER_NAME);
-  cursorMcpApi.registerServer(createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions()));
+  cursorMcpApi.registerServer(createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort()));
 }
 
 // 清理 Cursor 中的已注册服务定义。
@@ -162,7 +162,7 @@ async function startManualStdioRuntimeProcess(
     throw new Error(`未找到 stdio 运行时入口文件: ${runtimeScriptPath}`);
   }
 
-  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions());
+  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort());
   const manualProcess = spawn(cursorConfig.server.command, cursorConfig.server.args, {
     cwd: extensionPath,
     env: {
@@ -196,6 +196,62 @@ async function startManualStdioRuntimeProcess(
   });
 
   await vscode.window.showInformationMessage('已手动触发 stdio 进程启动。');
+}
+
+// 扩展激活时自动拉起 stdio 运行时，供 HTTP MCP 客户端连接使用。
+function autoStartStdioRuntime(
+  extensionPath: string,
+  storageDirectoryPath: string,
+  sessionId: string,
+  configStore: ServerConfigStore,
+  extensionVersion: string
+): void {
+  if (configStore.getHttpPort() <= 0) {
+    return;
+  }
+
+  clearExitedManualStdioRuntimeProcess();
+  if (hasRunningManualStdioRuntimeProcess()) {
+    return;
+  }
+
+  const config = configStore.getConfig();
+  const statusFilePath = getRuntimeStatusFilePath(storageDirectoryPath, config, sessionId);
+  const runtimeSnapshot = readRuntimeStatusSnapshot(statusFilePath);
+  if (runtimeSnapshot
+    && !isRuntimeStatusSnapshotStale(runtimeSnapshot)
+    && (runtimeSnapshot.runtimeStatus === 'running' || runtimeSnapshot.runtimeStatus === 'starting')) {
+    return;
+  }
+
+  const runtimeScriptPath = path.join(extensionPath, 'out', 'server', 'runtime.js');
+  if (!fs.existsSync(runtimeScriptPath)) {
+    return;
+  }
+
+  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort());
+  const proc = spawn(cursorConfig.server.command, cursorConfig.server.args, {
+    cwd: extensionPath,
+    env: { ...process.env, ...cursorConfig.server.env },
+    windowsHide: true,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  manualStdioRuntimeProcess = proc;
+
+  proc.stdout.on('data', () => { return; });
+  proc.stderr.on('data', () => { return; });
+
+  proc.once('error', () => {
+    if (manualStdioRuntimeProcess === proc) {
+      manualStdioRuntimeProcess = undefined;
+    }
+  });
+
+  proc.once('exit', () => {
+    if (manualStdioRuntimeProcess === proc) {
+      manualStdioRuntimeProcess = undefined;
+    }
+  });
 }
 
 /**
@@ -259,9 +315,12 @@ export function activate(context: vscode.ExtensionContext): void {
     return;
   }
 
-  const provider = new JlcMcpDefinitionProvider(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion);
+  const provider = new JlcMcpDefinitionProvider(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion, stopManualStdioRuntimeProcess);
   context.subscriptions.push(provider);
   context.subscriptions.push(vscode.lm.registerMcpServerDefinitionProvider('jlcMcpControl.provider', provider));
+
+  // HTTP MCP 传输已启用时，扩展激活阶段自动拉起运行时，确保外部工具可立即连接。
+  autoStartStdioRuntime(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion);
 }
 
 /**

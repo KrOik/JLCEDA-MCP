@@ -36,6 +36,7 @@ import { ToolDispatcher } from './mcp/tool-dispatcher';
 import { createStdioLineTransport } from './core/transports/line-transport';
 import { toSafeErrorMessage } from '../utils';
 import { startBridgeWebSocketServer } from './core/transports/bridge-server';
+import { startHttpMcpServer } from './core/transports/http-server';
 
 const HOST_FLAG = '--host';
 const PORT_FLAG = '--port';
@@ -46,6 +47,7 @@ const EXTENSION_VERSION_FLAG = '--extension-version';
 const AGENT_INSTRUCTIONS_FLAG = '--agent-instructions';
 const DEBUG_ENABLE_SYSTEM_LOG_FLAG = '--enable-system-log';
 const DEBUG_ENABLE_CONNECTION_LIST_FLAG = '--enable-connection-list';
+const HTTP_PORT_FLAG = '--http-port';
 const BRIDGE_WS_PATH = '/bridge/ws';
 const RUNTIME_STATUS_HEARTBEAT_INTERVAL_MS = 1000;
 const SERVER_STATUS_TEXT = ServerStateManager.text;
@@ -78,6 +80,7 @@ class McpRuntimeServer {
 	public constructor(
 		private readonly host: string,
 		private readonly port: number,
+		private readonly httpPort: number,
 		private readonly rpcHandler: RpcHandler,
 		private readonly statusFilePath: string,
 	) {
@@ -158,6 +161,24 @@ class McpRuntimeServer {
 		});
 		stdioTransport.start();
 
+		let httpMcpServer: ReturnType<typeof startHttpMcpServer> | undefined;
+		if (this.httpPort > 0) {
+			httpMcpServer = startHttpMcpServer({
+				port: this.httpPort,
+				rpcHandler: this.rpcHandler,
+				onListening: () => {
+					this.writeLog('success', 'runtime.http.listening', 'HTTP MCP 监听已就绪', `HTTP MCP 已监听 http://127.0.0.1:${this.httpPort}/mcp`);
+				},
+				onError: (error) => {
+					const detailMessage = toRuntimeErrorMessage(error, '127.0.0.1', this.httpPort);
+					this.writeLog('error', 'runtime.http.error', 'HTTP MCP 服务异常', detailMessage, {
+						errorCode: 'http_runtime_error',
+						detail: detailMessage,
+					});
+				},
+			});
+		}
+
 		const shutdown = async (exitCode = 0, writeStoppedStatus = true): Promise<void> => {
 			if (shuttingDown) {
 				return;
@@ -173,6 +194,9 @@ class McpRuntimeServer {
 				client.close(1001, SERVER_STATUS_TEXT.bridge.serverClosingReason);
 			}
 			await bridgeWebSocketServer.close();
+			if (httpMcpServer) {
+				await httpMcpServer.close();
+			}
 			setBridgeDisconnectHandler(undefined);
 			setVersionMismatchHandler(undefined);
 			this.writeLog('info', 'runtime.stopped', '服务已停止', SERVER_STATUS_TEXT.runtime.stopped, {
@@ -233,6 +257,7 @@ class McpRuntimeServer {
 		const snapshot: RuntimeStatusSnapshot = {
 			host: this.host,
 			port: this.port,
+			httpPort: this.httpPort > 0 ? this.httpPort : undefined,
 			runtimeStatus,
 			runtimeMessage,
 			bridgeClientCount: bridgeStatus.connectedClients,
@@ -297,6 +322,16 @@ function getServerConfig(): { host: string; port: number } {
 	return { host, port };
 }
 
+// 解析 HTTP MCP 传输端口，0 表示禁用。
+function getHttpPort(): number {
+	const httpPortRaw = getArgValue(HTTP_PORT_FLAG) ?? '0';
+	const httpPort = Number.parseInt(httpPortRaw, 10);
+	if (!Number.isInteger(httpPort) || httpPort < 0 || httpPort > 65535) {
+		return 0;
+	}
+	return httpPort;
+}
+
 // 读取状态文件参数。
 function getStatusFilePath(): string {
 	const statusFilePath = String(getArgValue(STATUS_FILE_PATH_FLAG) ?? '').trim();
@@ -357,7 +392,8 @@ function startRuntimeServer(): void {
 	const toolDispatcher = new ToolDispatcher(storageDirectoryPath, sessionId);
 	const rpcHandler = new RpcHandler(toolDispatcher, extensionVersion, agentInstructions);
 	setServerVersion(extensionVersion);
-	const runtimeServer = new McpRuntimeServer(host, port, rpcHandler, statusFilePath);
+	const httpPort = getHttpPort();
+	const runtimeServer = new McpRuntimeServer(host, port, httpPort, rpcHandler, statusFilePath);
 	runtimeServer.start();
 }
 

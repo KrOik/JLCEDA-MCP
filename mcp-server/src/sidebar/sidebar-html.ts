@@ -1357,6 +1357,13 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
               </div>
               <div id="bridgeAddress" class="bridge-address-text">ws://127.0.0.1:8765/bridge/ws</div>
             </div>
+            <div id="httpAddressBox" class="bridge-address-box" style="display:none;">
+              <div class="bridge-address-header">
+                <div class="hint">HTTP MCP 地址（第三方工具）：</div>
+                <button id="copyHttpAddress" class="secondary">复制</button>
+              </div>
+              <div id="httpAddress" class="bridge-address-text"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1414,6 +1421,9 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     const pageScrollElement = document.querySelector('.wrap');
     const interactionHostElement = document.getElementById('interactionHost');
     const copyBridgeAddressButton = document.getElementById('copyBridgeAddress');
+    const httpAddressBoxElement = document.getElementById('httpAddressBox');
+    const httpAddressElement = document.getElementById('httpAddress');
+    const copyHttpAddressButton = document.getElementById('copyHttpAddress');
     const openEditorButton = document.getElementById('openEditor');
     const startStdioRuntimeButton = document.getElementById('startStdioRuntime');
     const stopStdioRuntimeButton = document.getElementById('stopStdioRuntime');
@@ -1465,6 +1475,8 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     let isAiInstructionsCollapsed = false;
     let isDebugControlCollapsed = false;
     let copyBridgeAddressButtonResetTimer = null;
+    let copyHttpAddressButtonResetTimer = null;
+    let currentHttpPort = 0;
     let statusLogScrollFrameId = 0;
     let logFieldSchema = {
       fieldOrder: [],
@@ -2858,6 +2870,31 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       showCopyBridgeAddressDoneState();
     });
 
+    // 复制 HTTP MCP 地址成功后短暂反馈按钮状态。
+    function showCopyHttpAddressDoneState() {
+      if (copyHttpAddressButtonResetTimer !== null) {
+        clearTimeout(copyHttpAddressButtonResetTimer);
+      }
+
+      copyHttpAddressButton.textContent = '已复制';
+      copyHttpAddressButtonResetTimer = setTimeout(() => {
+        copyHttpAddressButton.textContent = '复制';
+        copyHttpAddressButtonResetTimer = null;
+      }, 1500);
+    }
+
+    if (copyHttpAddressButton) {
+      copyHttpAddressButton.addEventListener('click', () => {
+        if (currentHttpPort <= 0) {
+          return;
+        }
+
+        const httpAddress = 'http://127.0.0.1:' + currentHttpPort + '/mcp';
+        vscode.postMessage({ command: 'copyBridgeAddress', payload: httpAddress });
+        showCopyHttpAddressDoneState();
+      });
+    }
+
     // 自定义微调按钮行为：增/减端口值
     if (spinUpButton && portInput) {
       spinUpButton.addEventListener('click', (ev) => {
@@ -3147,6 +3184,15 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       }
       if (message.type === 'closeSidebarOnOpenEditor') {
         setCloseSidebarToggleState(message.payload);
+      }
+      if (message.type === 'httpPort') {
+        currentHttpPort = typeof message.payload === 'number' && message.payload > 0 ? message.payload : 0;
+        if (httpAddressBoxElement) {
+          httpAddressBoxElement.style.display = currentHttpPort > 0 ? '' : 'none';
+        }
+        if (httpAddressElement && currentHttpPort > 0) {
+          httpAddressElement.textContent = 'http://127.0.0.1:' + currentHttpPort + '/mcp';
+        }
       }
       if (message.type === 'interaction') {
         pendingInteractionActionKey = '';

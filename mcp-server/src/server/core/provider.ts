@@ -23,7 +23,9 @@ implements vscode.McpServerDefinitionProvider<vscode.McpStdioServerDefinition>, 
     private readonly storageDirectoryPath: string,
     private readonly sessionId: string,
     private readonly configStore: ServerConfigStore,
-    private readonly extensionVersion: string
+    private readonly extensionVersion: string,
+    // VS Code 拉起 stdio 进程前的回调，用于停止扩展自动拉起的预热进程，避免端口冲突。
+    private readonly onBeforeStart?: () => void
   ) {
     this.configChangeDisposable = this.configStore.onDidChangeConfig(() => {
       this.changeEmitter.fire();
@@ -44,7 +46,7 @@ implements vscode.McpServerDefinitionProvider<vscode.McpStdioServerDefinition>, 
   public provideMcpServerDefinitions(): vscode.ProviderResult<vscode.McpStdioServerDefinition[]> {
     const config = this.configStore.getConfig();
     this.configStore.validateConfig(config);
-    return [createVscodeStdioServerDefinition(this.extensionPath, this.storageDirectoryPath, this.sessionId, config, this.extensionVersion, this.configStore.getAgentInstructions())];
+    return [createVscodeStdioServerDefinition(this.extensionPath, this.storageDirectoryPath, this.sessionId, config, this.extensionVersion, this.configStore.getAgentInstructions(), this.configStore.getHttpPort())];
   }
 
   /**
@@ -55,6 +57,8 @@ implements vscode.McpServerDefinitionProvider<vscode.McpStdioServerDefinition>, 
   public async resolveMcpServerDefinition(
     server: vscode.McpStdioServerDefinition
   ): Promise<vscode.McpStdioServerDefinition> {
+    // 先停止扩展自动拉起的预热进程，确保 VS Code 即将 spawn 的进程可正常绑定端口。
+    this.onBeforeStart?.();
     return server;
   }
 

@@ -24,7 +24,8 @@ export class ServerConfigStore implements vscode.Disposable {
     this.configurationChangeDisposable = vscode.workspace.onDidChangeConfiguration((event) => {
       if (!event.affectsConfiguration('jlcMcpServer.host')
         && !event.affectsConfiguration('jlcMcpServer.port')
-        && !event.affectsConfiguration('jlcMcpServer.agentInstructions')) {
+        && !event.affectsConfiguration('jlcMcpServer.agentInstructions')
+        && !event.affectsConfiguration('jlcMcpServer.httpPort')) {
         return;
       }
 
@@ -58,6 +59,15 @@ export class ServerConfigStore implements vscode.Disposable {
     const configuration = vscode.workspace.getConfiguration(this.section);
     await configuration.update('host', config.host, vscode.ConfigurationTarget.Global);
     await configuration.update('port', config.port, vscode.ConfigurationTarget.Global);
+  }
+
+  /**
+   * 读取 HTTP MCP 传输监听端口。
+   * @returns HTTP 监听端口，0 表示禁用。
+   */
+  public getHttpPort(): number {
+    const configuration = vscode.workspace.getConfiguration(this.section);
+    return configuration.get<number>('httpPort', 7655);
   }
 
   /**

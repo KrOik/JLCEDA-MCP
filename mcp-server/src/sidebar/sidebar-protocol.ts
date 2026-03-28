@@ -51,4 +51,5 @@ export type SidebarWebviewMessage =
   | { type: 'logs'; payload: SidebarStatusLogEntry[] }
   | { type: 'clients'; payload: SidebarConnectedClientEntry[] }
   | { type: 'closeSidebarOnOpenEditor'; payload: boolean }
+  | { type: 'httpPort'; payload: number }
   | { type: 'interaction'; payload: SidebarInteractionRequest | null };

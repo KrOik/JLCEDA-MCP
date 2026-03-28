@@ -143,6 +143,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     this.configStore.onDidChangeConfig((config) => {
       this.postConfig(config);
       this.postInstructions();
+      this.postHttpPort();
       const runtimeSnapshot = createSidebarRuntimeSnapshot(this.storageDirectoryPath, this.sessionId, config);
       this.postState(runtimeSnapshot.state);
       this.postClients(runtimeSnapshot.clients);
@@ -156,6 +157,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     const config = this.configStore.getConfig();
     this.postConfig(config);
     this.postInstructions();
+    this.postHttpPort();
     this.postCloseSidebarOnOpenEditor();
     this.postInteraction();
     if (DEBUG_SWITCH.enableSystemLog) {
@@ -174,6 +176,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
         this.logPipeline.resetClientsSignature();
         this.postConfig(currentConfig);
         this.postInstructions();
+        this.postHttpPort();
         this.postCloseSidebarOnOpenEditor();
         if (DEBUG_SWITCH.enableSystemLog) {
           this.postLogSchema();
@@ -423,6 +426,14 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
+  private postHttpPort(): void {
+    // 将 HTTP MCP 传输端口同步到前端，供地址展示使用。
+    this.postMessage({
+      type: 'httpPort',
+      payload: this.configStore.getHttpPort()
+    });
+  }
+
   private postInteraction(): void {
     this.postMessage({
       type: 'interaction',
@@ -520,6 +531,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     const config = this.configStore.getConfig();
     this.postConfig(config);
     this.postInstructions();
+    this.postHttpPort();
     this.postCloseSidebarOnOpenEditor();
     this.postInteraction();
     if (DEBUG_SWITCH.enableSystemLog) {

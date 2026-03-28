@@ -54,6 +54,7 @@ export interface BridgeVersionMismatch {
 export interface RuntimeStatusSnapshot {
   host: string;
   port: number;
+  httpPort?: number;
   runtimeStatus: Exclude<RuntimeStatus, 'idle'>;
   runtimeMessage: string;
   bridgeClientCount: number;

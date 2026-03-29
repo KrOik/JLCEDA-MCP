@@ -1,6 +1,6 @@
 ﻿# 嘉立创 EDA MCP
 
-本扩展为嘉立创 EDA **AI 设计助手** 的 MCP 版，支持双协议连接（ stdio / http），在 VS Code / Cursor 内的聊天工具（Copilot/Chat/Claude Code/Codex等）中提供原理图分析、器件选型、交互放置等功能，配合嘉立创 EDA 侧的 MCP 服务端扩展使用。
+本扩展为嘉立创 EDA **AI 设计助手** 的 MCP 版，支持双协议连接（ stdio / http），在 VS Code / Cursor 内的聊天工具（Copilot/Chat/Claude Code/Codex等）中提供原理图分析、器件选型、交互放置等功能，配合嘉立创 EDA 侧的 **MCP Bridge** 扩展使用。
 
 项目地址：https://github.com/sengbin/JLCEDA-MCP
 

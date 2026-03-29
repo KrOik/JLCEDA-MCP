@@ -20,6 +20,9 @@ import {
 	type SidebarComponentSelectInteraction,
 	type SidebarInteractionRequest,
 	type SidebarInteractionResponse,
+	type SidebarNetFlagWaitInteraction,
+	type SidebarWirePlanConnectionRow,
+	type SidebarWirePlanInteraction,
 	readSidebarInteractionResponse,
 	writeSidebarInteractionRequest,
 } from '../../state/sidebar-interaction';
@@ -51,6 +54,8 @@ const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
 	'schematic_netlist',
 	'component_select',
 	'component_place',
+	'schematic_wire_plan',
+	'schematic_wire_execute',
 ]);
 
 const TOOL_DEFINITIONS = loadToolDefinitions();
@@ -156,6 +161,16 @@ function loadToolDefinitions(): readonly ToolDefinition[] {
 }
 
 export class ToolDispatcher {
+	// VCC/GND 等电源/地符号关键词（小写）集合，命中时硬拦截选型、不弹面板。
+	private static readonly NET_FLAG_KEYWORDS = new Set([
+		'vcc', 'gnd', 'ground', 'power', 'vdd', 'vss',
+		'电源', '地', '电源符号', '地符号', 'vcc符号', 'gnd符号',
+		'power symbol', 'ground symbol',
+	]);
+
+	// 同一会话内用户已跳过的选型关键词（小写），硬拦截重复弹面板。
+	private readonly skippedSelectKeywords = new Set<string>();
+
 	public constructor(
 		private readonly storageDirectoryPath: string,
 		private readonly sessionId: string,
@@ -190,6 +205,12 @@ export class ToolDispatcher {
 		}
 		if (toolCallParams.name === 'component_place') {
 			return this.toToolContent(await this.handleComponentPlace(args));
+		}
+		if (toolCallParams.name === 'schematic_wire_plan') {
+			return this.toToolContent(await this.handleSchematicWirePlan(args));
+		}
+		if (toolCallParams.name === 'schematic_wire_execute') {
+			return this.toToolContent(await this.handleSchematicWireExecute(args));
 		}
 		if (toolCallParams.name === 'api_index') {
 			return this.toToolContent(await this.handleApiIndex(args));
@@ -420,7 +441,14 @@ export class ToolDispatcher {
 			timeoutSeconds,
 		}, DEFAULT_BRIDGE_TIMEOUT_MS);
 		if (!isPlainObjectRecord(result) || typeof result.ok !== 'boolean') {
-			throw new Error('器件放置启动结果格式非法。');
+			// 超时对象（含 timeout: true）或格式非法：统一作为启动失败处理，不抛出。
+			const isTimeout = isPlainObjectRecord(result) && result.timeout === true;
+			return {
+				ok: false,
+				error: isTimeout
+					? `器件放置启动超时（桥接响应超过 ${String(DEFAULT_BRIDGE_TIMEOUT_MS / 1000)} 秒），请检查 EDA 桥接连接是否正常。`
+					: '器件放置启动结果格式非法，请确认 EDA 桥接版本与当前 MCP 服务端版本匹配。',
+			};
 		}
 
 		return {
@@ -463,6 +491,26 @@ export class ToolDispatcher {
 			throw new Error('component_select 缺少 keyword 参数。');
 		}
 
+		// 硬拦截 1：VCC/GND 等电源/地符号不进选型流程，直接返回错误。
+		// 这类符号由用户在 EDA 中手动放置，schematic_wire_plan 会自动弹出等待面板。
+		if (ToolDispatcher.NET_FLAG_KEYWORDS.has(keyword.toLowerCase())) {
+			return {
+				ok: false,
+				errorCode: 'NET_FLAG_NOT_SELECTABLE',
+				message: `电源/地符号（${keyword}）不需要选型，也不能通过 component_place 放置。请直接调用 schematic_wire_plan，工具会在连线前自动检测并弹出等待面板提示用户在 EDA 中手动放置所需符号，用户确认完成后自动继续连线。`,
+			};
+		}
+
+		// 硬拦截 2：同一会话内用户已跳过的关键词，直接返回跳过结果，不弹面板。
+		if (this.skippedSelectKeywords.has(keyword.toLowerCase())) {
+			return {
+				ok: true,
+				skipped: true,
+				skipReason: 'user-already-skipped',
+				message: `用户已跳过“${keyword}”的器件选型，禁止重试。请直接进行下一步。`,
+			};
+		}
+
 		const limit = parseBoundedIntegerValue(argumentsObject.limit, 20, 2, 20);
 		const initialResult = await enqueueBridgeRequest('/bridge/jlceda/component/select', {
 			keyword,
@@ -493,11 +541,13 @@ export class ToolDispatcher {
 			while (true) {
 				const response = await this.waitForInteractionResponse(requestId, ['cancel', 'change-page', 'confirm-selection']);
 				if (response.action === 'cancel') {
+					// 记录已跳过的关键词，同一会话内后续相同关键词的调用将被硬拦截。
+					this.skippedSelectKeywords.add(keyword.toLowerCase());
 					return {
 						ok: true,
 						skipped: true,
 						skipReason: 'user-skipped-selection',
-						message: '用户跳过了当前器件选型，请不要放置该器件，继续处理后续步骤，不要重试当前器件选型。',
+						message: `用户跳过了“${keyword}”的器件选型，禁止重试。请直接进行下一步，不得就该器件再做任何动作。`,
 					};
 				}
 
@@ -764,5 +814,386 @@ export class ToolDispatcher {
 		finally {
 			this.clearInteractionState();
 		}
+	}
+
+	// 连线规划：校验 AI 的逻辑连接声明，由用户在侧边栏确认方法后返回 planId。
+	private async handleSchematicWirePlan(argumentsObject: Record<string, unknown>): Promise<unknown> {
+		const connections = argumentsObject.connections;
+		if (!Array.isArray(connections)) {
+			throw new Error('schematic_wire_plan 缺少 connections 数组参数。');
+		}
+
+		// 连线前检查原理图中是否存在此次 connections 实际引用的 VCC/GND 符号。
+		const missingNetFlags = await this.checkMissingNetFlags(connections);
+		if (missingNetFlags.length > 0) {
+			const waitResult = await this.waitForNetFlagPlacement(missingNetFlags);
+			if (!waitResult.ok) {
+				return waitResult;
+			}
+		}
+
+		// 预校验：netName 为 VCC/GND 时，必须至少有一端 refDes 是 VCC/GND。
+		// 若两端都不是电源符号端点，连线根本无法落到电源符号上，直接拒绝。
+		const NET_FLAG_NAMES = new Set(['VCC', 'GND']);
+		const powerEndpointErrors: string[] = [];
+		for (let i = 0; i < connections.length; i++) {
+			const conn = connections[i];
+			if (!isPlainObjectRecord(conn)) {
+				continue;
+			}
+			const netName = String(conn.netName ?? '').trim().toUpperCase();
+			if (!NET_FLAG_NAMES.has(netName)) {
+				continue;
+			}
+			const fromRefDes = isPlainObjectRecord(conn.from) ? String(conn.from.refDes ?? '').trim().toUpperCase() : '';
+			const toRefDes = isPlainObjectRecord(conn.to) ? String(conn.to.refDes ?? '').trim().toUpperCase() : '';
+			if (!NET_FLAG_NAMES.has(fromRefDes) && !NET_FLAG_NAMES.has(toRefDes)) {
+				powerEndpointErrors.push(
+					`connections[${i}]：netName 为 "${netName}"，但 from.refDes="${String(isPlainObjectRecord(conn.from) ? conn.from.refDes : '')}" 和 to.refDes="${String(isPlainObjectRecord(conn.to) ? conn.to.refDes : '')}" 均不是 VCC/GND 符号端点。` +
+					`接电源/地时必须将 from 或 to 的 refDes 设为 "VCC" 或 "GND"，并将 pin 设为 "VCC" 或 "GND"。`,
+				);
+			}
+		}
+		if (powerEndpointErrors.length > 0) {
+			return {
+				ok: false,
+				errorCode: 'POWER_ENDPOINT_MISSING',
+				error: `连线规划被拒绝：以下连接的 netName 是电源/地网络，但没有指定 VCC/GND 符号作为端点。请修正后重新提交。`,
+				validationErrors: powerEndpointErrors,
+			};
+		}
+
+		// 发到 bridge 执行校验并生成 planId。
+		const bridgeResult = await enqueueBridgeRequest('/bridge/jlceda/schematic/wire/plan', { connections }, DEFAULT_BRIDGE_TIMEOUT_MS);
+
+		if (!isPlainObjectRecord(bridgeResult) || bridgeResult.ok !== true) {
+			return bridgeResult;
+		}
+
+		// 校验通过，从 bridge 结果中取连接摘要，展示侧边栏确认面板。
+		const planId = String(bridgeResult.planId ?? '').trim();
+		const rawConnections = Array.isArray(bridgeResult.connections) ? bridgeResult.connections : [];
+
+		const connectionRows: SidebarWirePlanConnectionRow[] = rawConnections
+			.filter(isPlainObjectRecord)
+			.map((item, index) => ({
+				index: typeof item.index === 'number' ? item.index : index,
+				fromLabel: String(item.fromLabel ?? ''),
+				toLabel: String(item.toLabel ?? ''),
+				netName: String(item.netName ?? ''),
+			}));
+
+		const requestId = createInteractionRequestId('schematic_wire_plan');
+		const interaction: SidebarWirePlanInteraction = {
+			kind: 'wire-plan',
+			requestId,
+			title: '连线规划确认',
+			description: `AI 规划了 ${String(connectionRows.length)} 条连线，请选择连接方式并确认后执行。`,
+			noticeText: '',
+			connectionMethod: 'net-label',
+			connections: connectionRows,
+			canConfirm: true,
+			canCancel: true,
+		};
+
+		this.clearInteractionState();
+		this.writeInteractionRequest(interaction);
+		try {
+			const response = await this.waitForInteractionResponse(requestId, ['cancel', 'confirm-wire-plan']);
+			if (response.action === 'cancel') {
+				return {
+					ok: false,
+					cancelled: true,
+					message: '用户取消了连线规划，请勿重试，直接告知用户已取消并停止。',
+				};
+			}
+
+			if (response.action === 'confirm-wire-plan') {
+				const connectionMethod = response.connectionMethod;
+				return {
+					ok: true,
+					planId,
+					connectionMethod,
+					connectionCount: connectionRows.length,
+					connections: connectionRows,
+					message: `连线规划已确认，共 ${String(connectionRows.length)} 条，连接方式：${connectionMethod === 'net-label' ? '网络标签' : '导线'}。请立即调用 schematic_wire_execute 执行连线，传入 planId 和 connectionMethod。`,
+				};
+			}
+
+			throw new Error('收到无效的侧边栏响应。');
+		}
+		finally {
+			this.clearInteractionState();
+		}
+	}
+
+	// 从拓扑中提取已存在的网络标识符号名称集合。
+	private extractExistingNetFlagNames(topologyResult: unknown): Set<string> {
+		const names = new Set<string>();
+		if (!isPlainObjectRecord(topologyResult) || topologyResult.ok !== true) {
+			return names;
+		}
+
+		const topologyJson = String(topologyResult.schematicTopology ?? '');
+		if (topologyJson.length === 0) {
+			return names;
+		}
+
+		let parsed: unknown;
+		try {
+			parsed = JSON.parse(topologyJson) as unknown;
+		}
+		catch {
+			return names;
+		}
+
+		if (!isPlainObjectRecord(parsed) || !Array.isArray(parsed.components)) {
+			return names;
+		}
+
+		for (const comp of parsed.components) {
+			if (!isPlainObjectRecord(comp)) {
+				continue;
+			}
+			const designator = String(comp.designator ?? '').trim();
+			const pcbFootprintUuid = String(comp.pcbFootprintUuid ?? '').trim();
+			// 网络标识符号无封装且位号即网络名称（如 VCC、GND）。
+			if (designator.length > 0 && pcbFootprintUuid.length === 0) {
+				names.add(designator.toUpperCase());
+			}
+		}
+
+		return names;
+	}
+
+	// 连线规划前按需检查：只检查 connections 中实际引用的 VCC/GND 符号是否已放置。
+	private async checkMissingNetFlags(connections: unknown[]): Promise<string[]> {
+		const REQUIRED_NET_FLAGS = ['VCC', 'GND'];
+
+		// 收集本次 connections 实际引用的电源/地符号名称。
+		// 同时扫描 from.refDes、to.refDes 和 netName：
+		// 只要任意一处出现 VCC/GND，就需要确认原理图中已放置对应符号。
+		const referencedFlags = new Set<string>();
+		for (const conn of connections) {
+			if (!isPlainObjectRecord(conn)) {
+				continue;
+			}
+			if (isPlainObjectRecord(conn.from)) {
+				const refDes = String(conn.from.refDes ?? '').trim().toUpperCase();
+				if (REQUIRED_NET_FLAGS.includes(refDes)) {
+					referencedFlags.add(refDes);
+				}
+			}
+			if (isPlainObjectRecord(conn.to)) {
+				const refDes = String(conn.to.refDes ?? '').trim().toUpperCase();
+				if (REQUIRED_NET_FLAGS.includes(refDes)) {
+					referencedFlags.add(refDes);
+				}
+			}
+			// 如果 netName 本身是 VCC/GND，也计入检查范围。
+			const netName = String(conn.netName ?? '').trim().toUpperCase();
+			if (REQUIRED_NET_FLAGS.includes(netName)) {
+				referencedFlags.add(netName);
+			}
+		}
+
+		// 本次 connections 中没有引用 VCC/GND，跳过检查。
+		if (referencedFlags.size === 0) {
+			return [];
+		}
+
+		// 通过拓扑检查原理图中已有的网络标识符号。
+		const topologyResult = await enqueueBridgeRequest('/bridge/jlceda/schematic/topology', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
+		const existingNames = this.extractExistingNetFlagNames(topologyResult);
+
+		// 只报告实际被引用且确实缺少的符号。
+		const missing: string[] = [];
+		for (const symbol of REQUIRED_NET_FLAGS) {
+			if (referencedFlags.has(symbol) && !existingNames.has(symbol)) {
+				missing.push(symbol);
+			}
+		}
+
+		return missing;
+	}
+
+	// 弹出等待面板，让用户在 EDA 中手动放置缺失的电源/地符号。
+	private async waitForNetFlagPlacement(missingSymbols: string[]): Promise<{ ok: true } | { ok: false; cancelled?: boolean; message: string }> {
+		const requestId = createInteractionRequestId('net_flag_wait');
+		const interaction: SidebarNetFlagWaitInteraction = {
+			kind: 'net-flag-wait',
+			requestId,
+			title: '放置电源/地符号',
+			description: `连线规划需要以下电源/地符号，请先在嘉立创 EDA 中手动放置后点击"已放置，继续"。`,
+			noticeText: '',
+			missingSymbols,
+			canConfirm: true,
+			canCancel: true,
+		};
+
+		this.clearInteractionState();
+		this.writeInteractionRequest(interaction);
+		try {
+			const response = await this.waitForInteractionResponse(requestId, ['cancel', 'confirm-net-flag-placed']);
+			if (response.action === 'cancel') {
+				return {
+					ok: false,
+					cancelled: true,
+					message: '用户取消了电源/地符号放置，连线规划已终止，请勿重试，直接告知用户已取消并停止。',
+				};
+			}
+
+			// 用户点击"已放置"，重新拓扑检查。
+			const recheckResult = await enqueueBridgeRequest('/bridge/jlceda/schematic/topology', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
+			const existingNames = this.extractExistingNetFlagNames(recheckResult);
+
+			const stillMissing: string[] = [];
+			for (const symbol of missingSymbols) {
+				if (!existingNames.has(symbol.toUpperCase())) {
+					stillMissing.push(symbol);
+				}
+			}
+
+			if (stillMissing.length > 0) {
+				return {
+					ok: false,
+					message: `重新检查后仍缺少以下电源/地符号：${stillMissing.join('、')}。连线规划已终止，请先在 EDA 中放置这些符号后重试。`,
+				};
+			}
+
+			return { ok: true };
+		}
+		finally {
+			this.clearInteractionState();
+		}
+	}
+
+	// 连线执行：按 planId 和 connectionMethod 执行桥接侧的连线操作。
+	private async handleSchematicWireExecute(argumentsObject: Record<string, unknown>): Promise<unknown> {
+		const planId = String(argumentsObject.planId ?? '').trim();
+		if (planId.length === 0) {
+			throw new Error('schematic_wire_execute 缺少 planId 参数。');
+		}
+
+		const connectionMethod = String(argumentsObject.connectionMethod ?? '').trim().toLowerCase();
+		if (connectionMethod !== 'wire' && connectionMethod !== 'net-label') {
+			throw new Error('schematic_wire_execute 的 connectionMethod 必须为 "wire" 或 "net-label"。');
+		}
+
+		// 执行超时设置较长（所有连线可能需要较多时间）。
+		const executeTimeoutMs = 120_000;
+		const executeResult = await enqueueBridgeRequest('/bridge/jlceda/schematic/wire/execute', {
+			planId,
+			connectionMethod,
+		}, executeTimeoutMs);
+
+		// 执行完成后检查悬空引脚——EDA 的 ERC 不报无封装器件悬空引脚，须手动检测。
+		const floatingWarnings = await this.checkFloatingPins();
+		if (!isPlainObjectRecord(executeResult)) {
+			return executeResult;
+		}
+		if (floatingWarnings.length > 0) {
+			return {
+				...executeResult,
+				floatingPinWarnings: floatingWarnings,
+				message: `${String(executeResult.message ?? '连线执行完成。')}\n\n⚠️ 检测到以下器件存在悬空引脚，连线可能不正确，请检查并重新规划：\n${floatingWarnings.map(w => `  • ${w}`).join('\n')}`,
+			};
+		}
+		return executeResult;
+	}
+
+	// 检查原理图中有封装的器件是否存在悬空引脚。
+	private async checkFloatingPins(): Promise<string[]> {
+		const warnings: string[] = [];
+		try {
+			// 获取拓扑（含引脚坐标）和网表（含引脚网络）。
+			const [topologyResult, netlistResult] = await Promise.all([
+				enqueueBridgeRequest('/bridge/jlceda/schematic/topology', {}, DEFAULT_BRIDGE_TIMEOUT_MS),
+				enqueueBridgeRequest('/bridge/jlceda/schematic/netlist', {}, DEFAULT_BRIDGE_TIMEOUT_MS),
+			]);
+
+			if (!isPlainObjectRecord(topologyResult) || topologyResult.ok !== true) {
+				return [];
+			}
+			if (!isPlainObjectRecord(netlistResult) || netlistResult.ok !== true) {
+				return [];
+			}
+
+			// 解析拓扑，收集有封装的器件及其引脚。
+			const topologyJson = String(topologyResult.schematicTopology ?? '');
+			let topology: unknown;
+			try {
+				topology = JSON.parse(topologyJson);
+			}
+			catch {
+				return [];
+			}
+			if (!isPlainObjectRecord(topology) || !Array.isArray(topology.components)) {
+				return [];
+			}
+
+			// 解析网表，建立 "位号:引脚编号" → 网络名 的查找表。
+			const netMap = new Map<string, string>(); // key = "REFDES:PINNUM"
+			const netlistJson = String(netlistResult.netlist ?? '');
+			let netlistParsed: unknown;
+			try {
+				netlistParsed = JSON.parse(netlistJson);
+			}
+			catch {
+				return [];
+			}
+			if (isPlainObjectRecord(netlistParsed) && isPlainObjectRecord(netlistParsed.components)) {
+				for (const [, compValue] of Object.entries(netlistParsed.components)) {
+					if (!isPlainObjectRecord(compValue) || !isPlainObjectRecord(compValue.props)) {
+						continue;
+					}
+					const designator = String(compValue.props.Designator ?? '').trim();
+					if (!isPlainObjectRecord(compValue.pinInfoMap)) {
+						continue;
+					}
+					for (const [pinNum, pinInfo] of Object.entries(compValue.pinInfoMap)) {
+						const net = isPlainObjectRecord(pinInfo) ? String(pinInfo.net ?? '').trim() : '';
+						netMap.set(`${designator}:${pinNum}`, net);
+					}
+				}
+			}
+
+			// 遍历拓扑器件，只检查有封装（普通器件）且未标记 NoConnect 的引脚。
+			for (const comp of topology.components) {
+				if (!isPlainObjectRecord(comp)) {
+					continue;
+				}
+				const pcbFootprintUuid = String(comp.pcbFootprintUuid ?? '').trim();
+				// 无封装的是电源/地符号，跳过。
+				if (pcbFootprintUuid.length === 0) {
+					continue;
+				}
+				const designator = String(comp.designator ?? '').trim();
+				if (!Array.isArray(comp.pins)) {
+					continue;
+				}
+				for (const pin of comp.pins) {
+					if (!isPlainObjectRecord(pin)) {
+						continue;
+					}
+					if (pin.hasNoConnectMark === true) {
+						continue;
+					}
+					const pinPadNumber = String(pin.pinPadNumber ?? '').trim();
+					const pinSignalName = String(pin.pinSignalName ?? '').trim();
+					const net = netMap.get(`${designator}:${pinPadNumber}`) ?? '';
+					if (net.length === 0) {
+						const pinLabel = pinSignalName.length > 0 && pinSignalName !== pinPadNumber
+							? `${pinPadNumber}(${pinSignalName})`
+							: pinPadNumber;
+						warnings.push(`${designator} 引脚 ${pinLabel} 悬空，未连接任何网络。`);
+					}
+				}
+			}
+		}
+		catch {
+			// 检查失败不影响主流程。
+		}
+		return warnings;
 	}
 }

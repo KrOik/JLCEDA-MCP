@@ -212,6 +212,7 @@ export async function handleComponentPlaceStartTask(payload: unknown): Promise<u
 	}
 
 	const component = normalizeComponentPlaceItem(payload.component, 0);
+
 	const timeoutSeconds = resolveTimeoutSeconds(payload.timeoutSeconds);
 	const timeoutMs = timeoutSeconds * 1000;
 	const placeApi = resolvePlaceComponentApi();

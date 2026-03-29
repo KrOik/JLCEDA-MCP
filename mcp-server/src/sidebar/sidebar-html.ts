@@ -688,6 +688,69 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     .interaction-place-row.is-error .interaction-place-row-status {
       color: var(--danger);
     }
+    .interaction-wire-plan-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+    .interaction-wire-plan-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border-radius: 4px;
+      background: var(--list-item-bg);
+      font-size: 12px;
+      color: var(--fg);
+    }
+    .interaction-wire-plan-index {
+      flex-shrink: 0;
+      color: var(--fg-secondary);
+      min-width: 20px;
+      text-align: right;
+    }
+    .interaction-wire-plan-endpoints {
+      flex: 1;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .interaction-wire-plan-net {
+      flex-shrink: 0;
+      font-size: 11px;
+      color: var(--btn-primary-bg);
+      background: var(--btn-primary-bg-10, rgba(0,120,212,0.10));
+      border-radius: 3px;
+      padding: 1px 5px;
+    }
+    .interaction-wire-plan-method {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      color: var(--fg);
+    }
+    .interaction-wire-plan-method label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+    .interaction-net-flag-wait-list {
+      margin-bottom: 10px;
+      padding: 0;
+      list-style: none;
+    }
+    .interaction-net-flag-wait-list li {
+      font-size: 12px;
+      color: var(--danger);
+      padding: 2px 0;
+    }
+    .interaction-net-flag-wait-list li::before {
+      content: '⚠ ';
+    }
     .status-log-filter-select {
       height: 24px;
       min-width: 88px;
@@ -2537,6 +2600,166 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       interactionHostElement.classList.remove('is-empty');
     }
 
+    function renderWirePlanInteraction(interaction) {
+      if (!interactionHostElement) {
+        return;
+      }
+
+      destroyInteractionScrollbar();
+      hideCandidatePopup();
+
+      const card = createInteractionCard(interaction);
+
+      const list = document.createElement('div');
+      list.className = 'interaction-wire-plan-list';
+      (interaction.connections || []).forEach((conn) => {
+        const row = document.createElement('div');
+        row.className = 'interaction-wire-plan-row';
+
+        const idx = document.createElement('span');
+        idx.className = 'interaction-wire-plan-index';
+        idx.textContent = String(conn.index + 1) + '.';
+
+        const endpoints = document.createElement('span');
+        endpoints.className = 'interaction-wire-plan-endpoints';
+        endpoints.textContent = String(conn.fromLabel) + '  →  ' + String(conn.toLabel);
+
+        const net = document.createElement('span');
+        net.className = 'interaction-wire-plan-net';
+        net.textContent = String(conn.netName);
+
+        row.appendChild(idx);
+        row.appendChild(endpoints);
+        row.appendChild(net);
+        list.appendChild(row);
+      });
+      card.appendChild(list);
+
+      // 连接方式选择
+      let selectedMethod = interaction.connectionMethod || 'net-label';
+      const methodSection = document.createElement('div');
+      methodSection.className = 'interaction-wire-plan-method';
+      const methodLabel = document.createElement('span');
+      methodLabel.textContent = '连接方式：';
+      methodSection.appendChild(methodLabel);
+
+      const wireLabel = document.createElement('label');
+      const wireRadio = document.createElement('input');
+      wireRadio.type = 'radio';
+      wireRadio.name = 'wirePlanMethod_' + String(interaction.requestId);
+      wireRadio.value = 'wire';
+      wireRadio.checked = selectedMethod === 'wire';
+      wireRadio.addEventListener('change', () => { selectedMethod = 'wire'; });
+      wireLabel.appendChild(wireRadio);
+      wireLabel.appendChild(document.createTextNode('导线'));
+      methodSection.appendChild(wireLabel);
+
+      const netLabelLabel = document.createElement('label');
+      const netLabelRadio = document.createElement('input');
+      netLabelRadio.type = 'radio';
+      netLabelRadio.name = 'wirePlanMethod_' + String(interaction.requestId);
+      netLabelRadio.value = 'net-label';
+      netLabelRadio.checked = selectedMethod === 'net-label';
+      netLabelRadio.addEventListener('change', () => { selectedMethod = 'net-label'; });
+      netLabelLabel.appendChild(netLabelRadio);
+      netLabelLabel.appendChild(document.createTextNode('网络标签'));
+      methodSection.appendChild(netLabelLabel);
+
+      card.appendChild(methodSection);
+
+      const actions = document.createElement('div');
+      actions.className = 'interaction-actions';
+
+      const cancelButton = document.createElement('button');
+      cancelButton.type = 'button';
+      cancelButton.className = 'secondary';
+      cancelButton.textContent = isInteractionActionPending(interaction.requestId, 'cancel') ? '提交中' : '取消';
+      cancelButton.disabled = !interaction.canCancel || pendingInteractionActionKey.length > 0;
+      cancelButton.addEventListener('click', () => {
+        if (cancelButton.disabled) { return; }
+        postInteractionAction({ requestId: interaction.requestId, action: 'cancel' });
+      });
+
+      const confirmButton = document.createElement('button');
+      confirmButton.type = 'button';
+      confirmButton.textContent = isInteractionActionPending(interaction.requestId, 'confirm-wire-plan') ? '提交中' : '确认执行';
+      confirmButton.disabled = !interaction.canConfirm || pendingInteractionActionKey.length > 0;
+      confirmButton.addEventListener('click', () => {
+        if (confirmButton.disabled) { return; }
+        postInteractionAction({
+          requestId: interaction.requestId,
+          action: 'confirm-wire-plan',
+          connectionMethod: selectedMethod,
+        });
+      });
+
+      actions.appendChild(cancelButton);
+      actions.appendChild(confirmButton);
+      card.appendChild(actions);
+
+      interactionHostElement.replaceChildren(card);
+      interactionHostElement.classList.remove('is-empty');
+    }
+
+    function renderNetFlagWaitInteraction(interaction) {
+      if (!interactionHostElement) {
+        return;
+      }
+
+      destroyInteractionScrollbar();
+      hideCandidatePopup();
+
+      const card = createInteractionCard(interaction);
+
+      const list = document.createElement('ul');
+      list.className = 'interaction-net-flag-wait-list';
+      (interaction.missingSymbols || []).forEach(function(symbol) {
+        const li = document.createElement('li');
+        li.textContent = '缺少 ' + String(symbol) + ' 符号';
+        list.appendChild(li);
+      });
+      card.appendChild(list);
+
+      const actions = document.createElement('div');
+      actions.className = 'interaction-actions';
+
+      const cancelButton = document.createElement('button');
+      cancelButton.type = 'button';
+      cancelButton.className = 'secondary';
+      cancelButton.textContent = isInteractionActionPending(interaction.requestId, 'cancel') ? '提交中' : '取消';
+      cancelButton.disabled = !interaction.canCancel || pendingInteractionActionKey.length > 0;
+      cancelButton.addEventListener('click', function() {
+        if (cancelButton.disabled) {
+          return;
+        }
+        postInteractionAction({
+          requestId: interaction.requestId,
+          action: 'cancel',
+        });
+      });
+
+      const confirmButton = document.createElement('button');
+      confirmButton.type = 'button';
+      confirmButton.textContent = isInteractionActionPending(interaction.requestId, 'confirm-net-flag-placed') ? '提交中' : '已放置，继续';
+      confirmButton.disabled = !interaction.canConfirm || pendingInteractionActionKey.length > 0;
+      confirmButton.addEventListener('click', function() {
+        if (confirmButton.disabled) {
+          return;
+        }
+        postInteractionAction({
+          requestId: interaction.requestId,
+          action: 'confirm-net-flag-placed',
+        });
+      });
+
+      actions.appendChild(cancelButton);
+      actions.appendChild(confirmButton);
+      card.appendChild(actions);
+
+      interactionHostElement.replaceChildren(card);
+      interactionHostElement.classList.remove('is-empty');
+    }
+
     function renderInteractionPanel(interaction) {
       currentInteraction = interaction || null;
       if (!interactionHostElement) {
@@ -2552,6 +2775,18 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
 
       if (interaction.kind === 'component-select') {
         renderComponentSelectInteraction(interaction);
+        return;
+      }
+
+      if (interaction.kind === 'wire-plan') {
+        currentInteractionSelectionKey = '';
+        renderWirePlanInteraction(interaction);
+        return;
+      }
+
+      if (interaction.kind === 'net-flag-wait') {
+        currentInteractionSelectionKey = '';
+        renderNetFlagWaitInteraction(interaction);
         return;
       }
 

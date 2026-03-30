@@ -40,31 +40,70 @@ function tryDeleteAttributePrimitive(primitive: unknown): void {
 	catch { /* 回滚失败时静默忽略 */ }
 }
 
-// 计算两点间的曼哈顿折线路径（根据目标引脚方向决定接近策略，避免路径穿越目标器件其他引脚）。
-// 核心规则：最后一段垂直/水平地抵达目标引脚端面，绕开同器件其他引脚。
-//   目标引脚为水平（0°/180°）：从上方或下方垂直接近 → 先横后竖
-//   目标引脚为垂直（90°/270°）：从侧面水平接近   → 先竖后横
+// 引脚延出线段长度（mil）。两端各沿引脚方向延伸该距离到过渡点，中间折线在过渡点之间运行，
+// 确保折线竖段/横段不在目标器件的引脚对齐轴上，避免接近目标引脚时穿越同器件相邻引脚。
+const PIN_STUB_MIL = 40;
+
+// 按正交方向角度计算延出偏移量（仅支持 0/90/180/270）。
+function pinStubDxDy(orientDeg: number): [number, number] {
+	const norm = ((Math.round(orientDeg) % 360) + 360) % 360;
+	if (norm === 0)   return [PIN_STUB_MIL, 0];
+	if (norm === 90)  return [0, PIN_STUB_MIL];
+	if (norm === 180) return [-PIN_STUB_MIL, 0];
+	return [0, -PIN_STUB_MIL]; // 270°
+}
+
+// 去除路径中连续重复坐标点对。
+function dedupPath(pts: number[]): number[] {
+	const out: number[] = [];
+	for (let i = 0; i < pts.length; i += 2) {
+		if (i === 0 || pts[i] !== pts[i - 2] || pts[i + 1] !== pts[i - 1]) {
+			out.push(pts[i], pts[i + 1]);
+		}
+	}
+	return out;
+}
+
+// 计算两点间的曼哈顿折线路径（含两端引脚方向延出 stub，避免路径穿越目标器件其他引脚）。
+// 两端各先沿引脚方向延伸 PIN_STUB_MIL 到过渡点，中间路径方向由 from stub 方向决定：
+//   若 from stub 水平方向与 from→to 整体水平方向相同 → 先横（y=from_stub_y）后竖（x=to_stub_x）
+//   否则（from stub 背离 to 方向）→ 先竖（x=from_stub_x）后横（y=to_stub_y）
 // EDA 坐标系：Y 轴向上为正（y 越大越高）。
 function buildManhattanPath(
 	x1: number, y1: number,
 	x2: number, y2: number,
-	_fromOrientationDeg: number,
+	fromOrientationDeg: number,
 	toOrientationDeg: number,
 ): number[] {
-	// 若已在同一水平或垂直方向，直接返回直线。
-	if (x1 === x2 || y1 === y2) {
-		return [x1, y1, x2, y2];
+	// 计算两端过渡点。
+	const [fdx, fdy] = pinStubDxDy(fromOrientationDeg);
+	const [tdx, tdy] = pinStubDxDy(toOrientationDeg);
+	const fx = x1 + fdx;
+	const fy = y1 + fdy;
+	const tx = x2 + tdx;
+	const ty = y2 + tdy;
+
+	// 过渡点已共线时，直接直线连接。
+	if (fx === tx || fy === ty) {
+		return dedupPath([x1, y1, fx, fy, tx, ty, x2, y2]);
 	}
 
-	const normTo = ((toOrientationDeg % 360) + 360) % 360;
+	// 选择中间折线方向：
+	//   from stub 的水平分量与过渡点间水平方向相同（stub 朝向 to）→ 先横后竖
+	//   否则（stub 背离 to）→ 先竖后横
+	const fromHorizDir  = fdx;       // stub 水平分量：>0 向右，<0 向左，0 垂直方向
+	const mainHorizDir  = tx - fx;   // 过渡点间水平方向：>0 向右，<0 向左
 
-	// 水平目标引脚（0° 或 180°）：先横后竖，最后竖段垂直接近，避免横段经过同行相邻引脚。
-	if (normTo === 0 || normTo === 180) {
-		return [x1, y1, x2, y1, x2, y2];
+	let mid: number[];
+	if (mainHorizDir === 0 || fromHorizDir === 0 || Math.sign(fromHorizDir) === Math.sign(mainHorizDir)) {
+		// 先横后竖：横线沿 y=fy，竖线落在 x=tx。
+		mid = [tx, fy, tx, ty];
+	} else {
+		// 先竖后横：竖线落在 x=fx，横线沿 y=ty。
+		mid = [fx, ty, tx, ty];
 	}
 
-	// 垂直目标引脚（90° 或 270°）：先竖后横，最后横段水平接近，避免竖段经过同列相邻引脚。
-	return [x1, y1, x1, y2, x2, y2];
+	return dedupPath([x1, y1, fx, fy, ...mid, x2, y2]);
 }
 
 // 执行单条网络标签连接，返回是否成功。

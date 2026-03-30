@@ -98,16 +98,8 @@
     }
   },
   {
-    "name": "schematic_topology",
-    "description": "获取原理图器件拓扑信息。",
-    "inputSchema": {
-      "type": "object",
-      "properties": {}
-    }
-  },
-  {
-    "name": "schematic_netlist",
-    "description": "获取原理图网表数据。",
+    "name": "schematic_read",
+    "description": "读取当前原理图的完整电路语义快照，返回器件列表、引脚网络连接关系、网络列表与 ERC 检查结果。",
     "inputSchema": {
       "type": "object",
       "properties": {}

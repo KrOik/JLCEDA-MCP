@@ -48,8 +48,7 @@ const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
 	// 'api_search',
 	// 'eda_context',
 	// 'api_invoke',
-	'schematic_topology',
-	'schematic_netlist',
+	'schematic_read',
 	'component_select',
 	'component_place',
 ]);
@@ -190,11 +189,8 @@ export class ToolDispatcher {
 		if (!EXPOSED_MCP_TOOL_NAMES.has(toolCallParams.name)) {
 			throw new Error(`未知工具: ${toolCallParams.name}`);
 		}
-		if (toolCallParams.name === 'schematic_topology') {
-			return this.toToolContent(await this.handleSchematicTopology());
-		}
-		if (toolCallParams.name === 'schematic_netlist') {
-			return this.toToolContent(await this.handleSchematicNetlist());
+		if (toolCallParams.name === 'schematic_read') {
+			return this.toToolContent(await this.handleSchematicRead());
 		}
 		if (toolCallParams.name === 'component_select') {
 			return this.toToolContent(await this.handleComponentSelect(args));
@@ -281,14 +277,9 @@ export class ToolDispatcher {
 		return await enqueueBridgeRequest('/bridge/jlceda/context', { scope }, timeoutMs);
 	}
 
-	// 桥接执行原理图 ERC + 拓扑快照提取（为自动连线准备数据）。
-	private async handleSchematicTopology(): Promise<unknown> {
-		return await enqueueBridgeRequest('/bridge/jlceda/schematic/topology', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
-	}
-
-	// 桥接获取原理图完整网表（供 AI 功能性分析）。
-	private async handleSchematicNetlist(): Promise<unknown> {
-		return await enqueueBridgeRequest('/bridge/jlceda/schematic/netlist', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
+	// 桥接读取原理图完整电路语义快照。
+	private async handleSchematicRead(): Promise<unknown> {
+		return await enqueueBridgeRequest('/bridge/jlceda/schematic/read', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
 	}
 
 	private writeInteractionRequest(request: SidebarInteractionRequest): void {

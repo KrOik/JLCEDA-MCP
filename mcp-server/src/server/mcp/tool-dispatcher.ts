@@ -43,6 +43,7 @@ const SIDEBAR_INTERACTION_POLL_INTERVAL_MS = 250;
 const COMPONENT_PLACE_CHECK_INTERVAL_MS = 400;
 
 const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
+	// 下面四个透传 API 工具仅作调试使用。
 	// 'api_index',
 	// 'api_search',
 	// 'eda_context',

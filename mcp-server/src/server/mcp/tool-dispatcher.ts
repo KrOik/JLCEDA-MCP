@@ -671,7 +671,6 @@ export class ToolDispatcher {
 					continue;
 				}
 
-				let placedCurrentComponent = false;
 				for (let attempt = 1; attempt <= placementPayload.retryCount + 1; attempt += 1) {
 					const isRetry = attempt > 1;
 					interaction.rows[index].status = 'active';
@@ -749,7 +748,6 @@ export class ToolDispatcher {
 						interaction.statusText = `已完成第 ${String(index + 1)} 个器件放置。`;
 						interaction.noticeText = '';
 						writePlaceInteraction();
-						placedCurrentComponent = true;
 						break;
 					}
 
@@ -760,10 +758,16 @@ export class ToolDispatcher {
 						interaction.statusText = `已跳过第 ${String(index + 1)} 个器件，继续下一个。`;
 						interaction.noticeText = '';
 						writePlaceInteraction();
-						placedCurrentComponent = true;
 						break;
 					}
 
+					// 本次 attempt 超时：非最后一次则关闭旧会话后继续重试，最后一次才返回错误。
+					if (attempt < placementPayload.retryCount + 1) {
+						await this.closeComponentPlaceAttempt(sessionId);
+						continue;
+					}
+
+					await this.closeComponentPlaceAttempt(sessionId);
 					interaction.rows[index].status = 'error';
 					interaction.rows[index].statusText = '超时失败';
 					interaction.rows[index].detail = `${formatPlaceComponentDetail(component)}  已达到最大重试次数。`;
@@ -780,10 +784,6 @@ export class ToolDispatcher {
 						failedIndex: index + 1,
 						failedComponent: component,
 					};
-				}
-
-				if (!placedCurrentComponent) {
-					break;
 				}
 			}
 

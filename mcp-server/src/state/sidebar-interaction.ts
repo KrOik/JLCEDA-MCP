@@ -124,7 +124,7 @@ function isSidebarComponentPlaceRowState(value: unknown): value is SidebarCompon
   return typeof value.title === 'string'
     && typeof value.detail === 'string'
     && typeof value.status === 'string'
-    && ['pending', 'active', 'success', 'timeout', 'error'].includes(value.status)
+    && ['pending', 'active', 'success', 'timeout', 'error', 'skipped'].includes(value.status)
     && typeof value.statusText === 'string';
 }
 

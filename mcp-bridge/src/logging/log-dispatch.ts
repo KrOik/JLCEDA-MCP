@@ -172,9 +172,6 @@ export class BridgeLogDispatchPipeline {
 		this.flushing = true;
 		try {
 			while (this.pendingLogs.length > 0) {
-				if (!transport) {
-					break;
-				}
 				const nextLog = this.pendingLogs[0];
 				transport.reportLog(nextLog);
 				this.pendingLogs.shift();

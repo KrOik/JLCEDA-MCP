@@ -2636,7 +2636,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       card.appendChild(list);
 
       // 连接方式选择
-      let selectedMethod = interaction.connectionMethod || 'net-label';
+      let selectedMethod = 'wire';
       const methodSection = document.createElement('div');
       methodSection.className = 'interaction-wire-plan-method';
       const methodLabel = document.createElement('span');
@@ -2659,7 +2659,8 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       netLabelRadio.type = 'radio';
       netLabelRadio.name = 'wirePlanMethod_' + String(interaction.requestId);
       netLabelRadio.value = 'net-label';
-      netLabelRadio.checked = selectedMethod === 'net-label';
+      netLabelRadio.checked = false;
+      netLabelRadio.disabled = true;
       netLabelRadio.addEventListener('change', () => { selectedMethod = 'net-label'; });
       netLabelLabel.appendChild(netLabelRadio);
       netLabelLabel.appendChild(document.createTextNode('网络标签'));

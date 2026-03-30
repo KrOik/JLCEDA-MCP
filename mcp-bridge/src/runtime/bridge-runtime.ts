@@ -28,8 +28,6 @@ import { handleEdaContextTask } from '../mcp/context-handler.ts';
 import { handleApiInvokeTask } from '../mcp/invoke-handler.ts';
 import { handleSchematicNetlistTask } from '../mcp/schematic-netlist-handler.ts';
 import { handleSchematicTopologyTask } from '../mcp/schematic-topology-handler.ts';
-import { handleSchematicWireExecuteTask } from '../mcp/schematic-wire-execute-handler.ts';
-import { handleSchematicWirePlanTask } from '../mcp/schematic-wire-plan-handler.ts';
 import { BridgeStateManager } from '../state/state-manager.ts';
 import { BridgeStatusReporter } from '../state/status-reporter.ts';
 import { safeCall, toSafeErrorMessage, toSerializableAsync } from '../utils.ts';
@@ -51,8 +49,6 @@ const BRIDGE_TASK_HANDLERS: Record<string, (payload: unknown) => Promise<unknown
 	'/bridge/jlceda/context': handleEdaContextTask,
 	'/bridge/jlceda/schematic/topology': handleSchematicTopologyTask,
 	'/bridge/jlceda/schematic/netlist': handleSchematicNetlistTask,
-	'/bridge/jlceda/schematic/wire/plan': handleSchematicWirePlanTask,
-	'/bridge/jlceda/schematic/wire/execute': handleSchematicWireExecuteTask,
 };
 
 let started = false;

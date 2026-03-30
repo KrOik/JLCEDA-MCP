@@ -1,7 +1,7 @@
 /**
  * ------------------------------------------------------------------------
  * 名称：桥接原理图拓扑扫描任务处理
- * 说明：提取当前原理图器件拓扑信息（含坐标、引脚详情），为自动连线分析提供数据基础。
+ * 说明：提取当前原理图器件拓扑信息，包含器件位置、引脚坐标与电气类型等详情。
  * 作者：Lion
  * 邮箱：chengbin@3578.cn
  * 日期：2026-03-25
@@ -24,7 +24,7 @@ function sg<T>(obj: unknown, method: string, fallback: T): T {
 	return fallback;
 }
 
-// 按当前原理图器件图元构建原理图拓扑快照，包含连线分析所需的器件、引脚与几何信息。
+// 按当前原理图器件图元构建原理图拓扑快照，包含器件、引脚与几何信息。
 async function extractSchematicTopology(): Promise<{ ok: true; data: string } | { ok: false; error: string }> {
 	const componentListRaw = await safeCall<unknown>(() => Promise.resolve(eda.sch_PrimitiveComponent.getAll(undefined, true)));
 	if (!Array.isArray(componentListRaw)) {
@@ -46,8 +46,8 @@ async function extractSchematicTopology(): Promise<{ ok: true; data: string } | 
 			pinSignalName: string; // 引脚信号名称，如 VCC、GND、PA0
 			pinPadNumber: string; // 引脚编号，与封装焊盘编号对应，如 1、2、A1
 			pinElectricalType: string; // 引脚电气类型，如 input、output、power、passive 等
-			wireConnectionX_mil: number; // 引脚导线连接点 X 坐标，单位 mil，用于连线分析
-			wireConnectionY_mil: number; // 引脚导线连接点 Y 坐标，单位 mil，用于连线分析
+			pinX_mil: number; // 引脚连接点 X 坐标，单位 mil，原理图坐标系
+			pinY_mil: number; // 引脚连接点 Y 坐标，单位 mil，原理图坐标系
 			orientationDeg: number; // 引脚朝向角度，单位：度，表示引脚伸出方向
 			pinLength_mil: number; // 引脚长度，单位 mil
 			hasNoConnectMark: boolean; // 是否放置了 No Connect 标记（X），true 表示该引脚不参与任何连线
@@ -76,8 +76,8 @@ async function extractSchematicTopology(): Promise<{ ok: true; data: string } | 
 				pinSignalName: string;
 				pinPadNumber: string;
 				pinElectricalType: string;
-				wireConnectionX_mil: number;
-				wireConnectionY_mil: number;
+			pinX_mil: number;
+			pinY_mil: number;
 				orientationDeg: number;
 				pinLength_mil: number;
 				hasNoConnectMark: boolean;
@@ -88,8 +88,8 @@ async function extractSchematicTopology(): Promise<{ ok: true; data: string } | 
 					pinSignalName: sg<string>(rawPin, 'getState_PinName', ''),
 					pinPadNumber: sg<string>(rawPin, 'getState_PinNumber', ''),
 					pinElectricalType: sg<string>(rawPin, 'getState_PinType', ''),
-					wireConnectionX_mil: sg<number>(rawPin, 'getState_X', 0),
-					wireConnectionY_mil: sg<number>(rawPin, 'getState_Y', 0),
+				pinX_mil: sg<number>(rawPin, 'getState_X', 0),
+				pinY_mil: sg<number>(rawPin, 'getState_Y', 0),
 					orientationDeg: sg<number>(rawPin, 'getState_Rotation', 0),
 					pinLength_mil: sg<number>(rawPin, 'getState_PinLength', 0),
 					hasNoConnectMark: sg<boolean>(rawPin, 'getState_NoConnected', false),
@@ -129,8 +129,8 @@ async function extractSchematicTopology(): Promise<{ ok: true; data: string } | 
 					pinSignalName: netFlagName,
 					pinPadNumber: '1',
 					pinElectricalType: 'power',
-					wireConnectionX_mil: cx,
-					wireConnectionY_mil: cy,
+					pinX_mil: cx,
+					pinY_mil: cy,
 					orientationDeg: 0,
 					pinLength_mil: 0,
 					hasNoConnectMark: false,
@@ -149,7 +149,7 @@ async function extractSchematicTopology(): Promise<{ ok: true; data: string } | 
  * @returns 扫描结果，含原理图拓扑快照。
  */
 export async function handleSchematicTopologyTask(_payload: unknown): Promise<unknown> {
-	// 构建原理图拓扑快照，包含连线分析所需的器件与引脚信息。
+	// 构建原理图拓扑快照，包含器件与引脚信息。
 	const extracted = await extractSchematicTopology();
 	if (!extracted.ok) {
 		return { ok: false, error: extracted.error };

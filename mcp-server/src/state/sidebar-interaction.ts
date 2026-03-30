@@ -75,45 +75,13 @@ export interface SidebarComponentPlaceInteraction {
   rows: SidebarComponentPlaceRowState[];
 }
 
-export interface SidebarWirePlanConnectionRow {
-  index: number;
-  fromLabel: string;
-  toLabel: string;
-  netName: string;
-}
-
-export interface SidebarWirePlanInteraction {
-  kind: 'wire-plan';
-  requestId: string;
-  title: string;
-  description: string;
-  noticeText: string;
-  connectionMethod: 'wire' | 'net-label';
-  connections: SidebarWirePlanConnectionRow[];
-  canConfirm: boolean;
-  canCancel: boolean;
-}
-
-export interface SidebarNetFlagWaitInteraction {
-  kind: 'net-flag-wait';
-  requestId: string;
-  title: string;
-  description: string;
-  noticeText: string;
-  missingSymbols: string[];
-  canConfirm: boolean;
-  canCancel: boolean;
-}
-
-export type SidebarInteractionRequest = SidebarComponentSelectInteraction | SidebarComponentPlaceInteraction | SidebarWirePlanInteraction | SidebarNetFlagWaitInteraction;
+export type SidebarInteractionRequest = SidebarComponentSelectInteraction | SidebarComponentPlaceInteraction;
 
 export type SidebarInteractionResponse =
   | { requestId: string; action: 'cancel' }
   | { requestId: string; action: 'start-placement' }
   | { requestId: string; action: 'change-page'; page: number }
-  | { requestId: string; action: 'confirm-selection'; candidate: SidebarComponentSelectCandidate }
-  | { requestId: string; action: 'confirm-wire-plan'; connectionMethod: 'wire' | 'net-label' }
-  | { requestId: string; action: 'confirm-net-flag-placed' };
+  | { requestId: string; action: 'confirm-selection'; candidate: SidebarComponentSelectCandidate };
 
 function sanitizeFileSegment(value: string): string {
   return String(value ?? '')
@@ -198,25 +166,6 @@ function isSidebarInteractionRequest(value: unknown): value is SidebarInteractio
       && value.rows.every((item) => isSidebarComponentPlaceRowState(item));
   }
 
-  if (value.kind === 'wire-plan') {
-    return typeof value.title === 'string'
-      && typeof value.description === 'string'
-      && typeof value.noticeText === 'string'
-      && (value.connectionMethod === 'wire' || value.connectionMethod === 'net-label')
-      && Array.isArray(value.connections)
-      && typeof value.canConfirm === 'boolean'
-      && typeof value.canCancel === 'boolean';
-  }
-
-  if (value.kind === 'net-flag-wait') {
-    return typeof value.title === 'string'
-      && typeof value.description === 'string'
-      && typeof value.noticeText === 'string'
-      && Array.isArray(value.missingSymbols)
-      && typeof value.canConfirm === 'boolean'
-      && typeof value.canCancel === 'boolean';
-  }
-
   return false;
 }
 
@@ -225,7 +174,7 @@ function isSidebarInteractionResponse(value: unknown): value is SidebarInteracti
     return false;
   }
 
-  if (value.action === 'cancel' || value.action === 'start-placement' || value.action === 'confirm-net-flag-placed') {
+  if (value.action === 'cancel' || value.action === 'start-placement') {
     return true;
   }
 
@@ -235,10 +184,6 @@ function isSidebarInteractionResponse(value: unknown): value is SidebarInteracti
 
   if (value.action === 'confirm-selection') {
     return isSidebarComponentSelectCandidate(value.candidate);
-  }
-
-  if (value.action === 'confirm-wire-plan') {
-    return value.connectionMethod === 'wire' || value.connectionMethod === 'net-label';
   }
 
   return false;

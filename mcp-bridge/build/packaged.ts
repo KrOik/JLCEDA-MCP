@@ -101,7 +101,7 @@ function main() {
 	}
 
 	zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true, compression: 'DEFLATE', compressionOptions: { level: 9 } }).pipe(
-		fs.createWriteStream(path.join(rootBuildDirectory, `${extensionConfig.name}.eext`)),
+		fs.createWriteStream(path.join(rootBuildDirectory, `${extensionConfig.name}-${extensionConfig.version}.eext`)),
 	);
 }
 

@@ -114,7 +114,7 @@
     "watch": "node ./config/esbuild.prod.mjs --watch",
     "typecheck": "tsc -p ./ --noEmit",
     "lint": "eslint src --ext .ts",
-    "package": "node -e \"const fs=require('fs'); const path=require('path'); const buildDir=path.resolve(process.cwd(),'../build'); fs.mkdirSync(buildDir,{recursive:true}); for (const name of fs.readdirSync(buildDir)) { if (name.startsWith('jlceda-mcp') && name.endsWith('.vsix')) { fs.rmSync(path.join(buildDir,name),{force:true}); } }\" && vsce package --allow-missing-repository --allow-star-activation --out ../build/jlceda-mcp.vsix"
+    "package": "node -e \"const fs=require('fs'); const path=require('path'); const cp=require('child_process'); const pkg=JSON.parse(fs.readFileSync('./package.json','utf8')); const ver=pkg.version; const buildDir=path.resolve(process.cwd(),'../build'); fs.mkdirSync(buildDir,{recursive:true}); for (const name of fs.readdirSync(buildDir)) { if (name.startsWith('jlceda-mcp') && name.endsWith('.vsix')) { fs.rmSync(path.join(buildDir,name),{force:true}); } } const out=path.join(buildDir,'jlceda-mcp-'+ver+'.vsix'); cp.execSync('vsce package --allow-missing-repository --allow-star-activation --out '+out,{stdio:'inherit'});\""
   },
   "dependencies": {
     "overlayscrollbars": "^2.14.0",

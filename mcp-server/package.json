@@ -1,7 +1,7 @@
 {
   "name": "jlceda-mcp",
   "displayName": "JLCEDA MCP",
-  "description": "MCP Bridge（嘉立创 EDA 扩展）的 MCP 服务端，供 Copilot/ClaudeCode/Codex 等 AI 工具连接调用。",
+  "description": "这是 MCP Bridge（JLCEDA）的 MCP 服务端，供 Copilot/ClaudeCode/Codex 等 AI 工具连接调用。",
   "version": "1.5.0",
   "publisher": "chengbin",
   "license": "Apache-2.0",

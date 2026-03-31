@@ -1,6 +1,6 @@
 # MCP Bridge
 
-本扩展为嘉立创 EDA **AI 设计助手** 的 MCP 版，支持双协议连接（ stdio / http），在 VS Code / Cursor 内的聊天工具（Copilot/Chat/Claude Code/Codex等）中提供原理图分析、器件选型、交互放置等功能，配合 VS Code / Cursor 侧的 **嘉立创 EDA MCP** 扩展使用。
+本扩展为嘉立创 EDA **AI 设计助手** 的 MCP 版，支持双协议连接（ stdio / http），在 VS Code / Cursor 内的聊天工具（Copilot/Chat/Claude Code/Codex等）中提供原理图分析、器件选型、交互放置等功能，配合 VS Code / Cursor 侧的 **JLCEDA MCP** 扩展使用。
 
 内置专用工具：
 
@@ -32,14 +32,14 @@
 
 ### 服务端（VS Code / Cursor）
 
-服务端文档：[嘉立创 EDA MCP 服务端 README](https://github.com/sengbin/JLCEDA-MCP/blob/main/mcp-server/README.md)
+服务端文档：[JLCEDA MCP 服务端 README](https://github.com/sengbin/JLCEDA-MCP/blob/main/mcp-server/README.md)
 
 **从扩展商店安装（推荐）：**
 
-打开 VS Code 或 Cursor 扩展视图，搜索"嘉立创 EDA MCP"并安装。
+打开 VS Code 或 Cursor 扩展视图，搜索“JLCEDA MCP”并安装。
 
-- VS Code 扩展商店：https://marketplace.visualstudio.com/items?itemName=chengbin.jlceda-mcp-server
-- Cursor（Open VSX）：https://open-vsx.org/extension/chengbin/jlceda-mcp-server
+- VS Code 扩展商店：https://marketplace.visualstudio.com/items?itemName=chengbin.jlceda-mcp
+- Cursor（Open VSX）：https://open-vsx.org/extension/chengbin/jlceda-mcp
 
 ## 状态说明
 

@@ -49,6 +49,7 @@ const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
 	// 'eda_context',
 	// 'api_invoke',
 	'schematic_read',
+	'schematic_review',
 	'component_select',
 	'component_place',
 ]);
@@ -192,6 +193,9 @@ export class ToolDispatcher {
 		if (toolCallParams.name === 'schematic_read') {
 			return this.toToolContent(await this.handleSchematicRead());
 		}
+		if (toolCallParams.name === 'schematic_review') {
+			return this.toToolContent(await this.handleSchematicReview());
+		}
 		if (toolCallParams.name === 'component_select') {
 			return this.toToolContent(await this.handleComponentSelect(args));
 		}
@@ -280,6 +284,11 @@ export class ToolDispatcher {
 	// 桥接读取原理图完整电路语义快照。
 	private async handleSchematicRead(): Promise<unknown> {
 		return await enqueueBridgeRequest('/bridge/jlceda/schematic/read', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
+	}
+
+	// 桥接读取全工程原理图网表文本。
+	private async handleSchematicReview(): Promise<unknown> {
+		return await enqueueBridgeRequest('/bridge/jlceda/schematic/review', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
 	}
 
 	private writeInteractionRequest(request: SidebarInteractionRequest): void {

@@ -1,3 +1,11 @@
+## [1.4.1] - 2026-03-31
+
+### 新增
+
+- 新增 `/bridge/jlceda/schematic/review` 桥接路由，对应 `schematic_review` 工具，在 EDA 扩展侧执行 `sch_ManufactureData.getNetlistFile` 读取全工程网表文件。
+
+---
+
 ## [1.4.0] - 2026-03-31
 
 ### 变更

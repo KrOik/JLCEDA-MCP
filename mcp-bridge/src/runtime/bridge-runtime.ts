@@ -27,6 +27,7 @@ import { handleComponentSelectTask } from '../mcp/component-select-handler.ts';
 import { handleEdaContextTask } from '../mcp/context-handler.ts';
 import { handleApiInvokeTask } from '../mcp/invoke-handler.ts';
 import { handleSchematicReadTask } from '../mcp/schematic-read-handler.ts';
+import { handleSchematicReviewTask } from '../mcp/schematic-review-handler.ts';
 import { BridgeStateManager } from '../state/state-manager.ts';
 import { BridgeStatusReporter } from '../state/status-reporter.ts';
 import { safeCall, toSafeErrorMessage, toSerializableAsync } from '../utils.ts';
@@ -47,6 +48,7 @@ const BRIDGE_TASK_HANDLERS: Record<string, (payload: unknown) => Promise<unknown
 	'/bridge/jlceda/component/select': handleComponentSelectTask,
 	'/bridge/jlceda/context': handleEdaContextTask,
 	'/bridge/jlceda/schematic/read': handleSchematicReadTask,
+	'/bridge/jlceda/schematic/review': handleSchematicReviewTask,
 };
 
 let started = false;

@@ -1,19 +1,19 @@
 ﻿# JLCEDA MCP
 
-JLCEDA MCP 是一套面向嘉立创 EDA 的本地 MCP 双扩展方案，由 mcp-server 和 mcp-bridge 组成。接入后，你可以直接在 Copilot、Cursor Chat 中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
+JLCEDA MCP 是一套面向嘉立创 EDA 的本地 MCP 双扩展方案，由 mcp-hub 和 mcp-bridge 组成。接入后，你可以直接在 Copilot、Cursor Chat 中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
 
 ## 整体链路
 
 ```
 嘉立创 EDA（mcp-bridge）
     ↕ WebSocket 桥接
-VS Code / Cursor（mcp-server）
+VS Code / Cursor（mcp-hub）
     ↕ stdio/http MCP 协议
 内置 AI 助手（Copilot / Cursor Chat）
 ```
 
-- **mcp-bridge**：EDA 侧扩展，建立到 mcp-server 的 WebSocket 连接，负责让 AI 在嘉立创 EDA 中读取当前图纸信息并执行相关操作。
-- **mcp-server**：VS Code/Cursor 侧扩展，通过 stdio/http MCP 协议将多项 MCP 工具能力暴露给 AI 助手，并托管桥接 WebSocket 服务接收 Bridge 连接。
+- **mcp-bridge**：EDA 侧扩展，建立到 mcp-hub 的 WebSocket 连接，负责让 AI 在嘉立创 EDA 中读取当前图纸信息并执行相关操作。
+- **mcp-hub**：VS Code/Cursor 侧扩展，通过 stdio/http MCP 协议将多项 MCP 工具能力暴露给 AI 助手，并托管桥接 WebSocket 服务接收 Bridge 连接。
 
 ## 可用工具
 
@@ -39,7 +39,7 @@ VS Code / Cursor（mcp-server）
 
 > 初次安装时，先确认 VS Code/Cursor 与嘉立创 EDA 两侧扩展都已安装，再检查聊天工具的 MCP 服务配置是否正确。
 
-### mcp-server（VS Code / Cursor）
+### mcp-hub（VS Code / Cursor）
 
 **从扩展商店安装（推荐）：**
 
@@ -70,7 +70,7 @@ VS Code / Cursor（mcp-server）
 
 ```text
 JLCEDA-MCP/
-├─ mcp-server/      VS Code/Cursor 扩展与 stdio MCP 运行时
+├─ mcp-hub/         VS Code/Cursor 扩展与 stdio MCP 运行时
 ├─ mcp-bridge/   嘉立创 EDA 扩展与桥接 WebSocket 客户端
 ├─ build/           构建产物输出目录（VSIX / EEXT）
 └─ tool/            离线文档与资源生成辅助脚本
@@ -80,15 +80,15 @@ JLCEDA-MCP/
 
 - Node.js 20+
 - npm
-- VS Code 1.105+（mcp-server 开发与调试）
+- VS Code 1.105+（mcp-hub 开发与调试）
 - 嘉立创 EDA 专业版（mcp-bridge 安装与联调）
 
 ### 构建
 
-**构建 mcp-server：**
+**构建 mcp-hub：**
 
 ```bash
-cd mcp-server
+cd mcp-hub
 npm install
 npm run build
 ```
@@ -107,7 +107,7 @@ npm run build
 
 ### 本地联调流程
 
-1. 在 VS Code 或 Cursor 中安装 mcp-server 扩展。
+1. 在 VS Code 或 Cursor 中安装 mcp-hub 扩展。
 2. 在侧边栏确认桥接监听地址，默认为 `ws://127.0.0.1:8765/bridge/ws`。
 3. 在嘉立创 EDA 中安装 mcp-bridge，写入相同的桥接地址。
 4. 打开 EDA 工程，确认 Bridge 已建立桥接连接。
@@ -115,16 +115,16 @@ npm run build
 
 ### 开发约定
 
-1. 新增或变更工具定义时，同步更新 `mcp-server/resources/mcp-tool-definitions.json`、对应 README 与 CHANGELOG。
-2. 新增或变更桥接任务路径时，必须同时修改 mcp-server 与 mcp-bridge 两端处理逻辑。
+1. 新增或变更工具定义时，同步更新 `mcp-hub/resources/mcp-tool-definitions.json`、对应 README 与 CHANGELOG。
+2. 新增或变更桥接任务路径时，必须同时修改 mcp-hub 与 mcp-bridge 两端处理逻辑。
 3. 调整桥接地址、端口、协议字段或角色模型时，同步更新相关 README 与 CHANGELOG。
 4. 发布前执行两端构建，确认 VSIX 与 EEXT 均可成功生成。
 
 ### 相关文档
 
-- [mcp-server/README.md](./mcp-server/README.md)
+- [mcp-hub/README.md](./mcp-hub/README.md)
 - [mcp-bridge/README.md](./mcp-bridge/README.md)
-- [mcp-server/CHANGELOG.md](./mcp-server/CHANGELOG.md)
+- [mcp-hub/CHANGELOG.md](./mcp-hub/CHANGELOG.md)
 - [mcp-bridge/CHANGELOG.md](./mcp-bridge/CHANGELOG.md)
 
 ## 许可证

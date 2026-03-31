@@ -2,14 +2,14 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Run JLC MCP Extension",
+      "name": "运行MCP Hub",
       "type": "extensionHost",
       "request": "launch",
       "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}/mcp-server"
+        "--extensionDevelopmentPath=${workspaceFolder}/mcp-hub"
       ],
       "outFiles": [
-        "${workspaceFolder}/mcp-server/out/**/*.js"
+        "${workspaceFolder}/mcp-hub/out/**/*.js"
       ],
       "preLaunchTask": "npm: build"
     }

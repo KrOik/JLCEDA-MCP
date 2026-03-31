@@ -4,7 +4,7 @@
     {
       "type": "npm",
       "script": "build",
-      "path": "mcp-server",
+      "path": "mcp-hub",
       "problemMatcher": "$tsc",
       "presentation": {
         "close": true,

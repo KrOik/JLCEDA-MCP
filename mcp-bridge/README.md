@@ -32,7 +32,7 @@
 
 ### 服务端（VS Code / Cursor）
 
-服务端文档：[JLCEDA MCP 服务端 README](https://github.com/sengbin/JLCEDA-MCP/blob/main/mcp-server/README.md)
+服务端文档：[JLCEDA MCP 服务端 README](https://github.com/sengbin/JLCEDA-MCP/blob/main/mcp-hub/README.md)
 
 **从扩展商店安装（推荐）：**
 

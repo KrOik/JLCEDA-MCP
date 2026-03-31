@@ -9,7 +9,7 @@ JLCEDA MCP 是一套面向嘉立创 EDA 的本地 MCP 双扩展方案，由 mcp-
     ↕ WebSocket 桥接
 VS Code / Cursor（mcp-hub）
     ↕ stdio/http MCP 协议
-内置 AI 助手（Copilot / Cursor Chat）
+MCP 客户端（Copilot / Cursor Chat / Claude Code / Codex 等）
 ```
 
 - **mcp-bridge**：EDA 侧扩展，建立到 mcp-hub 的 WebSocket 连接，负责让 AI 在嘉立创 EDA 中读取当前图纸信息并执行相关操作。
@@ -17,11 +17,12 @@ VS Code / Cursor（mcp-hub）
 
 ## 可用工具
 
-| 工具 | 说明 |
-|------|------|
-| `schematic_read` | 读取当前原理图的完整电路语义快照，返回器件列表、引脚→网络名映射、网络连接关系与 ERC 检查结果 |
-| `component_select` | 在 EDA 系统库中搜索候选器件，并在 VS Code / Cursor 侧边栏中由用户确认具体型号 |
-| `component_place` | 按顺序启动器件交互放置流程，在侧边栏中提示当前进度并等待用户完成放置 |
+| 工具                   | 说明                                                                                          |
+| -------------------- | --------------------------------------------------------------------------------------------- |
+| `schematic_read`   | 读取当前原理图的完整电路语义快照，返回器件列表、引脚→网络名映射、网络连接关系与 ERC 检查结果 |
+| `schematic_review` | 读取全工程所有原理图页面的网表文件，覆盖多页电路，适合全局审查、BOM 核查与跨页信号追踪              |
+| `component_select` | 在 EDA 系统库中搜索候选器件，并在 VS Code / Cursor 侧边栏中由用户确认具体型号                 |
+| `component_place`  | 按顺序启动器件交互放置流程，在侧边栏中提示当前进度并等待用户完成放置                          |
 
 ## 交互使用说明
 
@@ -34,8 +35,6 @@ VS Code / Cursor（mcp-hub）
 ## 安装
 
 **服务端**和**客户端**两个扩展都需要安装。
-
-> 目前仅支持 VS Code 内置 Copilot 和 Cursor 内置 Chat，其他第三方聊天工具暂不支持。
 
 > 初次安装时，先确认 VS Code/Cursor 与嘉立创 EDA 两侧扩展都已安装，再检查聊天工具的 MCP 服务配置是否正确。
 

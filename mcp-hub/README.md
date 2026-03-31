@@ -1,8 +1,17 @@
-﻿# JLCEDA MCP
+﻿# JLCEDA MCP Hub
 
-本扩展为嘉立创 EDA **AI 设计助手** 的 MCP 版，支持双协议连接（ stdio / http），在 VS Code / Cursor 内的聊天工具（Copilot/Chat/Claude Code/Codex等）中提供原理图分析、器件选型、交互放置等功能，配合嘉立创 EDA 侧的 **MCP Bridge** 扩展使用。
+本扩展为嘉立创 EDA **AI 设计助手** 的 MCP Hub，支持双协议连接（stdio / http），在 VS Code / Cursor 内的 MCP 客户端（Copilot / Cursor Chat / Claude Code / Codex 等）中提供嘉立创 EDA 工具调用能力，配合嘉立创 EDA 侧的 **MCP Bridge** 扩展使用。
 
 项目地址：https://github.com/sengbin/JLCEDA-MCP
+
+---
+
+## 可用工具
+
+- `schematic_read`：读取当前原理图页面的完整电路语义快照，包含器件列表、引脚网络连接关系与 ERC 检查结果。
+- `schematic_review`：读取全工程所有原理图页面的网表文件，覆盖多页电路，适合全局审查、BOM 核查与跨页信号追踪。
+- `component_select`：搜索器件候选项并返回确认结果。
+- `component_place`：引导放置已确认的器件列表。
 
 ---
 
@@ -16,7 +25,7 @@
 
 **从扩展商店安装（推荐）：**
 
-打开 VS Code 或 Cursor 扩展视图，搜索“JLCEDA MCP”并安装。
+打开 VS Code 或 Cursor 扩展视图，搜索“JLCEDA MCP Hub”并安装。
 
 - VS Code 扩展商店：https://marketplace.visualstudio.com/items?itemName=chengbin.jlceda-mcp-hub
 - Cursor（Open VSX）：https://open-vsx.org/extension/chengbin/jlceda-mcp-hub

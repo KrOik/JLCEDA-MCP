@@ -1,17 +1,17 @@
 # MCP Bridge
 
-本扩展为嘉立创 EDA **AI 设计助手** 的 MCP 版，支持双协议连接（ stdio / http），在 VS Code / Cursor 内的聊天工具（Copilot/Chat/Claude Code/Codex等）中提供原理图分析、器件选型、交互放置等功能，配合 VS Code / Cursor 侧的 **JLCEDA MCP** 扩展使用。
+本扩展为嘉立创 EDA **AI 设计助手** 的 MCP 版，支持双协议连接（ stdio / http），在 VS Code / Cursor 内的聊天工具（Copilot/Chat/Claude Code/Codex等）中提供原理图分析、器件选型、交互放置等功能，配合 VS Code / Cursor 侧的 **JLCEDA MCP Hub** 扩展使用。
 
 内置专用工具：
 
-- 原理图语义读取：读取当前激活页面的完整电路语义快照，包含器件列表、引脚网络连接关系与 ERC 检查结果，AI 可直接理解电路结构与功能。
-- 全工程原理图审查：读取全工程所有原理图页面的网表文件，覆盖多页电路，适合全局审查、BOM 核查与跨页信号追踪。
-- 器件选型：在需要确认具体型号时，辅助筛选合适器件。
-- 交互放置：在需要落图时，按确认结果引导器件放置。
+- `schematic_read`：读取当前原理图页面的完整电路语义快照，包含器件列表、引脚网络连接关系与 ERC 检查结果。
+- `schematic_review`：读取全工程所有原理图页面的网表文件，覆盖多页电路，适合全局审查、BOM 核查与跨页信号追踪。
+- `component_select`：搜索器件候选项并返回确认结果。
+- `component_place`：引导放置已确认的器件列表。
 
 ![演示动画](images/demo.gif)
 
-> 这套方案的链路是：EDA -> WebSocket (Bridge) -> stdio/http (MCP) -> AI 助手（Copilot / Cursor Chat/Claude Code/Codex）。
+> 这套方案的链路是：EDA -> WebSocket (Bridge) -> stdio/http (MCP) -> MCP 客户端（Copilot / Cursor Chat / Claude Code / Codex）。
 
 > B 站演示视频：https://www.bilibili.com/video/BV11QwuzxEDy/
 

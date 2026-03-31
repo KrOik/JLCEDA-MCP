@@ -11,8 +11,8 @@
 
 ### 变更
 
-- 扩展 ID 调整为 `jlceda-mcp`，显示名调整为「JLCEDA MCP」。
-- Marketplace 地址同步更新为 `chengbin.jlceda-mcp`。
+- 扩展 ID 调整为 `jlceda-mcp-hub`，显示名调整为「JLCEDA MCP Hub」。
+- Marketplace 地址同步更新为 `chengbin.jlceda-mcp-hub`。
 
 ---
 

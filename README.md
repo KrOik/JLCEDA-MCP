@@ -43,8 +43,8 @@ VS Code / Cursor（mcp-server）
 
 **从扩展商店安装（推荐）：**
 
-- VS Code：[marketplace.visualstudio.com](https://marketplace.visualstudio.com/items?itemName=chengbin.jlceda-mcp)
-- Cursor（Open VSX）：[open-vsx.org](https://open-vsx.org/extension/chengbin/jlceda-mcp)
+- VS Code：[marketplace.visualstudio.com](https://marketplace.visualstudio.com/items?itemName=chengbin.jlceda-mcp-hub)
+- Cursor（Open VSX）：[open-vsx.org](https://open-vsx.org/extension/chengbin/jlceda-mcp-hub)
 
 ### mcp-bridge（嘉立创 EDA）
 
@@ -93,7 +93,7 @@ npm install
 npm run build
 ```
 
-产物：`build/jlceda-mcp.vsix`
+产物：`build/jlceda-mcp-hub.vsix`
 
 **构建 mcp-bridge：**
 

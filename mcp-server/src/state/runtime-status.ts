@@ -17,7 +17,7 @@ import type { BridgeDisconnectSnapshot, RuntimeStatusSnapshot, ServerConfig } fr
 // stdio 运行时状态文件命令行参数名。
 export const STATUS_FILE_FLAG = '--status-file';
 // 运行时状态文件名前缀。
-const RUNTIME_STATUS_FILE_PREFIX = 'jlceda-mcp-runtime-status';
+const RUNTIME_STATUS_FILE_PREFIX = 'jlceda-mcp-hub-runtime-status';
 // 运行时状态心跳有效期，超过后视为旧状态。
 export const RUNTIME_STATUS_STALE_TTL_MS = 4000;
 

@@ -13,8 +13,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { isPlainObjectRecord } from '../utils';
 
-const SIDEBAR_INTERACTION_REQUEST_FILE_PREFIX = 'jlceda-mcp-sidebar-interaction-request';
-const SIDEBAR_INTERACTION_RESPONSE_FILE_PREFIX = 'jlceda-mcp-sidebar-interaction-response';
+const SIDEBAR_INTERACTION_REQUEST_FILE_PREFIX = 'jlceda-mcp-hub-sidebar-interaction-request';
+const SIDEBAR_INTERACTION_RESPONSE_FILE_PREFIX = 'jlceda-mcp-hub-sidebar-interaction-response';
 
 export interface SidebarComponentSelectCandidate {
   uuid: string;

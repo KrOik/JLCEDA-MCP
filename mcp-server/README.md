@@ -18,8 +18,8 @@
 
 打开 VS Code 或 Cursor 扩展视图，搜索“JLCEDA MCP”并安装。
 
-- VS Code 扩展商店：https://marketplace.visualstudio.com/items?itemName=chengbin.jlceda-mcp
-- Cursor（Open VSX）：https://open-vsx.org/extension/chengbin/jlceda-mcp
+- VS Code 扩展商店：https://marketplace.visualstudio.com/items?itemName=chengbin.jlceda-mcp-hub
+- Cursor（Open VSX）：https://open-vsx.org/extension/chengbin/jlceda-mcp-hub
 
 ### 客户端（嘉立创 EDA）
 

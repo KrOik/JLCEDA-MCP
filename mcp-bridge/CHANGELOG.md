@@ -11,7 +11,7 @@
 ### 变更
 
 - 版本与服务端 `1.5.0` 保持同步。
-- 服务端（VS Code 扩展）显示名由「嘉立创 EDA MCP」更名为「JLCEDA MCP」，扩展 ID 由 `chengbin.jlceda-mcp-server` 更名为 `chengbin.jlceda-mcp`；本扩展文档中的名称引用与 Marketplace 链接已同步修正。
+- 服务端（VS Code 扩展）显示名统一为「JLCEDA MCP」，扩展 ID 统一为 `chengbin.jlceda-mcp`；本扩展文档中的名称引用与 Marketplace 链接已同步修正。
 
 ---
 

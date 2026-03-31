@@ -11,7 +11,7 @@
 
 ### 变更
 
-- 扩展 ID 由 `jlceda-mcp-server` 更名为 `jlceda-mcp`，显示名由「嘉立创 EDA MCP」更名为「JLCEDA MCP」。
+- 扩展 ID 调整为 `jlceda-mcp`，显示名调整为「JLCEDA MCP」。
 - Marketplace 地址同步更新为 `chengbin.jlceda-mcp`。
 
 ---
@@ -179,7 +179,7 @@
 
 **侧边栏面板**
 
-- 在 VS Code 活动栏注册「嘉立创 EDA MCP」侧边栏，实时显示服务运行状态和桥接连接状态。
+- 在 VS Code 活动栏注册「JLCEDA MCP」侧边栏，实时显示服务运行状态和桥接连接状态。
 - 显示已连接的 EDA 实例列表，区分活动与待命角色。
 
 **三个 MCP 工具**

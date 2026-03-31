@@ -17,6 +17,11 @@ import { safeCall } from '../utils';
  * @returns 读取结果，含全工程网表文本。
  */
 export async function handleSchematicReviewTask(_payload: unknown): Promise<unknown> {
+	// ── 第一步：执行 DRC 检查 ────────────────────────────────────────────────
+	const drcRawResult = await safeCall<unknown>(() => Promise.resolve(eda.sch_Drc.check(false, false, true)));
+	const drcCheckPassed = drcRawResult === true;
+
+	// ── 第二步：获取全工程网表 ───────────────────────────────────────────────
 	const netlistFile: unknown = await safeCall<unknown>(() => Promise.resolve(eda.sch_ManufactureData.getNetlistFile()));
 	if (!netlistFile) {
 		return {
@@ -37,6 +42,7 @@ export async function handleSchematicReviewTask(_payload: unknown): Promise<unkn
 
 	return {
 		ok: true,
+		drcCheckPassed,
 		netlistText,
 	};
 }

@@ -56,6 +56,7 @@ export interface SidebarComponentSelectInteraction {
   candidates: SidebarComponentSelectCandidate[];
   pageSize: number;
   currentPage: number;
+  timeoutSeconds: number;
 }
 
 export interface SidebarComponentPlaceInteraction {
@@ -143,7 +144,9 @@ function isSidebarInteractionRequest(value: unknown): value is SidebarInteractio
       && Number.isInteger(value.pageSize)
       && Number(value.pageSize) > 0
       && Number.isInteger(value.currentPage)
-      && Number(value.currentPage) > 0;
+      && Number(value.currentPage) > 0
+      && Number.isInteger(value.timeoutSeconds)
+      && Number(value.timeoutSeconds) > 0;
   }
 
   if (value.kind === 'component-place') {

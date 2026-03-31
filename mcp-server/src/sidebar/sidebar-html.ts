@@ -459,6 +459,23 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       font-size: 12px;
       line-height: 1.45;
     }
+    .interaction-countdown {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 8px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .interaction-countdown-value {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      min-width: 34px;
+      letter-spacing: 0.02em;
+    }
+    .interaction-countdown.is-urgent {
+      color: var(--danger);
+    }
     .interaction-select-wrapper {
       border: 1px solid var(--panel-border);
       border-radius: 6px;
@@ -499,7 +516,11 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       background: color-mix(in srgb, var(--text) 6%, transparent);
     }
     .interaction-select-row.is-selected {
-      background: color-mix(in srgb, var(--btn-primary-bg) 12%, transparent);
+      background: color-mix(in srgb, var(--btn-primary-bg) 22%, transparent);
+      box-shadow: inset 3px 0 0 var(--btn-primary-bg);
+    }
+    .interaction-select-row.is-selected .interaction-select-cell {
+      color: var(--text);
     }
     .interaction-select-row:last-child {
       border-bottom: none;
@@ -1508,6 +1529,9 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     let currentInteraction = null;
     let currentInteractionSelectionKey = '';
     let pendingInteractionActionKey = '';
+    let interactionCountdownTimerId = null;
+    let interactionCountdownStartTime = 0;
+    let interactionCountdownRequestId = '';
 
     const STATUS_LOG_LEVEL_FILTER_VALUES = new Set(['all', 'info', 'success', 'warning', 'error']);
     const STATUS_LOG_SOURCE_FILTER_VALUES = new Set(['all', 'server', 'client']);
@@ -2203,6 +2227,12 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       if (isEmpty) {
         destroyInteractionScrollbar();
         hideCandidatePopup();
+        if (interactionCountdownTimerId !== null) {
+          clearInterval(interactionCountdownTimerId);
+          interactionCountdownTimerId = null;
+        }
+        interactionCountdownRequestId = '';
+        interactionCountdownStartTime = 0;
         interactionHostElement.replaceChildren();
       }
     }
@@ -2215,6 +2245,25 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
 
     function isInteractionActionPending(requestId, action) {
       return pendingInteractionActionKey === String(requestId || '') + ':' + String(action || '');
+    }
+
+    function updateCountdownDisplay() {
+      const valueEl = document.getElementById('interactionCountdownValue');
+      const countdownEl = document.getElementById('interactionCountdown');
+      if (!valueEl || !countdownEl) {
+        return;
+      }
+
+      const timeoutSec = currentInteraction && typeof currentInteraction.timeoutSeconds === 'number' && currentInteraction.timeoutSeconds > 0
+        ? currentInteraction.timeoutSeconds
+        : 900;
+      const elapsed = Date.now() - interactionCountdownStartTime;
+      const remainingMs = Math.max(0, timeoutSec * 1000 - elapsed);
+      const remainingSec = Math.ceil(remainingMs / 1000);
+      const mins = Math.floor(remainingSec / 60);
+      const secs = remainingSec % 60;
+      valueEl.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      countdownEl.classList.toggle('is-urgent', remainingSec <= 60);
     }
 
     function createInteractionCard(interaction) {
@@ -2254,6 +2303,39 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       }
 
       const card = createInteractionCard(interaction);
+
+      // 倒计时显示与定时器管理
+      const timeoutSeconds = typeof interaction.timeoutSeconds === 'number' && interaction.timeoutSeconds > 0
+        ? interaction.timeoutSeconds
+        : 900;
+      if (interaction.requestId !== interactionCountdownRequestId) {
+        if (interactionCountdownTimerId !== null) {
+          clearInterval(interactionCountdownTimerId);
+          interactionCountdownTimerId = null;
+        }
+        interactionCountdownRequestId = interaction.requestId;
+        interactionCountdownStartTime = Date.now();
+        interactionCountdownTimerId = setInterval(updateCountdownDisplay, 1000);
+      }
+      const elapsed = Date.now() - interactionCountdownStartTime;
+      const remainingMs = Math.max(0, timeoutSeconds * 1000 - elapsed);
+      const remainingSec = Math.ceil(remainingMs / 1000);
+      const mins = Math.floor(remainingSec / 60);
+      const secs = remainingSec % 60;
+      const isUrgent = remainingSec <= 60;
+
+      const countdown = document.createElement('div');
+      countdown.id = 'interactionCountdown';
+      countdown.className = 'interaction-countdown' + (isUrgent ? ' is-urgent' : '');
+      const countdownLabel = document.createElement('span');
+      countdownLabel.textContent = '超时倒计时：';
+      const countdownValue = document.createElement('span');
+      countdownValue.id = 'interactionCountdownValue';
+      countdownValue.className = 'interaction-countdown-value';
+      countdownValue.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      countdown.appendChild(countdownLabel);
+      countdown.appendChild(countdownValue);
+      card.appendChild(countdown);
 
       // 创建外层包裹容器（统一边框 + 圆角）
       const wrapper = document.createElement('div');

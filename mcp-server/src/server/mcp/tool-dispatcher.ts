@@ -523,6 +523,7 @@ export class ToolDispatcher {
 			candidates: initialPayload.candidates,
 			pageSize: initialPayload.pageSize,
 			currentPage: initialPayload.currentPage,
+			timeoutSeconds: Math.floor(SIDEBAR_INTERACTION_TIMEOUT_MS / 1000),
 		};
 
 		this.clearInteractionState();

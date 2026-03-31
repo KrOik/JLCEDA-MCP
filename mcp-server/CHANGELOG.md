@@ -1,3 +1,12 @@
+## [1.5.0] - 2026-03-31
+
+### 变更
+
+- 扩展 ID 由 `jlceda-mcp-server` 更名为 `jlceda-mcp`，显示名由「嘉立创 EDA MCP」更名为「JLCEDA MCP」。
+- Marketplace 地址同步更新为 `chengbin.jlceda-mcp`。
+
+---
+
 ## [1.4.1] - 2026-03-31
 
 ### 新增

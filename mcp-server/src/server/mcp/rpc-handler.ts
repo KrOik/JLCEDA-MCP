@@ -79,7 +79,7 @@ export class RpcHandler {
 				capabilities: { tools: {} },
 				instructions,
 				serverInfo: {
-					name: 'jlceda-mcp-server',
+					name: 'jlceda-mcp',
 					version: this.serverVersion,
 				},
 			});

@@ -23,7 +23,7 @@ const DEBUG_ENABLE_SYSTEM_LOG_FLAG = '--enable-system-log';
 const DEBUG_ENABLE_CONNECTION_LIST_FLAG = '--enable-connection-list';
 
 // Cursor 侧注册使用的 MCP 服务名称。
-export const JLC_MCP_SERVER_NAME = 'chengbin.jlceda-mcp-server';
+export const JLC_MCP_SERVER_NAME = 'chengbin.jlceda-mcp';
 
 export interface CursorStdioServerConfig {
   name: string;

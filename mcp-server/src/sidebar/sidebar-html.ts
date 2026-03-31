@@ -35,7 +35,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'unsafe-inline'; script-src ${cspSource} 'nonce-${nonce}'; img-src ${cspSource} data:;" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>嘉立创 EDA MCP 服务管理</title>
+  <title>JLCEDA MCP 服务管理</title>
   <link rel="stylesheet" href="${overlayScrollbarsCssUri}" />
   <style>
     :root {

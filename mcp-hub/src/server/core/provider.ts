@@ -59,6 +59,8 @@ implements vscode.McpServerDefinitionProvider<vscode.McpStdioServerDefinition>, 
   ): Promise<vscode.McpStdioServerDefinition> {
     // 先停止扩展自动拉起的预热进程，确保 VS Code 即将 spawn 的进程可正常绑定端口。
     this.onBeforeStart?.();
+    // 等待 OS 释放端口后再返回，避免 Windows 上端口延迟释放导致新进程绑定失败。
+    await new Promise<void>((resolve) => setTimeout(resolve, 300));
     return server;
   }
 

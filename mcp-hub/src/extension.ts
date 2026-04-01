@@ -309,11 +309,6 @@ export function activate(context: vscode.ExtensionContext): void {
         sidebarProvider.notifyExposeRawApiToolsChanged();
         // VS Code 路径：通知 provider 触发 MCP 定义刷新（不经过 configStore.onDidChangeConfig，避免重启 HTTP 运行时）
         onExposeRawApiToolsChanged?.();
-        // 如果是 VS Code (非 Cursor)，手动触发一次运行时重启以同步配置
-        if (!isCursorHost()) {
-          stopManualStdioRuntimeProcess();
-          autoStartStdioRuntime(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion, true);
-        }
       }
     })
   );

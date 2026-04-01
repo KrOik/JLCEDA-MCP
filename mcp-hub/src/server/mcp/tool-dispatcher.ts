@@ -206,7 +206,7 @@ export class ToolDispatcher {
 	public constructor(
 		private readonly storageDirectoryPath: string,
 		private readonly sessionId: string,
-		private readonly exposeRawApiTools: boolean = false,
+		private exposeRawApiTools: boolean = false,
 	) { }
 
 	/**
@@ -215,6 +215,14 @@ export class ToolDispatcher {
 	 */
 	public getToolDefinitions(): readonly ToolDefinition[] {
 		return this.exposeRawApiTools ? FULL_TOOL_DEFINITIONS : TOOL_DEFINITIONS;
+	}
+
+	/**
+	 * 动态更新透传 EDA API 工具开关状态。
+	 * @param value 新的开关状态。
+	 */
+	public updateExposeRawApiTools(value: boolean): void {
+		this.exposeRawApiTools = value;
 	}
 
 	/**

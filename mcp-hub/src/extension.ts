@@ -20,6 +20,15 @@ import { createCursorStdioServerConfig, JLC_MCP_SERVER_NAME, type CursorStdioSer
 import { McpSidebarViewProvider } from './sidebar/sidebar';
 import { getRuntimeStatusFilePath, isRuntimeStatusSnapshotStale, readRuntimeStatusSnapshot } from './state/runtime-status';
 
+// 写入透传 EDA API 工具开关标志文件，供运行时进程监听。
+function writeRawApiToolsFlag(storageDirectoryPath: string, sessionId: string, enabled: boolean): void {
+  try {
+    fs.writeFileSync(path.join(storageDirectoryPath, `${sessionId}_raw_api_tools.flag`), enabled ? '1' : '0', 'utf8');
+  } catch {
+    // 写入失败时忽略，不影响主流程。
+  }
+}
+
 interface CursorMcpApi {
   registerServer(config: CursorStdioServerConfig): void;
   unregisterServer(serverName: string): void;
@@ -269,6 +278,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const extensionVersion = String(context.extension.packageJSON.version);
   ensureStorageDirectory(storageDirectoryPath);
   updateDebugSwitch(readDebugSwitchFromConfig());
+  // 激活时将当前开关状态写入标志文件，供运行时进程监听。
+  writeRawApiToolsFlag(storageDirectoryPath, sessionId, configStore.getExposeRawApiTools());
   context.subscriptions.push(configStore);
   context.subscriptions.push(new vscode.Disposable(() => {
     stopManualStdioRuntimeProcess();
@@ -307,7 +318,9 @@ export function activate(context: vscode.ExtensionContext): void {
       }
       if (event.affectsConfiguration('jlcMcpServer.exposeRawApiTools')) {
         sidebarProvider.notifyExposeRawApiToolsChanged();
-        // VS Code 路径：通知 provider 触发 MCP 定义刷新（不经过 configStore.onDidChangeConfig，避免重启 HTTP 运行时）
+        // 写入标志文件，运行时进程通过文件监听感知变化并动态推送通知，无需重启进程。
+        writeRawApiToolsFlag(storageDirectoryPath, sessionId, configStore.getExposeRawApiTools());
+        // Cursor 路径：重新注册服务定义（Cursor 不支持动态通知，只能重注册）。
         onExposeRawApiToolsChanged?.();
       }
     })

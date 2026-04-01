@@ -21,6 +21,8 @@ import {
 	type BridgeDisconnectEvent,
 	type BridgeVersionMismatchEvent,
 } from './bridge/broker';
+import * as fs from 'fs';
+import * as path from 'path';
 import { DEBUG_SWITCH, updateDebugSwitch } from '../debug';
 import type { UnifiedLogLevel } from '../logging/server-log';
 import { RuntimeLogPipeline, type RuntimeLogExtra } from '../logging/runtime-log';
@@ -84,6 +86,8 @@ class McpRuntimeServer {
 		private readonly httpPort: number,
 		private readonly rpcHandler: RpcHandler,
 		private readonly statusFilePath: string,
+		private readonly toolDispatcher: ToolDispatcher,
+		private readonly rawApiToolsFlagFilePath: string,
 	) {
 		this.runtimeLogPipeline = new RuntimeLogPipeline(host, port);
 	}
@@ -184,6 +188,29 @@ class McpRuntimeServer {
 			});
 		}
 
+		// 监听透传 EDA API 工具开关标志文件，变化时动态更新工具列表并推送通知。
+		let lastFlagContent = '';
+		const watchFlagFile = (): void => {
+			try {
+				const content = fs.existsSync(this.rawApiToolsFlagFilePath)
+					? fs.readFileSync(this.rawApiToolsFlagFilePath, 'utf8').trim()
+					: '';
+				if (content === lastFlagContent) {
+					return;
+				}
+				lastFlagContent = content;
+				const newValue = content === '1';
+				this.toolDispatcher.updateExposeRawApiTools(newValue);
+				// 向已连接的 SSE 客户端广播工具列表变更通知。
+				httpMcpServer?.broadcastToolsListChanged();
+				// 向 stdio 客户端（VS Code Copilot）发送工具列表变更通知。
+				stdioTransport.write({ jsonrpc: '2.0', method: 'notifications/tools/list_changed', params: {} });
+			} catch {
+				// 文件读取失败时忽略，等待下次轮询。
+			}
+		};
+		fs.watchFile(this.rawApiToolsFlagFilePath, { interval: 500, persistent: false }, watchFlagFile);
+
 		const shutdown = async (exitCode = 0, writeStoppedStatus = true): Promise<void> => {
 			if (shuttingDown) {
 				return;
@@ -202,6 +229,7 @@ class McpRuntimeServer {
 			if (httpMcpServer) {
 				await httpMcpServer.close();
 			}
+			fs.unwatchFile(this.rawApiToolsFlagFilePath);
 			setBridgeDisconnectHandler(undefined);
 			setVersionMismatchHandler(undefined);
 			this.writeLog('info', 'runtime.stopped', '服务已停止', SERVER_STATUS_TEXT.runtime.stopped, {
@@ -404,7 +432,8 @@ function startRuntimeServer(): void {
 	const rpcHandler = new RpcHandler(toolDispatcher, extensionVersion, agentInstructions);
 	setServerVersion(extensionVersion);
 	const httpPort = getHttpPort();
-	const runtimeServer = new McpRuntimeServer(host, port, httpPort, rpcHandler, statusFilePath);
+	const rawApiToolsFlagFilePath = path.join(storageDirectoryPath, `${sessionId}_raw_api_tools.flag`);
+	const runtimeServer = new McpRuntimeServer(host, port, httpPort, rpcHandler, statusFilePath, toolDispatcher, rawApiToolsFlagFilePath);
 	runtimeServer.start();
 }
 

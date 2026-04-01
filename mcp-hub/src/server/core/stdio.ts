@@ -103,7 +103,7 @@ export function createVscodeStdioServerDefinition(
     getRuntimeCommand(),
     getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, agentInstructions, httpPort, exposeRawApiTools),
     {},
-    exposeRawApiTools ? `${version}+raw` : version
+    version
   );
   definition.cwd = vscode.Uri.file(extensionPath);
   return definition;

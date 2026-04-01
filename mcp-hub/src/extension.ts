@@ -73,7 +73,7 @@ function registerCursorMcpServer(
   const config = configStore.getConfig();
   configStore.validateConfig(config);
   cursorMcpApi.unregisterServer(JLC_MCP_SERVER_NAME);
-  cursorMcpApi.registerServer(createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort(), configStore.getExposeRawApiTools()));
+  cursorMcpApi.registerServer(createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort()));
 }
 
 // 清理 Cursor 中的已注册服务定义。
@@ -171,7 +171,7 @@ async function startManualStdioRuntimeProcess(
     throw new Error(`未找到运行时入口文件: ${runtimeScriptPath}`);
   }
 
-  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort(), configStore.getExposeRawApiTools());
+  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort());
   const manualProcess = spawn(cursorConfig.server.command, cursorConfig.server.args, {
     cwd: extensionPath,
     env: {
@@ -242,7 +242,7 @@ function autoStartStdioRuntime(
     return;
   }
 
-  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort(), configStore.getExposeRawApiTools());
+  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort());
   const proc = spawn(cursorConfig.server.command, cursorConfig.server.args, {
     cwd: extensionPath,
     env: { ...process.env, ...cursorConfig.server.env },
@@ -320,24 +320,17 @@ export function activate(context: vscode.ExtensionContext): void {
         sidebarProvider.notifyExposeRawApiToolsChanged();
         // 写入标志文件，运行时进程通过文件监听感知变化并动态推送通知，无需重启进程。
         writeRawApiToolsFlag(storageDirectoryPath, sessionId, configStore.getExposeRawApiTools());
-        // Cursor 路径：重新注册服务定义（Cursor 不支持动态通知，只能重注册）。
-        onExposeRawApiToolsChanged?.();
       }
     })
   );
 
-  // exposeRawApiTools 变更时的 MCP 定义刷新回调，由各宿主路径在下方赋值。
-  let onExposeRawApiToolsChanged: (() => void) | undefined;
+  // exposeRawApiTools 已通过标志文件监听机制处理，无需额外回调。
 
   if (isCursorHost() && getCursorMcpApi()) {
     registerCursorMcpServer(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion);
     context.subscriptions.push(configStore.onDidChangeConfig(() => {
       registerCursorMcpServer(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion);
     }));
-    // Cursor 路径：exposeRawApiTools 变化时重新注册服务定义。
-    onExposeRawApiToolsChanged = () => {
-      registerCursorMcpServer(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion);
-    };
     context.subscriptions.push(new vscode.Disposable(() => {
       unregisterCursorMcpServer();
     }));
@@ -345,8 +338,6 @@ export function activate(context: vscode.ExtensionContext): void {
   }
 
   const provider = new JlcMcpDefinitionProvider(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion, stopManualStdioRuntimeProcess);
-  // VS Code 路径：exposeRawApiTools 变化时仅通知 provider 刷新定义，不重启 HTTP 运行时。
-  onExposeRawApiToolsChanged = () => provider.notifyExposeRawApiToolsChanged();
   context.subscriptions.push(provider);
   context.subscriptions.push(vscode.lm.registerMcpServerDefinitionProvider('jlcMcpControl.provider', provider));
 

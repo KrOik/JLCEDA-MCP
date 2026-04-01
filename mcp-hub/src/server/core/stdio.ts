@@ -21,7 +21,6 @@ const EXTENSION_VERSION_FLAG = '--extension-version';
 const AGENT_INSTRUCTIONS_FLAG = '--agent-instructions';
 const DEBUG_ENABLE_SYSTEM_LOG_FLAG = '--enable-system-log';
 const DEBUG_ENABLE_CONNECTION_LIST_FLAG = '--enable-connection-list';
-const EXPOSE_RAW_API_TOOLS_FLAG = '--expose-raw-api-tools';
 
 // Cursor 侧注册使用的 MCP 服务名称。
 export const JLC_MCP_SERVER_NAME = 'chengbin.jlceda-mcp-hub';
@@ -46,7 +45,7 @@ function getRuntimeScriptPath(extensionPath: string): string {
 }
 
 // 统一构造 stdio 运行时启动参数。
-function getRuntimeArgs(extensionPath: string, storageDirectoryPath: string, sessionId: string, config: ServerConfig, extensionVersion: string, agentInstructions: string, httpPort: number, exposeRawApiTools: boolean): string[] {
+function getRuntimeArgs(extensionPath: string, storageDirectoryPath: string, sessionId: string, config: ServerConfig, extensionVersion: string, agentInstructions: string, httpPort: number): string[] {
   const statusFilePath = getRuntimeStatusFilePath(storageDirectoryPath, config, sessionId);
   const args = [
     getRuntimeScriptPath(extensionPath),
@@ -73,9 +72,6 @@ function getRuntimeArgs(extensionPath: string, storageDirectoryPath: string, ses
   if (httpPort > 0) {
     args.push('--http-port', String(httpPort));
   }
-  if (exposeRawApiTools) {
-    args.push(EXPOSE_RAW_API_TOOLS_FLAG);
-  }
   return args;
 }
 
@@ -85,7 +81,6 @@ function getRuntimeArgs(extensionPath: string, storageDirectoryPath: string, ses
  * @param config 当前桥接监听配置。
  * @param version 服务定义版本号。
  * @param httpPort HTTP MCP 传输监听端口，0 表示禁用。
- * @param exposeRawApiTools 是否暴露四个透传 EDA API 工具。
  * @returns VS Code stdio MCP 服务定义。
  */
 export function createVscodeStdioServerDefinition(
@@ -95,13 +90,12 @@ export function createVscodeStdioServerDefinition(
   config: ServerConfig,
   version: string,
   agentInstructions: string,
-  httpPort: number,
-  exposeRawApiTools: boolean
+  httpPort: number
 ): vscode.McpStdioServerDefinition {
   const definition = new vscode.McpStdioServerDefinition(
     '嘉立创 EDA',
     getRuntimeCommand(),
-    getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, agentInstructions, httpPort, exposeRawApiTools),
+    getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, agentInstructions, httpPort),
     {},
     version
   );
@@ -115,7 +109,6 @@ export function createVscodeStdioServerDefinition(
  * @param config 当前桥接监听配置。
  * @param version 服务定义版本号。
  * @param httpPort HTTP MCP 传输监听端口，0 表示禁用。
- * @param exposeRawApiTools 是否暴露四个透传 EDA API 工具。
  * @returns Cursor stdio MCP 服务定义。
  */
 export function createCursorStdioServerConfig(
@@ -125,14 +118,13 @@ export function createCursorStdioServerConfig(
   config: ServerConfig,
   version: string,
   agentInstructions: string,
-  httpPort: number,
-  exposeRawApiTools: boolean
+  httpPort: number
 ): CursorStdioServerConfig {
   return {
     name: JLC_MCP_SERVER_NAME,
     server: {
       command: getRuntimeCommand(),
-      args: getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, agentInstructions, httpPort, exposeRawApiTools),
+      args: getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, agentInstructions, httpPort),
       env: {}
     }
   };

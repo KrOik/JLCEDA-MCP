@@ -50,7 +50,6 @@ const AGENT_INSTRUCTIONS_FLAG = '--agent-instructions';
 const DEBUG_ENABLE_SYSTEM_LOG_FLAG = '--enable-system-log';
 const DEBUG_ENABLE_CONNECTION_LIST_FLAG = '--enable-connection-list';
 const HTTP_PORT_FLAG = '--http-port';
-const EXPOSE_RAW_API_TOOLS_FLAG = '--expose-raw-api-tools';
 const BRIDGE_WS_PATH = '/bridge/ws';
 const RUNTIME_STATUS_HEARTBEAT_INTERVAL_MS = 1000;
 const SERVER_STATUS_TEXT = ServerStateManager.text;
@@ -401,12 +400,7 @@ function getExtensionVersion(): string {
 	return extensionVersion;
 }
 
-// 读取是否暴露透传 EDA API 工具。
-function getExposeRawApiTools(): boolean {
-	return process.argv.includes(EXPOSE_RAW_API_TOOLS_FLAG);
-}
-
-// 运行时启动入口。
+	// 运行时启动入口。
 function startRuntimeServer(): void {
 	// 从 CLI 参数读取调试开关配置并应用。
 	const enableSystemLog = getArgValue(DEBUG_ENABLE_SYSTEM_LOG_FLAG) !== 'false';
@@ -427,12 +421,15 @@ function startRuntimeServer(): void {
 		: '';
 	clearSidebarInteractionRequest(storageDirectoryPath, sessionId);
 	clearSidebarInteractionResponse(storageDirectoryPath, sessionId);
-	const exposeRawApiTools = getExposeRawApiTools();
+	const rawApiToolsFlagFilePath = path.join(storageDirectoryPath, `${sessionId}_raw_api_tools.flag`);
+	// 从标志文件读取初始开关状态，由扩展主进程在启动前写入。
+	const exposeRawApiTools = fs.existsSync(rawApiToolsFlagFilePath)
+		? fs.readFileSync(rawApiToolsFlagFilePath, 'utf8').trim() === '1'
+		: false;
 	const toolDispatcher = new ToolDispatcher(storageDirectoryPath, sessionId, exposeRawApiTools);
 	const rpcHandler = new RpcHandler(toolDispatcher, extensionVersion, agentInstructions);
 	setServerVersion(extensionVersion);
 	const httpPort = getHttpPort();
-	const rawApiToolsFlagFilePath = path.join(storageDirectoryPath, `${sessionId}_raw_api_tools.flag`);
 	const runtimeServer = new McpRuntimeServer(host, port, httpPort, rpcHandler, statusFilePath, toolDispatcher, rawApiToolsFlagFilePath);
 	runtimeServer.start();
 }

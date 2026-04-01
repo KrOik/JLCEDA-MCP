@@ -46,7 +46,7 @@ implements vscode.McpServerDefinitionProvider<vscode.McpStdioServerDefinition>, 
   public provideMcpServerDefinitions(): vscode.ProviderResult<vscode.McpStdioServerDefinition[]> {
     const config = this.configStore.getConfig();
     this.configStore.validateConfig(config);
-    return [createVscodeStdioServerDefinition(this.extensionPath, this.storageDirectoryPath, this.sessionId, config, this.extensionVersion, this.configStore.getAgentInstructions(), this.configStore.getHttpPort(), this.configStore.getExposeRawApiTools())];
+    return [createVscodeStdioServerDefinition(this.extensionPath, this.storageDirectoryPath, this.sessionId, config, this.extensionVersion, this.configStore.getAgentInstructions(), this.configStore.getHttpPort())];
   }
 
   /**
@@ -62,14 +62,6 @@ implements vscode.McpServerDefinitionProvider<vscode.McpStdioServerDefinition>, 
     // 等待 OS 释放端口后再返回，避免 Windows 上端口延迟释放导致新进程绑定失败。
     await new Promise<void>((resolve) => setTimeout(resolve, 300));
     return server;
-  }
-
-  /**
-   * 外部通知：「暴露透传 EDA API 工具」设置已变更，触发 VS Code 重新读取 MCP 服务定义。
-   * 与 configStore.onDidChangeConfig 路径完全独立，不会触发 HTTP 运行时重启。
-   */
-  public notifyExposeRawApiToolsChanged(): void {
-    this.changeEmitter.fire();
   }
 
   /**

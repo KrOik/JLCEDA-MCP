@@ -163,6 +163,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     this.postConfig(config);
     this.postInstructions();
     this.postCloseSidebarOnOpenEditor();
+    this.postExposeRawApiTools();
     this.postInteraction();
     if (DEBUG_SWITCH.enableSystemLog) {
       this.postLogSchema();
@@ -181,6 +182,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
         this.postConfig(currentConfig);
         this.postInstructions();
         this.postCloseSidebarOnOpenEditor();
+        this.postExposeRawApiTools();
         if (DEBUG_SWITCH.enableSystemLog) {
           this.postLogSchema();
           this.postLogs();
@@ -241,6 +243,11 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
           message.payload,
           vscode.ConfigurationTarget.Global
         );
+        return;
+      }
+
+      if (message.command === 'setExposeRawApiTools') {
+        await this.configStore.updateExposeRawApiTools(message.payload);
         return;
       }
 
@@ -451,6 +458,14 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
+  private postExposeRawApiTools(): void {
+    // 将「暴露透传 EDA API 工具」开关状态同步到前端。
+    this.postMessage({
+      type: 'exposeRawApiTools',
+      payload: this.configStore.getExposeRawApiTools()
+    });
+  }
+
   private postInteraction(): void {
     this.postMessage({
       type: 'interaction',
@@ -520,6 +535,13 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     this.postCloseSidebarOnOpenEditor();
   }
 
+  /**
+   * 外部通知：「暴露透传 EDA API 工具」设置已变更，同步到侧边栏开关。
+   */
+  public notifyExposeRawApiToolsChanged(): void {
+    this.postExposeRawApiTools();
+  }
+
   private postMessage(message: SidebarWebviewMessage): void {
     // 统一封装宿主到 Webview 的消息发送。
     void this.view?.webview.postMessage(message);
@@ -549,6 +571,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     this.postConfig(config);
     this.postInstructions();
     this.postCloseSidebarOnOpenEditor();
+    this.postExposeRawApiTools();
     this.postInteraction();
     if (DEBUG_SWITCH.enableSystemLog) {
       this.postLogSchema();

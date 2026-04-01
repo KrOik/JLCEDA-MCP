@@ -46,7 +46,7 @@ implements vscode.McpServerDefinitionProvider<vscode.McpStdioServerDefinition>, 
   public provideMcpServerDefinitions(): vscode.ProviderResult<vscode.McpStdioServerDefinition[]> {
     const config = this.configStore.getConfig();
     this.configStore.validateConfig(config);
-    return [createVscodeStdioServerDefinition(this.extensionPath, this.storageDirectoryPath, this.sessionId, config, this.extensionVersion, this.configStore.getAgentInstructions(), this.configStore.getHttpPort())];
+    return [createVscodeStdioServerDefinition(this.extensionPath, this.storageDirectoryPath, this.sessionId, config, this.extensionVersion, this.configStore.getAgentInstructions(), this.configStore.getHttpPort(), this.configStore.getExposeRawApiTools())];
   }
 
   /**

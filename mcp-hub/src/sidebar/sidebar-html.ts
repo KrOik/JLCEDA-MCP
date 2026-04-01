@@ -1301,6 +1301,13 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     .toggle-switch[aria-checked="true"] .toggle-thumb {
       transform: translateX(16px);
     }
+    .inline-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 4px 0 2px 0;
+    }
   </style>
 </head>
 <body>
@@ -1405,14 +1412,14 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         <div class="card-inner config-panel">
           <div id="aiInstructionsToggle" class="section-header status-log-toggle" role="button" tabindex="0" aria-expanded="false" aria-controls="aiInstructionsContent">
             <div class="section-title-row">
-              <div class="section-title">AI 自定义指令</div>
+              <div class="section-title">功能设置</div>
               <div class="status-log-toggle-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" focusable="false">
                   <use href="#icon-chevron-down"></use>
                 </svg>
               </div>
             </div>
-            <div class="section-description">自定义 AI 助手指令，留空则仅使用内置指令。保存后重连即生效。</div>
+            <div class="section-description">自定义 AI 助手指令与扩展功能开关。保存后重连即生效。</div>
           </div>
           <div id="aiInstructionsContent" class="status-log-content">
             <div class="section-divider"></div>
@@ -1420,6 +1427,13 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
             <textarea id="agentInstructions" rows="8" placeholder="在此输入自定义指令，留空则仅使用内置系统指令。"></textarea>
             <div class="buttons">
               <button id="saveInstructions" class="secondary" disabled>保存指令</button>
+            </div>
+            <div class="buttons-divider"></div>
+            <div class="inline-toggle-row">
+              <span class="toggle-label">暴露透传 EDA API 工具</span>
+              <button id="exposeRawApiToolsToggle" class="toggle-switch" role="switch" aria-checked="false" type="button" title="开启后暴露 api_index、api_search、eda_context、api_invoke 四个透传工具，人未加入 Copilot 工具列表">
+                <span class="toggle-thumb"></span>
+              </button>
             </div>
           </div>
         </div>
@@ -1491,6 +1505,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
     const aiInstructionsContentElement = document.getElementById('aiInstructionsContent');
     const agentInstructionsTextarea = document.getElementById('agentInstructions');
     const saveInstructionsButton = document.getElementById('saveInstructions');
+    const exposeRawApiToolsToggleButton = document.getElementById('exposeRawApiToolsToggle');
     const debugControlToggleElement = document.getElementById('debugControlToggle');
     const debugControlContentElement = document.getElementById('debugControlContent');
 
@@ -3347,6 +3362,9 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
       if (message.type === 'closeSidebarOnOpenEditor') {
         setCloseSidebarToggleState(message.payload);
       }
+      if (message.type === 'exposeRawApiTools') {
+        setExposeRawApiToolsToggleState(message.payload);
+      }
       if (message.type === 'interaction') {
         pendingInteractionActionKey = '';
         renderInteractionPanel(message.payload || null);
@@ -3370,6 +3388,24 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         const newValue = !closeSidebarOnOpenEditor;
         setCloseSidebarToggleState(newValue);
         vscode.postMessage({ command: 'setCloseSidebarOnOpenEditor', payload: newValue });
+      });
+    }
+
+    let exposeRawApiTools = false;
+
+    // 更新透传 EDA API 工具开关按钮的视觉状态。
+    function setExposeRawApiToolsToggleState(enabled) {
+      exposeRawApiTools = Boolean(enabled);
+      if (exposeRawApiToolsToggleButton) {
+        exposeRawApiToolsToggleButton.setAttribute('aria-checked', exposeRawApiTools ? 'true' : 'false');
+      }
+    }
+
+    if (exposeRawApiToolsToggleButton) {
+      exposeRawApiToolsToggleButton.addEventListener('click', () => {
+        const newValue = !exposeRawApiTools;
+        setExposeRawApiToolsToggleState(newValue);
+        vscode.postMessage({ command: 'setExposeRawApiTools', payload: newValue });
       });
     }
 

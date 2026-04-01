@@ -38,6 +38,7 @@ export type SidebarCommand =
   | { command: 'startStdioRuntime' }
   | { command: 'stopStdioRuntime' }
   | { command: 'setCloseSidebarOnOpenEditor'; payload: boolean }
+  | { command: 'setExposeRawApiTools'; payload: boolean }
   | { command: 'interactionAction'; payload: SidebarInteractionResponse };
 
 /**
@@ -51,4 +52,5 @@ export type SidebarWebviewMessage =
   | { type: 'logs'; payload: SidebarStatusLogEntry[] }
   | { type: 'clients'; payload: SidebarConnectedClientEntry[] }
   | { type: 'closeSidebarOnOpenEditor'; payload: boolean }
+  | { type: 'exposeRawApiTools'; payload: boolean }
   | { type: 'interaction'; payload: SidebarInteractionRequest | null };

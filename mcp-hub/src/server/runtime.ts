@@ -48,6 +48,7 @@ const AGENT_INSTRUCTIONS_FLAG = '--agent-instructions';
 const DEBUG_ENABLE_SYSTEM_LOG_FLAG = '--enable-system-log';
 const DEBUG_ENABLE_CONNECTION_LIST_FLAG = '--enable-connection-list';
 const HTTP_PORT_FLAG = '--http-port';
+const EXPOSE_RAW_API_TOOLS_FLAG = '--expose-raw-api-tools';
 const BRIDGE_WS_PATH = '/bridge/ws';
 const RUNTIME_STATUS_HEARTBEAT_INTERVAL_MS = 1000;
 const SERVER_STATUS_TEXT = ServerStateManager.text;
@@ -372,6 +373,11 @@ function getExtensionVersion(): string {
 	return extensionVersion;
 }
 
+// 读取是否暴露透传 EDA API 工具。
+function getExposeRawApiTools(): boolean {
+	return process.argv.includes(EXPOSE_RAW_API_TOOLS_FLAG);
+}
+
 // 运行时启动入口。
 function startRuntimeServer(): void {
 	// 从 CLI 参数读取调试开关配置并应用。
@@ -393,7 +399,8 @@ function startRuntimeServer(): void {
 		: '';
 	clearSidebarInteractionRequest(storageDirectoryPath, sessionId);
 	clearSidebarInteractionResponse(storageDirectoryPath, sessionId);
-	const toolDispatcher = new ToolDispatcher(storageDirectoryPath, sessionId);
+	const exposeRawApiTools = getExposeRawApiTools();
+	const toolDispatcher = new ToolDispatcher(storageDirectoryPath, sessionId, exposeRawApiTools);
 	const rpcHandler = new RpcHandler(toolDispatcher, extensionVersion, agentInstructions);
 	setServerVersion(extensionVersion);
 	const httpPort = getHttpPort();

@@ -43,18 +43,23 @@ const SIDEBAR_INTERACTION_POLL_INTERVAL_MS = 250;
 const COMPONENT_PLACE_CHECK_INTERVAL_MS = 400;
 
 const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
-	// 下面四个透传 API 工具仅作调试使用。
-	// 'api_index',
-	// 'api_search',
-	// 'eda_context',
-	// 'api_invoke',
 	'schematic_read',
 	'schematic_review',
 	'component_select',
 	'component_place',
 ]);
 
+// 四个透传 EDA API 工具名称集合。
+const RAW_API_TOOL_NAMES = new Set<string>([
+	'api_index',
+	'api_search',
+	'eda_context',
+	'api_invoke',
+]);
+
 const TOOL_DEFINITIONS = loadToolDefinitions();
+// 启用透传 API 工具时的完整工具列表（包含四个透传工具）。
+const FULL_TOOL_DEFINITIONS = loadAllToolDefinitions();
 
 interface ComponentSelectBridgePayload {
 	title: string;
@@ -156,6 +161,37 @@ function loadToolDefinitions(): readonly ToolDefinition[] {
 	return definitions.filter(item => EXPOSED_MCP_TOOL_NAMES.has(item.name));
 }
 
+// 加载包含透传 API 工具在内的完整工具定义（不过滤）。
+function loadAllToolDefinitions(): readonly ToolDefinition[] {
+	const parsed: unknown = _rawToolDefinitions;
+	if (!Array.isArray(parsed)) {
+		throw new Error('工具定义文件格式非法：根节点必须是数组。');
+	}
+
+	const definitions: ToolDefinition[] = [];
+	for (const item of parsed) {
+		if (!isPlainObjectRecord(item)) {
+			throw new Error('工具定义项必须为对象。');
+		}
+
+		const name = String(item.name ?? '').trim();
+		const description = String(item.description ?? '').trim();
+		if (name.length === 0 || description.length === 0) {
+			throw new Error('工具定义项缺少 name 或 description。');
+		}
+		if (!isPlainObjectRecord(item.inputSchema)) {
+			throw new Error(`工具 ${name} 缺少 inputSchema 对象。`);
+		}
+
+		definitions.push({
+			name,
+			description,
+			inputSchema: item.inputSchema,
+		});
+	}
+	return definitions.filter(item => EXPOSED_MCP_TOOL_NAMES.has(item.name) || RAW_API_TOOL_NAMES.has(item.name));
+}
+
 export class ToolDispatcher {
 	// VCC/GND 等电源/地符号关键词（小写）集合，命中时硬拦截选型、不弹面板。
 	private static readonly NET_FLAG_KEYWORDS = new Set([
@@ -170,6 +206,7 @@ export class ToolDispatcher {
 	public constructor(
 		private readonly storageDirectoryPath: string,
 		private readonly sessionId: string,
+		private readonly exposeRawApiTools: boolean = false,
 	) { }
 
 	/**
@@ -177,7 +214,7 @@ export class ToolDispatcher {
 	 * @returns 工具定义。
 	 */
 	public getToolDefinitions(): readonly ToolDefinition[] {
-		return TOOL_DEFINITIONS;
+		return this.exposeRawApiTools ? FULL_TOOL_DEFINITIONS : TOOL_DEFINITIONS;
 	}
 
 	/**
@@ -187,7 +224,7 @@ export class ToolDispatcher {
 	 */
 	public async dispatch(toolCallParams: ToolCallParams): Promise<unknown> {
 		const args = isPlainObjectRecord(toolCallParams.arguments) ? toolCallParams.arguments : {};
-		if (!EXPOSED_MCP_TOOL_NAMES.has(toolCallParams.name)) {
+		if (!EXPOSED_MCP_TOOL_NAMES.has(toolCallParams.name) && !(this.exposeRawApiTools && RAW_API_TOOL_NAMES.has(toolCallParams.name))) {
 			throw new Error(`未知工具: ${toolCallParams.name}`);
 		}
 		if (toolCallParams.name === 'schematic_read') {

@@ -64,7 +64,7 @@ function registerCursorMcpServer(
   const config = configStore.getConfig();
   configStore.validateConfig(config);
   cursorMcpApi.unregisterServer(JLC_MCP_SERVER_NAME);
-  cursorMcpApi.registerServer(createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort()));
+  cursorMcpApi.registerServer(createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort(), configStore.getExposeRawApiTools()));
 }
 
 // 清理 Cursor 中的已注册服务定义。
@@ -162,7 +162,7 @@ async function startManualStdioRuntimeProcess(
     throw new Error(`未找到运行时入口文件: ${runtimeScriptPath}`);
   }
 
-  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort());
+  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort(), configStore.getExposeRawApiTools());
   const manualProcess = spawn(cursorConfig.server.command, cursorConfig.server.args, {
     cwd: extensionPath,
     env: {
@@ -233,7 +233,7 @@ function autoStartStdioRuntime(
     return;
   }
 
-  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort());
+  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort(), configStore.getExposeRawApiTools());
   const proc = spawn(cursorConfig.server.command, cursorConfig.server.args, {
     cwd: extensionPath,
     env: { ...process.env, ...cursorConfig.server.env },
@@ -304,6 +304,9 @@ export function activate(context: vscode.ExtensionContext): void {
       }
       if (event.affectsConfiguration('jlcMcpServer.closeSidebarOnOpenEditor')) {
         sidebarProvider.notifyCloseSidebarSettingChanged();
+      }
+      if (event.affectsConfiguration('jlcMcpServer.exposeRawApiTools')) {
+        sidebarProvider.notifyExposeRawApiToolsChanged();
       }
     })
   );

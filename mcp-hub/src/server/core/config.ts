@@ -25,7 +25,8 @@ export class ServerConfigStore implements vscode.Disposable {
       if (!event.affectsConfiguration('jlcMcpServer.host')
         && !event.affectsConfiguration('jlcMcpServer.port')
         && !event.affectsConfiguration('jlcMcpServer.agentInstructions')
-        && !event.affectsConfiguration('jlcMcpServer.httpPort')) {
+        && !event.affectsConfiguration('jlcMcpServer.httpPort')
+        && !event.affectsConfiguration('jlcMcpServer.exposeRawApiTools')) {
         return;
       }
 
@@ -61,6 +62,24 @@ export class ServerConfigStore implements vscode.Disposable {
     await configuration.update('host', config.host, vscode.ConfigurationTarget.Global);
     await configuration.update('port', config.port, vscode.ConfigurationTarget.Global);
     await configuration.update('httpPort', config.httpPort, vscode.ConfigurationTarget.Global);
+  }
+
+  /**
+   * 读取是否暴露四个透传 EDA API 工具的开关。
+   * @returns 开关状态，true 表示暴露。
+   */
+  public getExposeRawApiTools(): boolean {
+    const configuration = vscode.workspace.getConfiguration(this.section);
+    return configuration.get<boolean>('exposeRawApiTools', false);
+  }
+
+  /**
+   * 写入透传 EDA API 工具暴露开关。
+   * @param enabled 开关状态。
+   */
+  public async updateExposeRawApiTools(enabled: boolean): Promise<void> {
+    const configuration = vscode.workspace.getConfiguration(this.section);
+    await configuration.update('exposeRawApiTools', enabled, vscode.ConfigurationTarget.Global);
   }
 
   /**

@@ -1,6 +1,8 @@
 ﻿# JLCEDA MCP Hub
 
-本扩展为嘉立创 EDA **AI 设计助手** 的 MCP Hub，支持双协议连接（stdio / http），在 VS Code / Cursor 内的 MCP 客户端（Copilot / Cursor Chat / Claude Code / Codex 等）中提供嘉立创 EDA 工具调用能力，配合嘉立创 EDA 侧的 **MCP Bridge** 扩展使用。
+本扩展为嘉立创 EDA **AI 设计助手** 的 MCP 版，支持双协议连接（stdio / http），在 VS Code / Cursor 内的 MCP 客户端（Copilot / Cursor Chat / Claude Code / Codex 等）中提供嘉立创 EDA 工具调用能力，配合嘉立创 EDA 侧的 **MCP Bridge** 扩展使用。
+
+除核心原理图与器件工具外，还可在侧边栏「功能设置」中开启 **透传 EDA API** 模式，向 AI 客户端额外暴露对底层 EDA API 的直接查询与调用能力，适合有进阶需求的高级用户探索使用。
 
 项目地址：https://github.com/sengbin/JLCEDA-MCP
 
@@ -8,10 +10,21 @@
 
 ## 可用工具
 
+### 基础工具
+
 - `schematic_read`：读取当前原理图页面的完整电路语义快照，包含器件列表、引脚网络连接关系与 DRC 检查结果。
 - `schematic_review`：读取全工程所有原理图页面的网表文件，覆盖多页电路，适合全局审查、BOM 核查与跨页信号追踪。
 - `component_select`：搜索器件候选项并返回确认结果。
 - `component_place`：引导放置已确认的器件列表。
+
+### 透传 EDA API 工具（可选）
+
+在侧边栏「功能设置」中开启「暴露透传 EDA API 工具」后，以下四个工具将额外暴露给 AI 客户端。开关切换后立即生效，无需重启。
+
+- `api_index`：列出所有可用的 EDA API 模块名称，用于浏览 API 命名空间全貌。
+- `api_search`：按关键词搜索具体 API 方法及其参数说明，便于 AI 定位所需接口。
+- `eda_context`：读取当前 EDA 页面的上下文信息，包括活动页类型与当前工程基本状态。
+- `api_invoke`：直接调用任意 EDA API，将结果透传给 AI，适用于核心工具未覆盖的定制化任务。
 
 ---
 

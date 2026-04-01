@@ -1,13 +1,24 @@
 # MCP Bridge
 
-本扩展为嘉立创 EDA **AI 设计助手** 的 MCP 版，支持双协议连接（ stdio / http），在 VS Code / Cursor 内的聊天工具（Copilot/Chat/Claude Code/Codex等）中提供原理图分析、器件选型、交互放置等功能，配合 VS Code / Cursor 侧的 **JLCEDA MCP Hub** 扩展使用。
+本扩展为嘉立创 EDA **AI 设计助手** 的 MCP 版，支持双协议连接（stdio / http），在 VS Code / Cursor 内的聊天工具（Copilot / Chat / Claude Code / Codex 等）中提供原理图分析、器件选型、交互放置等功能，配合 VS Code / Cursor 侧的 **JLCEDA MCP Hub** 扩展使用。
+
+服务端还支持可选的 **透传 EDA API** 模式，开启后可向 AI 额外暴露底层 EDA API 的查询与调用能力，适合有进阶需求的用户使用。
 
 内置专用工具：
+
+**基础工具**
 
 - `schematic_read`：读取当前原理图页面的完整电路语义快照，包含器件列表、引脚网络连接关系与 DRC 检查结果。
 - `schematic_review`：读取全工程所有原理图页面的网表文件，覆盖多页电路，适合全局审查、BOM 核查与跨页信号追踪。
 - `component_select`：搜索器件候选项并返回确认结果。
 - `component_place`：引导放置已确认的器件列表。
+
+**透传 EDA API 工具（可选，需在服务端侧边栏开启）**
+
+- `api_index`：列出所有可用的 EDA API 模块名称。
+- `api_search`：按关键词搜索具体 API 方法及参数说明。
+- `eda_context`：读取当前 EDA 页面的上下文信息。
+- `api_invoke`：直接调用任意 EDA API 并返回结果。
 
 ![演示动画](images/demo.gif)
 
@@ -32,7 +43,7 @@
 
 ### 服务端（VS Code / Cursor）
 
-服务端文档：[JLCEDA MCP 服务端 README](https://github.com/sengbin/JLCEDA-MCP/blob/main/mcp-hub/README.md)
+服务端文档：[MCP Hub README](https://github.com/sengbin/JLCEDA-MCP/blob/main/mcp-hub/README.md)
 
 **从扩展商店安装（推荐）：**
 

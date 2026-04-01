@@ -1431,7 +1431,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
             <div class="buttons-divider"></div>
             <div class="inline-toggle-row">
               <span class="toggle-label">暴露透传 EDA API 工具</span>
-              <button id="exposeRawApiToolsToggle" class="toggle-switch" role="switch" aria-checked="false" type="button" title="开启后暴露 api_index、api_search、eda_context、api_invoke 四个透传工具，人未加入 Copilot 工具列表">
+              <button id="exposeRawApiToolsToggle" class="toggle-switch" role="switch" aria-checked="false" type="button" title="开启后暴露 api_index、api_search、eda_context、api_invoke 四个透传工具。">
                 <span class="toggle-thumb"></span>
               </button>
             </div>

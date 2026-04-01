@@ -87,6 +87,7 @@ class McpRuntimeServer {
 		private readonly statusFilePath: string,
 		private readonly toolDispatcher: ToolDispatcher,
 		private readonly rawApiToolsFlagFilePath: string,
+		private readonly agentInstructionsFlagFilePath: string,
 	) {
 		this.runtimeLogPipeline = new RuntimeLogPipeline(host, port);
 	}
@@ -189,26 +190,39 @@ class McpRuntimeServer {
 
 		// 监听透传 EDA API 工具开关标志文件，变化时动态更新工具列表并推送通知。
 		let lastFlagContent = '';
+		// 监听 AI 助手自定义指令标志文件，变化时动态更新 RpcHandler。
+		let lastInstructionsContent = '';
 		const watchFlagFile = (): void => {
 			try {
 				const content = fs.existsSync(this.rawApiToolsFlagFilePath)
 					? fs.readFileSync(this.rawApiToolsFlagFilePath, 'utf8').trim()
 					: '';
-				if (content === lastFlagContent) {
-					return;
+				if (content !== lastFlagContent) {
+					lastFlagContent = content;
+					const newValue = content === '1';
+					this.toolDispatcher.updateExposeRawApiTools(newValue);
+					// 向已连接的 SSE 客户端广播工具列表变更通知。
+					httpMcpServer?.broadcastToolsListChanged();
+					// 向 stdio 客户端（VS Code Copilot）发送工具列表变更通知。
+					stdioTransport.write({ jsonrpc: '2.0', method: 'notifications/tools/list_changed', params: {} });
 				}
-				lastFlagContent = content;
-				const newValue = content === '1';
-				this.toolDispatcher.updateExposeRawApiTools(newValue);
-				// 向已连接的 SSE 客户端广播工具列表变更通知。
-				httpMcpServer?.broadcastToolsListChanged();
-				// 向 stdio 客户端（VS Code Copilot）发送工具列表变更通知。
-				stdioTransport.write({ jsonrpc: '2.0', method: 'notifications/tools/list_changed', params: {} });
 			} catch {
 				// 文件读取失败时忽略，等待下次轮询。
 			}
+			try {
+				const instructionsContent = fs.existsSync(this.agentInstructionsFlagFilePath)
+					? fs.readFileSync(this.agentInstructionsFlagFilePath, 'utf8')
+					: '';
+				if (instructionsContent !== lastInstructionsContent) {
+					lastInstructionsContent = instructionsContent;
+					this.rpcHandler.updateAgentInstructions(instructionsContent.trim());
+				}
+			} catch {
+				// 文件读取失败时忽略。
+			}
 		};
 		fs.watchFile(this.rawApiToolsFlagFilePath, { interval: 500, persistent: false }, watchFlagFile);
+		fs.watchFile(this.agentInstructionsFlagFilePath, { interval: 500, persistent: false }, watchFlagFile);
 
 		const shutdown = async (exitCode = 0, writeStoppedStatus = true): Promise<void> => {
 			if (shuttingDown) {
@@ -229,6 +243,7 @@ class McpRuntimeServer {
 				await httpMcpServer.close();
 			}
 			fs.unwatchFile(this.rawApiToolsFlagFilePath);
+			fs.unwatchFile(this.agentInstructionsFlagFilePath);
 			setBridgeDisconnectHandler(undefined);
 			setVersionMismatchHandler(undefined);
 			this.writeLog('info', 'runtime.stopped', '服务已停止', SERVER_STATUS_TEXT.runtime.stopped, {
@@ -422,15 +437,20 @@ function startRuntimeServer(): void {
 	clearSidebarInteractionRequest(storageDirectoryPath, sessionId);
 	clearSidebarInteractionResponse(storageDirectoryPath, sessionId);
 	const rawApiToolsFlagFilePath = path.join(storageDirectoryPath, `${sessionId}_raw_api_tools.flag`);
+	const agentInstructionsFlagFilePath = path.join(storageDirectoryPath, `${sessionId}_agent_instructions.flag`);
 	// 从标志文件读取初始开关状态，由扩展主进程在启动前写入。
 	const exposeRawApiTools = fs.existsSync(rawApiToolsFlagFilePath)
 		? fs.readFileSync(rawApiToolsFlagFilePath, 'utf8').trim() === '1'
 		: false;
+	// 从指令标志文件读取初始自定义指令，由扩展主进程写入。
+	const initialInstructions = fs.existsSync(agentInstructionsFlagFilePath)
+		? fs.readFileSync(agentInstructionsFlagFilePath, 'utf8').trim()
+		: agentInstructions;
 	const toolDispatcher = new ToolDispatcher(storageDirectoryPath, sessionId, exposeRawApiTools);
-	const rpcHandler = new RpcHandler(toolDispatcher, extensionVersion, agentInstructions);
+	const rpcHandler = new RpcHandler(toolDispatcher, extensionVersion, initialInstructions);
 	setServerVersion(extensionVersion);
 	const httpPort = getHttpPort();
-	const runtimeServer = new McpRuntimeServer(host, port, httpPort, rpcHandler, statusFilePath, toolDispatcher, rawApiToolsFlagFilePath);
+	const runtimeServer = new McpRuntimeServer(host, port, httpPort, rpcHandler, statusFilePath, toolDispatcher, rawApiToolsFlagFilePath, agentInstructionsFlagFilePath);
 	runtimeServer.start();
 }
 

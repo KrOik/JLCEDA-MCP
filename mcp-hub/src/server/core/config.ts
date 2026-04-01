@@ -24,7 +24,6 @@ export class ServerConfigStore implements vscode.Disposable {
     this.configurationChangeDisposable = vscode.workspace.onDidChangeConfiguration((event) => {
       if (!event.affectsConfiguration('jlcMcpServer.host')
         && !event.affectsConfiguration('jlcMcpServer.port')
-        && !event.affectsConfiguration('jlcMcpServer.agentInstructions')
         && !event.affectsConfiguration('jlcMcpServer.httpPort')) {
         return;
       }

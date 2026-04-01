@@ -1419,7 +1419,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
                 </svg>
               </div>
             </div>
-            <div class="section-description">自定义 AI 助手指令与扩展功能开关。保存后重连即生效。</div>
+            <div class="section-description">自定义 AI 助手指令与扩展功能开关。保存后立即生效。</div>
           </div>
           <div id="aiInstructionsContent" class="status-log-content">
             <div class="section-divider"></div>

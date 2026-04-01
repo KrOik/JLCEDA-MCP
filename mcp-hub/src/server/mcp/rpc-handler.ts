@@ -41,8 +41,16 @@ export class RpcHandler {
 	public constructor(
 		private readonly toolDispatcher: ToolDispatcher,
 		private readonly serverVersion: string,
-		private readonly agentInstructions?: string,
+		private agentInstructions?: string,
 	) {}
+
+	/**
+	 * 动态更新 AI 助手指令。
+	 * @param instructions 新的用户自定义指令。
+	 */
+	public updateAgentInstructions(instructions: string): void {
+		this.agentInstructions = instructions;
+	}
 
 	/**
 	 * 解析 JSON-RPC 请求。

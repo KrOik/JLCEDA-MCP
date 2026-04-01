@@ -29,6 +29,15 @@ function writeRawApiToolsFlag(storageDirectoryPath: string, sessionId: string, e
   }
 }
 
+// 写入 AI 助手自定义指令标志文件，供运行时进程监听。
+function writeAgentInstructionsFlag(storageDirectoryPath: string, sessionId: string, instructions: string): void {
+  try {
+    fs.writeFileSync(path.join(storageDirectoryPath, `${sessionId}_agent_instructions.flag`), instructions, 'utf8');
+  } catch {
+    // 写入失败时忽略，不影响主流程。
+  }
+}
+
 interface CursorMcpApi {
   registerServer(config: CursorStdioServerConfig): void;
   unregisterServer(serverName: string): void;
@@ -73,7 +82,7 @@ function registerCursorMcpServer(
   const config = configStore.getConfig();
   configStore.validateConfig(config);
   cursorMcpApi.unregisterServer(JLC_MCP_SERVER_NAME);
-  cursorMcpApi.registerServer(createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort()));
+  cursorMcpApi.registerServer(createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getHttpPort()));
 }
 
 // 清理 Cursor 中的已注册服务定义。
@@ -171,7 +180,7 @@ async function startManualStdioRuntimeProcess(
     throw new Error(`未找到运行时入口文件: ${runtimeScriptPath}`);
   }
 
-  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort());
+  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getHttpPort());
   const manualProcess = spawn(cursorConfig.server.command, cursorConfig.server.args, {
     cwd: extensionPath,
     env: {
@@ -242,7 +251,7 @@ function autoStartStdioRuntime(
     return;
   }
 
-  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getAgentInstructions(), configStore.getHttpPort());
+  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getHttpPort());
   const proc = spawn(cursorConfig.server.command, cursorConfig.server.args, {
     cwd: extensionPath,
     env: { ...process.env, ...cursorConfig.server.env },
@@ -280,6 +289,8 @@ export function activate(context: vscode.ExtensionContext): void {
   updateDebugSwitch(readDebugSwitchFromConfig());
   // 激活时将当前开关状态写入标志文件，供运行时进程监听。
   writeRawApiToolsFlag(storageDirectoryPath, sessionId, configStore.getExposeRawApiTools());
+  // 激活时将当前自定义指令写入标志文件，供运行时进程监听。
+  writeAgentInstructionsFlag(storageDirectoryPath, sessionId, configStore.getAgentInstructions());
   context.subscriptions.push(configStore);
   context.subscriptions.push(new vscode.Disposable(() => {
     stopManualStdioRuntimeProcess();
@@ -320,6 +331,10 @@ export function activate(context: vscode.ExtensionContext): void {
         sidebarProvider.notifyExposeRawApiToolsChanged();
         // 写入标志文件，运行时进程通过文件监听感知变化并动态推送通知，无需重启进程。
         writeRawApiToolsFlag(storageDirectoryPath, sessionId, configStore.getExposeRawApiTools());
+      }
+      if (event.affectsConfiguration('jlcMcpServer.agentInstructions')) {
+        // 写入标志文件，运行时进程通过文件监听感知变化并动态更新指令，无需重启进程。
+        writeAgentInstructionsFlag(storageDirectoryPath, sessionId, configStore.getAgentInstructions());
       }
     })
   );

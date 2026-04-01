@@ -18,7 +18,6 @@ import type { ServerConfig } from '../../state/status';
 const STORAGE_DIRECTORY_FLAG = '--storage-directory';
 const SESSION_ID_FLAG = '--session-id';
 const EXTENSION_VERSION_FLAG = '--extension-version';
-const AGENT_INSTRUCTIONS_FLAG = '--agent-instructions';
 const DEBUG_ENABLE_SYSTEM_LOG_FLAG = '--enable-system-log';
 const DEBUG_ENABLE_CONNECTION_LIST_FLAG = '--enable-connection-list';
 
@@ -45,7 +44,7 @@ function getRuntimeScriptPath(extensionPath: string): string {
 }
 
 // 统一构造 stdio 运行时启动参数。
-function getRuntimeArgs(extensionPath: string, storageDirectoryPath: string, sessionId: string, config: ServerConfig, extensionVersion: string, agentInstructions: string, httpPort: number): string[] {
+function getRuntimeArgs(extensionPath: string, storageDirectoryPath: string, sessionId: string, config: ServerConfig, extensionVersion: string, httpPort: number): string[] {
   const statusFilePath = getRuntimeStatusFilePath(storageDirectoryPath, config, sessionId);
   const args = [
     getRuntimeScriptPath(extensionPath),
@@ -66,9 +65,6 @@ function getRuntimeArgs(extensionPath: string, storageDirectoryPath: string, ses
     DEBUG_ENABLE_CONNECTION_LIST_FLAG,
     String(DEBUG_SWITCH.enableConnectionList),
   ];
-  if (agentInstructions.trim().length > 0) {
-    args.push(AGENT_INSTRUCTIONS_FLAG, Buffer.from(agentInstructions, 'utf8').toString('base64'));
-  }
   if (httpPort > 0) {
     args.push('--http-port', String(httpPort));
   }
@@ -89,13 +85,12 @@ export function createVscodeStdioServerDefinition(
   sessionId: string,
   config: ServerConfig,
   version: string,
-  agentInstructions: string,
   httpPort: number
 ): vscode.McpStdioServerDefinition {
   const definition = new vscode.McpStdioServerDefinition(
     '嘉立创 EDA',
     getRuntimeCommand(),
-    getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, agentInstructions, httpPort),
+    getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, httpPort),
     {},
     version
   );
@@ -117,14 +112,13 @@ export function createCursorStdioServerConfig(
   sessionId: string,
   config: ServerConfig,
   version: string,
-  agentInstructions: string,
   httpPort: number
 ): CursorStdioServerConfig {
   return {
     name: JLC_MCP_SERVER_NAME,
     server: {
       command: getRuntimeCommand(),
-      args: getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, agentInstructions, httpPort),
+      args: getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, httpPort),
       env: {}
     }
   };

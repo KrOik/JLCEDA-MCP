@@ -65,7 +65,7 @@
             "type": "string",
             "editPresentation": "multilineText",
             "default": "",
-            "description": "自定义 AI 助手指令，留空时仅使用内置系统指令，保存后重连即生效。"
+            "description": "自定义 AI 助手指令，留空时仅使用内置系统指令，保存后立即生效。"
           }
         }
       },

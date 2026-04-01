@@ -307,15 +307,29 @@ export function activate(context: vscode.ExtensionContext): void {
       }
       if (event.affectsConfiguration('jlcMcpServer.exposeRawApiTools')) {
         sidebarProvider.notifyExposeRawApiToolsChanged();
+        // VS Code 路径：通知 provider 触发 MCP 定义刷新（不经过 configStore.onDidChangeConfig，避免重启 HTTP 运行时）
+        onExposeRawApiToolsChanged?.();
+        // 如果是 VS Code (非 Cursor)，手动触发一次运行时重启以同步配置
+        if (!isCursorHost()) {
+          stopManualStdioRuntimeProcess();
+          autoStartStdioRuntime(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion, true);
+        }
       }
     })
   );
+
+  // exposeRawApiTools 变更时的 MCP 定义刷新回调，由各宿主路径在下方赋值。
+  let onExposeRawApiToolsChanged: (() => void) | undefined;
 
   if (isCursorHost() && getCursorMcpApi()) {
     registerCursorMcpServer(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion);
     context.subscriptions.push(configStore.onDidChangeConfig(() => {
       registerCursorMcpServer(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion);
     }));
+    // Cursor 路径：exposeRawApiTools 变化时重新注册服务定义。
+    onExposeRawApiToolsChanged = () => {
+      registerCursorMcpServer(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion);
+    };
     context.subscriptions.push(new vscode.Disposable(() => {
       unregisterCursorMcpServer();
     }));
@@ -323,6 +337,8 @@ export function activate(context: vscode.ExtensionContext): void {
   }
 
   const provider = new JlcMcpDefinitionProvider(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion, stopManualStdioRuntimeProcess);
+  // VS Code 路径：exposeRawApiTools 变化时仅通知 provider 刷新定义，不重启 HTTP 运行时。
+  onExposeRawApiToolsChanged = () => provider.notifyExposeRawApiToolsChanged();
   context.subscriptions.push(provider);
   context.subscriptions.push(vscode.lm.registerMcpServerDefinitionProvider('jlcMcpControl.provider', provider));
 

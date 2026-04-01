@@ -63,6 +63,14 @@ implements vscode.McpServerDefinitionProvider<vscode.McpStdioServerDefinition>, 
   }
 
   /**
+   * 外部通知：「暴露透传 EDA API 工具」设置已变更，触发 VS Code 重新读取 MCP 服务定义。
+   * 与 configStore.onDidChangeConfig 路径完全独立，不会触发 HTTP 运行时重启。
+   */
+  public notifyExposeRawApiToolsChanged(): void {
+    this.changeEmitter.fire();
+  }
+
+  /**
    * 释放定义刷新相关资源。
    */
   public dispose(): void {

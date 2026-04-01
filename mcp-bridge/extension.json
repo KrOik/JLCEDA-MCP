@@ -2,7 +2,7 @@
 	"name": "jlceda-mcp-bridge",
 	"uuid": "1f41b7a0f9784d6aa5fd77478de4a25c",
 	"displayName": "MCP Bridge",
-	"description": "将 EDA 桥接到 VSCode/Cursor 中运行的 MCP 服务，供 Copilot/ClaudeCode/Codex 连接使用（非 API 透传）。",
+	"description": "将 EDA 桥接到 VSCode/Cursor 中运行的 MCP 服务，供 Copilot/ClaudeCode/Codex 连接使用。",
 	"version": "1.5.1",
 	"publisher": "Lion",
 	"engines": {

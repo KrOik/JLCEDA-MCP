@@ -4,6 +4,16 @@
 
 服务端还支持可选的 **透传 EDA API** 模式，开启后可向 AI 额外暴露底层 EDA API 的查询与调用能力，适合有进阶需求的用户使用。
 
+> 这套方案的链路是：EDA -> WebSocket (Bridge) -> stdio/http (MCP) -> MCP 客户端（Copilot / Cursor Chat / Claude Code / Codex）。
+
+B 站演示视频：https://www.bilibili.com/video/BV11QwuzxEDy/
+
+讨论QQ群：9041389，欢迎你反馈更多的问题和建议。
+
+![演示动画](images/demo.gif)
+
+项目地址：https://github.com/sengbin/JLCEDA-MCP
+
 内置专用工具：
 
 **基础工具**
@@ -19,14 +29,6 @@
 - `api_search`：按关键词搜索具体 API 方法及参数说明。
 - `eda_context`：读取当前 EDA 页面的上下文信息。
 - `api_invoke`：直接调用任意 EDA API 并返回结果。
-
-![演示动画](images/demo.gif)
-
-> 这套方案的链路是：EDA -> WebSocket (Bridge) -> stdio/http (MCP) -> MCP 客户端（Copilot / Cursor Chat / Claude Code / Codex）。
-
-> B 站演示视频：https://www.bilibili.com/video/BV11QwuzxEDy/
-
-项目地址：https://github.com/sengbin/JLCEDA-MCP
 
 ## 安装
 

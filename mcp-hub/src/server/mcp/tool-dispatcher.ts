@@ -86,6 +86,7 @@ interface ComponentPlaceStartResult {
 interface ComponentPlaceCheckResult {
 	ok: boolean;
 	placed?: boolean;
+	userCancelled?: boolean;
 	error?: string;
 }
 
@@ -504,6 +505,7 @@ export class ToolDispatcher {
 		return {
 			ok: result.ok,
 			placed: typeof result.placed === 'boolean' ? result.placed : undefined,
+			userCancelled: typeof result.userCancelled === 'boolean' ? result.userCancelled : undefined,
 			error: typeof result.error === 'string' ? result.error : undefined,
 		};
 	}
@@ -784,10 +786,12 @@ export class ToolDispatcher {
 							placed = true;
 							break;
 						}
-					}
 
-					if (placed) {
-						placedComponents.push(component);
+					// 用户右键取消放置（浮动图元消失），跳过当前器件，继续放置下一个。
+					if (checkResult.userCancelled) {
+						skippedByUser = true;
+						break;
+					}
 						interaction.placedCount = placedComponents.length;
 						interaction.rows[index].status = 'success';
 						interaction.rows[index].statusText = '已完成';

@@ -324,13 +324,30 @@ export async function handleComponentPlaceCheckTask(payload: unknown): Promise<u
 				return {
 					ok: true,
 					placed: true,
+					userCancelled: false,
 				};
+			}
+		}
+
+		// 检测基线图元是否消失（用户右键取消，浮动图元被移除）。
+		if (session.referenceIds.size > 0) {
+			const currentIdSet = new Set<string>(currentIds.map((id: string) => String(id || '').trim()).filter((id: string) => id.length > 0));
+			for (const refId of session.referenceIds) {
+				if (!currentIdSet.has(refId)) {
+					await cleanupPlaceSession(sessionId);
+					return {
+						ok: true,
+						placed: false,
+						userCancelled: true,
+					};
+				}
 			}
 		}
 
 		return {
 			ok: true,
 			placed: false,
+			userCancelled: false,
 		};
 	}
 	catch (error: unknown) {

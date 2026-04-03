@@ -47,6 +47,8 @@ interface ActivePlaceSession {
 	followMouseTipApi: FollowMouseTipApi | null;
 	placeApi: PlaceComponentApi;
 	createdAt: number;
+	cancelledByRightClick: boolean;
+	cancelHandler: ((event: Event) => void) | null;
 }
 
 const COMPONENT_PLACE_PROTOCOL = 'component-place/v1';
@@ -151,6 +153,14 @@ async function cleanupPlaceSession(sessionId: string): Promise<void> {
 	}
 
 	activePlaceSessions.delete(sessionId);
+	// 移除鼠标右键取消监听器。
+	if (session.cancelHandler) {
+		const docRef = (globalThis as unknown as { document?: Document }).document;
+		if (docRef) {
+			docRef.removeEventListener('mousedown', session.cancelHandler, { capture: true });
+		}
+		session.cancelHandler = null;
+	}
 	if (session.followMouseTipApi) {
 		try {
 			await session.followMouseTipApi.remove.call(session.followMouseTipApi.context, session.tipText);
@@ -261,14 +271,32 @@ export async function handleComponentPlaceStartTask(payload: unknown): Promise<u
 		}
 
 		const sessionId = createPlaceSessionId();
-		activePlaceSessions.set(sessionId, {
+		const session: ActivePlaceSession = {
 			sessionId,
 			referenceIds,
 			tipText,
 			followMouseTipApi,
 			placeApi,
 			createdAt: Date.now(),
-		});
+			cancelledByRightClick: false,
+			cancelHandler: null,
+		};
+		activePlaceSessions.set(sessionId, session);
+
+		// 注册鼠标右键取消监听器，当用户在 EDA 中右键取消放置时，立即标记会话已取消。
+		const docRef = (globalThis as unknown as { document?: Document }).document;
+		if (docRef) {
+			session.cancelHandler = (event: Event): void => {
+				if ((event as MouseEvent).button !== 2) {
+					return;
+				}
+				const sess = activePlaceSessions.get(sessionId);
+				if (sess) {
+					sess.cancelledByRightClick = true;
+				}
+			};
+			docRef.addEventListener('mousedown', session.cancelHandler, { capture: true });
+		}
 
 		return {
 			ok: true,
@@ -316,6 +344,16 @@ export async function handleComponentPlaceCheckTask(payload: unknown): Promise<u
 	}
 
 	try {
+		// 用户右键取消放置（mousedown 事件已标记），优先于图元 ID 检测立即返回。
+		if (session.cancelledByRightClick) {
+			await cleanupPlaceSession(sessionId);
+			return {
+				ok: true,
+				placed: false,
+				userCancelled: true,
+			};
+		}
+
 		const currentIds = await Promise.resolve(session.placeApi.getAllPrimitiveId.call(session.placeApi.context));
 		for (let index = 0; index < currentIds.length; index += 1) {
 			const primitiveId = String(currentIds[index] || '').trim();

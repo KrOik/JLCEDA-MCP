@@ -792,6 +792,10 @@ export class ToolDispatcher {
 						skippedByUser = true;
 						break;
 					}
+					}
+
+					if (placed) {
+						placedComponents.push(component);
 						interaction.placedCount = placedComponents.length;
 						interaction.rows[index].status = 'success';
 						interaction.rows[index].statusText = '已完成';

@@ -2314,7 +2314,7 @@ export function buildSidebarHtml(webview: vscode.Webview, extensionUri: vscode.U
         ? interaction.candidates.map((candidate) => getInteractionCandidateKey(candidate))
         : [];
       if (!candidateKeys.includes(currentInteractionSelectionKey)) {
-        currentInteractionSelectionKey = '';
+        currentInteractionSelectionKey = candidateKeys.length > 0 ? candidateKeys[0] : '';
       }
 
       const card = createInteractionCard(interaction);

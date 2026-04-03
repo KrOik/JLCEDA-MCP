@@ -842,17 +842,22 @@ export class ToolDispatcher {
 			}
 
 			interaction.canCancel = false;
-			interaction.statusText = `已完成全部 ${String(placementPayload.components.length)} 个器件的交互放置。`;
+			const finalPlacedCount = placedComponents.length;
+			const finalSkippedCount = skippedComponents.length;
+			const finalMessage = finalSkippedCount > 0
+				? `共 ${String(placementPayload.components.length)} 个器件：已放置 ${String(finalPlacedCount)} 个，用户跳过 ${String(finalSkippedCount)} 个。`
+				: `已完成全部 ${String(placementPayload.components.length)} 个器件的交互放置。`;
+			interaction.statusText = finalMessage;
 			interaction.noticeText = '';
 			writePlaceInteraction();
 			return {
 				ok: true,
-				placedCount: placedComponents.length,
+				placedCount: finalPlacedCount,
 				totalCount: placementPayload.components.length,
 				placedComponents,
-				skippedCount: skippedComponents.length,
+				skippedCount: finalSkippedCount,
 				skippedComponents,
-				message: `已完成全部 ${String(placementPayload.components.length)} 个器件的交互放置。`,
+				message: finalMessage,
 			};
 		}
 		finally {

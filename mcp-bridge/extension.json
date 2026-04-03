@@ -3,7 +3,7 @@
 	"uuid": "1f41b7a0f9784d6aa5fd77478de4a25c",
 	"displayName": "MCP Bridge",
 	"description": "免配置开箱即用，语义级原理图审查，支持 EDA API 透传。",
-	"version": "1.5.3",
+	"version": "1.5.4",
 	"publisher": "Lion",
 	"engines": {
 		"eda": "^3.0.0"

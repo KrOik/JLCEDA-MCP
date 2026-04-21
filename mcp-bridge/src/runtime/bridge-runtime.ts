@@ -27,6 +27,8 @@ import {
 import { handleComponentSelectTask } from '../mcp/component-select-handler.ts';
 import { handleEdaContextTask } from '../mcp/context-handler.ts';
 import { handleApiInvokeTask } from '../mcp/invoke-handler.ts';
+import { handlePcbConstraintSnapshotTask } from '../mcp/pcb-constraint-handler.ts';
+import { handlePcbGeometryAnalyzeTask, handlePcbSnapshotTask } from '../mcp/pcb-geometry-handler.ts';
 import { handleSchematicReadTask } from '../mcp/schematic-read-handler.ts';
 import { handleSchematicReviewTask } from '../mcp/schematic-review-handler.ts';
 import { BridgeStateManager } from '../state/state-manager.ts';
@@ -48,6 +50,9 @@ const BRIDGE_TASK_HANDLERS: Record<string, (payload: unknown) => Promise<unknown
 	'/bridge/jlceda/component/place': handleComponentPlaceTask,
 	'/bridge/jlceda/component/select': handleComponentSelectTask,
 	'/bridge/jlceda/context': handleEdaContextTask,
+	'/bridge/jlceda/pcb/constraint/snapshot': handlePcbConstraintSnapshotTask,
+	'/bridge/jlceda/pcb/geometry/analyze': handlePcbGeometryAnalyzeTask,
+	'/bridge/jlceda/pcb/snapshot': handlePcbSnapshotTask,
 	'/bridge/jlceda/schematic/read': handleSchematicReadTask,
 	'/bridge/jlceda/schematic/review': handleSchematicReviewTask,
 };

@@ -11,16 +11,14 @@
 
 import * as vscode from 'vscode';
 import { DEBUG_SWITCH } from '../debug';
+import type { HostRuntimeBridge } from '../ipc/host-runtime-bridge';
 import { SidebarLogPipeline } from '../logging/sidebar-log';
 import type { ServerConfigStore } from '../server/core/config';
-import { getRuntimeStatusFilePath, isRuntimeStatusSnapshotStale, readRuntimeStatusSnapshot } from '../state/runtime-status';
 import {
-  readSidebarInteractionRequest,
-  writeSidebarInteractionResponse,
   type SidebarInteractionRequest,
 } from '../state/sidebar-interaction';
 import { ServerStateManager } from '../state/server-state-manager';
-import type { BridgeVersionMismatch, ServerConfig, ServerStatus } from '../state/status';
+import type { BridgeVersionMismatch, RuntimeStatusSnapshot, ServerConfig, ServerStatus } from '../state/status';
 import {
   getUnifiedLogFieldSchema,
 } from '../logging/server-log';
@@ -32,10 +30,6 @@ import type {
   SidebarWebviewMessage
 } from './sidebar-protocol';
 
-// 侧边栏状态轮询间隔，单位毫秒。
-const SIDEBAR_STATUS_REFRESH_INTERVAL_MS = 1000;
-// 侧边栏交互状态轮询间隔，单位毫秒。
-const SIDEBAR_INTERACTION_REFRESH_INTERVAL_MS = 250;
 const serverStateManager = new ServerStateManager();
 
 // 根据当前配置生成默认接入状态文案。
@@ -51,20 +45,10 @@ interface SidebarRuntimeSnapshot {
 }
 
 // 将运行时状态快照转换为侧边栏展示状态与连接列表。
-function createSidebarRuntimeSnapshot(storageDirectoryPath: string, sessionId: string, config: ServerConfig): SidebarRuntimeSnapshot {
-  const statusFilePath = getRuntimeStatusFilePath(storageDirectoryPath, config, sessionId);
-  const snapshot = readRuntimeStatusSnapshot(statusFilePath);
+function createSidebarRuntimeSnapshot(snapshot: RuntimeStatusSnapshot | undefined, config: ServerConfig): SidebarRuntimeSnapshot {
   if (!snapshot) {
     return {
       state: createIdleState(config),
-      clients: [],
-      logs: []
-    };
-  }
-
-  if (isRuntimeStatusSnapshotStale(snapshot) && (snapshot.runtimeStatus === 'running' || snapshot.runtimeStatus === 'starting')) {
-    return {
-      state: serverStateManager.createStaleRuntimeState(config, snapshot),
       clients: [],
       logs: []
     };
@@ -99,10 +83,6 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
   private static readonly editorUrl = 'https://pro.lceda.cn/editor';
   // 当前已解析的侧边栏视图实例。
   private view: vscode.WebviewView | undefined;
-  // 侧边栏状态轮询定时器。
-  private statusRefreshTimer: NodeJS.Timeout | undefined;
-  // 侧边栏交互轮询定时器。
-  private interactionRefreshTimer: NodeJS.Timeout | undefined;
   // 调试卡片状态缓存与去重逻辑。
   private readonly logPipeline = new SidebarLogPipeline();
   // 已弹出过版本不一致提示的去重键，格式为 "bridgeVersion|serverVersion"。
@@ -125,6 +105,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     private readonly storageDirectoryPath: string,
     private readonly sessionId: string,
     private readonly configStore: ServerConfigStore,
+    private readonly hostRuntimeBridge: HostRuntimeBridge,
     private readonly startStdioRuntime: () => Promise<void>,
     private readonly stopStdioRuntime: () => Promise<void>
   ) {}
@@ -146,20 +127,29 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
       await this.handleSidebarMessage(message);
     });
 
+    this.hostRuntimeBridge.onDidSnapshotChange(() => {
+      const config = this.configStore.getConfig();
+      this.syncState(createSidebarRuntimeSnapshot(this.hostRuntimeBridge.getLatestSnapshot(), config));
+    });
+    this.hostRuntimeBridge.onDidInteractionChange((interaction) => {
+      this.syncInteractionState(interaction);
+    });
+
     this.configStore.onDidChangeConfig((config) => {
       this.postConfig(config);
       this.postInstructions();
-      const runtimeSnapshot = createSidebarRuntimeSnapshot(this.storageDirectoryPath, this.sessionId, config);
+      const runtimeSnapshot = createSidebarRuntimeSnapshot(this.hostRuntimeBridge.getLatestSnapshot(), config);
       this.postState(runtimeSnapshot.state);
       this.postClients(runtimeSnapshot.clients);
     });
 
     webviewView.onDidDispose(() => {
-      this.stopStatusRefreshLoop();
       this.view = undefined;
     });
 
     const config = this.configStore.getConfig();
+    this.currentInteraction = this.hostRuntimeBridge.getCurrentInteraction();
+    this.currentInteractionSignature = this.currentInteraction ? JSON.stringify(this.currentInteraction) : '';
     this.postConfig(config);
     this.postInstructions();
     this.postCloseSidebarOnOpenEditor();
@@ -169,8 +159,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
       this.postLogSchema();
       this.postLogs();
     }
-    this.syncState(createSidebarRuntimeSnapshot(this.storageDirectoryPath, this.sessionId, config));
-    this.startStatusRefreshLoop();
+    this.syncState(createSidebarRuntimeSnapshot(this.hostRuntimeBridge.getLatestSnapshot(), config));
   }
 
   private async handleSidebarMessage(message: SidebarCommand): Promise<void> {
@@ -187,7 +176,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
           this.postLogSchema();
           this.postLogs();
         }
-        this.syncState(createSidebarRuntimeSnapshot(this.storageDirectoryPath, this.sessionId, currentConfig));
+        this.syncState(createSidebarRuntimeSnapshot(this.hostRuntimeBridge.getLatestSnapshot(), currentConfig));
         return;
       }
 
@@ -196,7 +185,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
         await this.configStore.updateConfig(message.payload);
         const savedConfig = this.configStore.getConfig();
         this.postConfig(savedConfig);
-        this.syncState(createSidebarRuntimeSnapshot(this.storageDirectoryPath, this.sessionId, savedConfig));
+        this.syncState(createSidebarRuntimeSnapshot(this.hostRuntimeBridge.getLatestSnapshot(), savedConfig));
         return;
       }
 
@@ -252,7 +241,7 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
       }
 
       if (message.command === 'interactionAction') {
-        writeSidebarInteractionResponse(this.storageDirectoryPath, this.sessionId, message.payload);
+        this.hostRuntimeBridge.sendInteractionResponse(message.payload);
         return;
       }
     } catch (error) {
@@ -275,57 +264,24 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  // 定时读取运行时真实状态，刷新 stdio 与桥接客户端显示。
-  private startStatusRefreshLoop(): void {
-    this.stopStatusRefreshLoop();
-    this.statusRefreshTimer = setInterval(() => {
-      if (!this.view) {
-        return;
-      }
-
-      const config = this.configStore.getConfig();
-      this.syncState(createSidebarRuntimeSnapshot(this.storageDirectoryPath, this.sessionId, config));
-    }, SIDEBAR_STATUS_REFRESH_INTERVAL_MS);
-  }
-
-  // 停止侧边栏状态轮询。
-  private stopStatusRefreshLoop(): void {
-    if (!this.statusRefreshTimer) {
-      return;
-    }
-
-    clearInterval(this.statusRefreshTimer);
-    this.statusRefreshTimer = undefined;
-  }
-
   /**
    * 启动侧边栏交互状态轮询。
    */
   public startInteractionSyncLoop(): void {
-    this.stopInteractionSyncLoop();
-    this.syncInteractionState();
-    this.interactionRefreshTimer = setInterval(() => {
-      this.syncInteractionState();
-    }, SIDEBAR_INTERACTION_REFRESH_INTERVAL_MS);
+    this.syncInteractionState(this.hostRuntimeBridge.getCurrentInteraction());
   }
 
   /**
    * 停止侧边栏交互状态轮询。
    */
   public stopInteractionSyncLoop(): void {
-    if (!this.interactionRefreshTimer) {
-      return;
-    }
-
-    clearInterval(this.interactionRefreshTimer);
-    this.interactionRefreshTimer = undefined;
+    return;
   }
 
   /**
    * 释放侧边栏提供器资源。
    */
   public dispose(): void {
-    this.stopStatusRefreshLoop();
     this.stopInteractionSyncLoop();
   }
 
@@ -473,9 +429,8 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
-  // 从共享状态文件同步当前待处理交互，并在需要时拉起侧边栏。
-  private syncInteractionState(): void {
-    const nextInteraction = readSidebarInteractionRequest(this.storageDirectoryPath, this.sessionId) ?? null;
+  // 从宿主 IPC 状态同步当前待处理交互，并在需要时拉起侧边栏。
+  private syncInteractionState(nextInteraction: SidebarInteractionRequest | null): void {
     const nextSignature = nextInteraction ? JSON.stringify(nextInteraction) : '';
     if (nextSignature === this.currentInteractionSignature) {
       return;
@@ -577,6 +532,6 @@ export class McpSidebarViewProvider implements vscode.WebviewViewProvider {
       this.postLogSchema();
       this.postLogs();
     }
-    this.syncState(createSidebarRuntimeSnapshot(this.storageDirectoryPath, this.sessionId, config));
+    this.syncState(createSidebarRuntimeSnapshot(this.hostRuntimeBridge.getLatestSnapshot(), config));
   }
 }

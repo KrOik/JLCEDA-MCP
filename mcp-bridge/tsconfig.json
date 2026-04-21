@@ -27,5 +27,5 @@
 		"forceConsistentCasingInFileNames": true,
 		"isolatedModules": true
 	},
-	"include": ["./src/**/*", "./config/**/*", "./build/**/*", "./node_modules/@jlceda/pro-api-types/**/*"]
+	"include": ["./src/**/*", "./config/**/*", "./build/**/*", "./node_modules/@jlceda/pro-api-types/**/*", "../shared/**/*.ts"]
 }

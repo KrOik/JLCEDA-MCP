@@ -9,29 +9,18 @@
  * ------------------------------------------------------------------------
  */
 
-/**
- * 统一日志级别。
- */
-export type UnifiedLogLevel = 'info' | 'success' | 'warning' | 'error';
+import type {
+	UnifiedLogEntry,
+	UnifiedLogFieldSchema,
+	UnifiedLogLevel,
+} from '../../../shared/bridge-contract.ts';
+import { isUnifiedLogEntry as isSharedUnifiedLogEntry } from '../../../shared/bridge-contract.ts';
 
-/**
- * 统一日志字段定义。
- */
-export interface UnifiedLogFieldSchema {
-	fieldOrder: string[];
-	fieldLabels: Record<string, string>;
-	defaultVisibleFields: string[];
-}
-
-/**
- * 统一日志记录结构。
- */
-export interface UnifiedLogEntry {
-	id: string;
-	timestamp: string;
-	level: UnifiedLogLevel;
-	fields: Record<string, string>;
-}
+export type {
+	UnifiedLogEntry,
+	UnifiedLogFieldSchema,
+	UnifiedLogLevel,
+} from '../../../shared/bridge-contract.ts';
 
 export interface BridgeLogBuildInput {
 	level: UnifiedLogLevel;
@@ -254,25 +243,7 @@ export class BridgeLogPipeline {
 	 * @returns 是否为合法日志。
 	 */
 	public isUnifiedLogEntry(value: unknown): value is UnifiedLogEntry {
-		if (!value || typeof value !== 'object') {
-			return false;
-		}
-
-		const recordValue = value as Record<string, unknown>;
-		if (typeof recordValue.id !== 'string' || normalizeText(recordValue.id).length === 0) {
-			return false;
-		}
-		if (typeof recordValue.timestamp !== 'string' || normalizeText(recordValue.timestamp).length === 0) {
-			return false;
-		}
-		if (recordValue.level !== 'info' && recordValue.level !== 'success' && recordValue.level !== 'warning' && recordValue.level !== 'error') {
-			return false;
-		}
-		if (!recordValue.fields || typeof recordValue.fields !== 'object' || Array.isArray(recordValue.fields)) {
-			return false;
-		}
-
-		return true;
+		return isSharedUnifiedLogEntry(value);
 	}
 
 	/**

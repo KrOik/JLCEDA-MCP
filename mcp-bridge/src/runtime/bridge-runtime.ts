@@ -9,10 +9,11 @@
  * ------------------------------------------------------------------------
  */
 
-import type { BridgeDebugSwitch, BridgeRole, BridgeServerRoleMessage } from '../bridge/protocol.ts';
+import type { BridgeDebugSwitch, BridgeProtocolError, BridgeRole, BridgeServerRoleMessage, BridgeTaskEnvelope } from '../bridge/protocol.ts';
 import type { UnifiedLogEntry } from '../logging/log.ts';
 import extensionConfig from '../../extension.json';
 import { getConfiguredMcpUrl, getMcpServerUrlChangedTopic } from '../bridge/config.ts';
+import { toBridgeProtocolError } from '../bridge/protocol.ts';
 import { BridgeLogDispatchPipeline } from '../logging/log-dispatch.ts';
 import { bridgeLogPipeline } from '../logging/log.ts';
 import { handleApiIndexTask } from '../mcp/api-index-handler.ts';
@@ -159,7 +160,7 @@ function applyRole(message: BridgeServerRoleMessage): void {
 }
 
 // 调度任务执行并回传结果。
-function enqueueTask(task: { requestId: string; path: string; payload: unknown; leaseTerm: number }, currentTransport: BridgeTransport): void {
+function enqueueTask(task: BridgeTaskEnvelope, currentTransport: BridgeTransport): void {
 	taskChain = taskChain.then(async () => {
 		if (currentRole !== 'active') {
 			currentTransport.completeTask(task.requestId, task.leaseTerm, undefined, {
@@ -184,15 +185,12 @@ function enqueueTask(task: { requestId: string; path: string; payload: unknown; 
 		}
 
 		let result: unknown;
-		let taskError: { message: string; stack?: string } | undefined;
+		let taskError: BridgeProtocolError | undefined;
 		try {
 			result = await toSerializableAsync(await handler(task.payload));
 		}
 		catch (error: unknown) {
-			taskError = {
-				message: toSafeErrorMessage(error),
-				stack: error instanceof Error ? error.stack : undefined,
-			};
+			taskError = toBridgeProtocolError(error, toSafeErrorMessage(error));
 		}
 
 		currentTransport.completeTask(task.requestId, task.leaseTerm, result, taskError);

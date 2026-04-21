@@ -1,5 +1,9 @@
 ## [1.5.5] - 2026-04-21
 
+### 新增
+
+- 新增 `pcb_snapshot`、`pcb_geometry_analyze` 与 `pcb_constraint_snapshot` 三个 PCB 基础工具，可输出归一化的 PCB 几何快照、关系特征、约束上下文与证据字段，供上层 agent 继续分析。
+
 ### 优化
 
 - 桥接 Broker、工具分发与侧边栏交互链路完成模块化重构，宿主 IPC、共享协议与 Webview 模板职责拆分更清晰，后续维护与排障成本更低。

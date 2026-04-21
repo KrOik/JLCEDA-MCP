@@ -114,6 +114,279 @@
     }
   },
   {
+    "name": "pcb_snapshot",
+    "description": "读取当前 PCB 页面归一化后的几何关系快照。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "nets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "可选。按网络名过滤返回对象。"
+        },
+        "layerIds": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "可选。按图层 ID 过滤返回对象。"
+        },
+        "include": {
+          "type": "object",
+          "description": "可选。控制返回的对象族，未指定时默认全部开启。",
+          "properties": {
+            "lines": {
+              "type": "boolean"
+            },
+            "arcs": {
+              "type": "boolean"
+            },
+            "vias": {
+              "type": "boolean"
+            },
+            "pours": {
+              "type": "boolean"
+            },
+            "fills": {
+              "type": "boolean"
+            },
+            "regions": {
+              "type": "boolean"
+            },
+            "images": {
+              "type": "boolean"
+            },
+            "objects": {
+              "type": "boolean"
+            },
+            "components": {
+              "type": "boolean"
+            },
+            "pads": {
+              "type": "boolean"
+            },
+            "boardOutline": {
+              "type": "boolean"
+            },
+            "layers": {
+              "type": "boolean"
+            }
+          }
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 120000,
+          "default": 15000,
+          "description": "桥接超时（毫秒）。"
+        }
+      }
+    }
+  },
+  {
+    "name": "pcb_geometry_analyze",
+    "description": "分析当前 PCB 的几何关系并返回规范化特征与证据。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "nets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "可选。仅分析这些网络。"
+        },
+        "layerIds": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "可选。仅分析这些图层上的对象。"
+        },
+        "tracePrimitiveIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "可选。仅分析指定走线/圆弧图元。"
+        },
+        "referenceNetNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "可选。参考网络名列表，默认使用常见地网络。"
+        },
+        "analysisModes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "net_stats",
+              "reference_grounding",
+              "board_edge_clearance",
+              "return_via_clearance",
+              "plane_connectivity",
+              "loop_area_proxy",
+              "spatial_relations"
+            ]
+          },
+          "description": "可选。分析模式列表，默认执行全部模式。"
+        },
+        "spatialObjectKinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "pour",
+              "fill",
+              "region",
+              "image",
+              "object"
+            ]
+          },
+          "description": "可选。空间关系分析时纳入计算的对象族，默认包含 pour/fill/region/image/object。"
+        },
+        "sampleStep": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "default": 8,
+          "description": "采样步长，单位继承当前 EDA 原生坐标系。"
+        },
+        "includeSnapshot": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否在分析结果中附带归一化快照。"
+        },
+        "include": {
+          "type": "object",
+          "description": "可选。控制分析前加载的对象族，未指定时默认全部开启。",
+          "properties": {
+            "lines": {
+              "type": "boolean"
+            },
+            "arcs": {
+              "type": "boolean"
+            },
+            "vias": {
+              "type": "boolean"
+            },
+            "pours": {
+              "type": "boolean"
+            },
+            "fills": {
+              "type": "boolean"
+            },
+            "regions": {
+              "type": "boolean"
+            },
+            "images": {
+              "type": "boolean"
+            },
+            "objects": {
+              "type": "boolean"
+            },
+            "components": {
+              "type": "boolean"
+            },
+            "pads": {
+              "type": "boolean"
+            },
+            "boardOutline": {
+              "type": "boolean"
+            },
+            "layers": {
+              "type": "boolean"
+            }
+          }
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 120000,
+          "default": 15000,
+          "description": "桥接超时（毫秒）。"
+        }
+      }
+    }
+  },
+  {
+    "name": "pcb_constraint_snapshot",
+    "description": "读取当前 PCB 的第二层约束与结构上下文快照，包括规则配置、差分对、等长组、网络类以及更细的 pad/via 结构细节。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "nets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "可选。按网络名过滤差分对、等长组、网络类以及 pad/via 条目。"
+        },
+        "viaPrimitiveIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "可选。仅返回这些 via 图元。"
+        },
+        "padPrimitiveIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "可选。仅返回这些 pad 图元。"
+        },
+        "include": {
+          "type": "object",
+          "description": "可选。控制返回的第二层对象族，未指定时默认全部开启。",
+          "properties": {
+            "ruleConfiguration": {
+              "type": "boolean"
+            },
+            "netRules": {
+              "type": "boolean"
+            },
+            "netByNetRules": {
+              "type": "boolean"
+            },
+            "regionRules": {
+              "type": "boolean"
+            },
+            "differentialPairs": {
+              "type": "boolean"
+            },
+            "equalLengthNetGroups": {
+              "type": "boolean"
+            },
+            "netClasses": {
+              "type": "boolean"
+            },
+            "padPairGroups": {
+              "type": "boolean"
+            },
+            "vias": {
+              "type": "boolean"
+            },
+            "pads": {
+              "type": "boolean"
+            }
+          }
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 120000,
+          "default": 15000,
+          "description": "桥接超时（毫秒）。"
+        }
+      }
+    }
+  },
+  {
     "name": "component_select",
     "description": "搜索器件候选项并返回确认结果。",
     "inputSchema": {

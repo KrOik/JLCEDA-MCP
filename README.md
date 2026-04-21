@@ -23,6 +23,9 @@ MCP 客户端（Copilot / Cursor Chat / Claude Code / Codex 等）
 | -------------------- | --------------------------------------------------------------------------------------------- |
 | `schematic_read`   | 读取当前原理图的完整电路语义快照，返回器件列表、引脚→网络名映射、网络连接关系与 DRC 检查结果 |
 | `schematic_review` | 读取全工程所有原理图页面的网表文件，覆盖多页电路，适合全局审查、BOM 核查与跨页信号追踪       |
+| `pcb_snapshot`     | 读取当前 PCB 页面归一化后的几何关系快照，返回图层、走线、过孔、覆铜、fill、region、image、object、实际覆铜填充区域、器件、焊盘与板框信息     |
+| `pcb_geometry_analyze` | 分析当前 PCB 的几何关系，返回规范化 `relations`、`features` 与证据字段，支持路由拓扑、参考面连续性、换层回流过孔距离、平面投影 loop area proxy 与 trace/object 空间关系等事实型分析 |
+| `pcb_constraint_snapshot` | 读取当前 PCB 的第二层约束与结构上下文快照，返回规则配置、网络规则、差分对、等长组、网络类以及更细的 pad/via 结构细节 |
 | `component_select` | 在 EDA 系统库中搜索候选器件，并在 VS Code / Cursor 侧边栏中由用户确认具体型号                |
 | `component_place`  | 按顺序启动器件交互放置流程，在侧边栏中提示当前进度并等待用户完成放置                         |
 
@@ -154,6 +157,7 @@ CI 质量门会在 Windows 环境按 `test -> lint -> typecheck -> build` 顺序
 2. 新增或变更桥接任务路径时，必须同时修改 mcp-hub 与 mcp-bridge 两端处理逻辑。
 3. 调整桥接地址、端口、协议字段或角色模型时，同步更新相关 README 与 CHANGELOG。
 4. 发布前执行两端 `test`、`lint`、`typecheck` 与 `build`，确认 VSIX 与 EEXT 均可成功生成。
+5. PCB 几何/约束分析能力通过 bridge plugin 接入；MCP handler 仅负责参数校验与插件分发，新增 PCB 能力时优先扩展插件契约与共享 schema，而不是在 runtime 中直接堆逻辑。
 
 ### 相关文档
 

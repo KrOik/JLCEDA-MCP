@@ -13,30 +13,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { spawn, type ChildProcessWithoutNullStreams } from 'child_process';
 import * as vscode from 'vscode';
+import { HostRuntimeBridge } from './ipc/host-runtime-bridge';
+import { createHostRuntimeIpcEndpoint } from './ipc/host-runtime-endpoint';
 import { ServerConfigStore } from './server/core/config';
 import { updateDebugSwitch, type DebugSwitchValues } from './debug';
 import { JlcMcpDefinitionProvider } from './server/core/provider';
 import { createCursorStdioServerConfig, JLC_MCP_SERVER_NAME, type CursorStdioServerConfig } from './server/core/stdio';
 import { McpSidebarViewProvider } from './sidebar/sidebar';
-import { getRuntimeStatusFilePath, isRuntimeStatusSnapshotStale, readRuntimeStatusSnapshot } from './state/runtime-status';
-
-// 写入透传 EDA API 工具开关标志文件，供运行时进程监听。
-function writeRawApiToolsFlag(storageDirectoryPath: string, sessionId: string, enabled: boolean): void {
-  try {
-    fs.writeFileSync(path.join(storageDirectoryPath, `${sessionId}_raw_api_tools.flag`), enabled ? '1' : '0', 'utf8');
-  } catch {
-    // 写入失败时忽略，不影响主流程。
-  }
-}
-
-// 写入 AI 助手自定义指令标志文件，供运行时进程监听。
-function writeAgentInstructionsFlag(storageDirectoryPath: string, sessionId: string, instructions: string): void {
-  try {
-    fs.writeFileSync(path.join(storageDirectoryPath, `${sessionId}_agent_instructions.flag`), instructions, 'utf8');
-  } catch {
-    // 写入失败时忽略，不影响主流程。
-  }
-}
+import { isRuntimeStatusSnapshotStale } from './state/runtime-status';
 
 interface CursorMcpApi {
   registerServer(config: CursorStdioServerConfig): void;
@@ -82,7 +66,16 @@ function registerCursorMcpServer(
   const config = configStore.getConfig();
   configStore.validateConfig(config);
   cursorMcpApi.unregisterServer(JLC_MCP_SERVER_NAME);
-  cursorMcpApi.registerServer(createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getHttpPort()));
+  cursorMcpApi.registerServer(createCursorStdioServerConfig(
+    extensionPath,
+    storageDirectoryPath,
+    sessionId,
+    config,
+    extensionVersion,
+    configStore.getHttpPort(),
+    configStore.getExposeRawApiTools(),
+    configStore.getAgentInstructions(),
+  ));
 }
 
 // 清理 Cursor 中的已注册服务定义。
@@ -156,7 +149,8 @@ async function startManualStdioRuntimeProcess(
   storageDirectoryPath: string,
   sessionId: string,
   configStore: ServerConfigStore,
-  extensionVersion: string
+  extensionVersion: string,
+  hostRuntimeBridge: HostRuntimeBridge,
 ): Promise<void> {
   clearExitedManualStdioRuntimeProcess();
   if (hasRunningManualStdioRuntimeProcess()) {
@@ -166,8 +160,7 @@ async function startManualStdioRuntimeProcess(
 
   const config = configStore.getConfig();
   configStore.validateConfig(config);
-  const statusFilePath = getRuntimeStatusFilePath(storageDirectoryPath, config, sessionId);
-  const runtimeSnapshot = readRuntimeStatusSnapshot(statusFilePath);
+  const runtimeSnapshot = hostRuntimeBridge.getLatestSnapshot();
   if (runtimeSnapshot
     && !isRuntimeStatusSnapshotStale(runtimeSnapshot)
     && (runtimeSnapshot.runtimeStatus === 'running' || runtimeSnapshot.runtimeStatus === 'starting')) {
@@ -180,7 +173,16 @@ async function startManualStdioRuntimeProcess(
     throw new Error(`未找到运行时入口文件: ${runtimeScriptPath}`);
   }
 
-  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getHttpPort());
+  const cursorConfig = createCursorStdioServerConfig(
+    extensionPath,
+    storageDirectoryPath,
+    sessionId,
+    config,
+    extensionVersion,
+    configStore.getHttpPort(),
+    configStore.getExposeRawApiTools(),
+    configStore.getAgentInstructions(),
+  );
   const manualProcess = spawn(cursorConfig.server.command, cursorConfig.server.args, {
     cwd: extensionPath,
     env: {
@@ -224,6 +226,7 @@ function autoStartStdioRuntime(
   sessionId: string,
   configStore: ServerConfigStore,
   extensionVersion: string,
+  hostRuntimeBridge: HostRuntimeBridge,
   forceRestart = false
 ): void {
   if (configStore.getHttpPort() <= 0) {
@@ -237,8 +240,7 @@ function autoStartStdioRuntime(
 
   const config = configStore.getConfig();
   if (!forceRestart) {
-    const statusFilePath = getRuntimeStatusFilePath(storageDirectoryPath, config, sessionId);
-    const runtimeSnapshot = readRuntimeStatusSnapshot(statusFilePath);
+    const runtimeSnapshot = hostRuntimeBridge.getLatestSnapshot();
     if (runtimeSnapshot
       && !isRuntimeStatusSnapshotStale(runtimeSnapshot)
       && (runtimeSnapshot.runtimeStatus === 'running' || runtimeSnapshot.runtimeStatus === 'starting')) {
@@ -251,7 +253,16 @@ function autoStartStdioRuntime(
     return;
   }
 
-  const cursorConfig = createCursorStdioServerConfig(extensionPath, storageDirectoryPath, sessionId, config, extensionVersion, configStore.getHttpPort());
+  const cursorConfig = createCursorStdioServerConfig(
+    extensionPath,
+    storageDirectoryPath,
+    sessionId,
+    config,
+    extensionVersion,
+    configStore.getHttpPort(),
+    configStore.getExposeRawApiTools(),
+    configStore.getAgentInstructions(),
+  );
   const proc = spawn(cursorConfig.server.command, cursorConfig.server.args, {
     cwd: extensionPath,
     env: { ...process.env, ...cursorConfig.server.env },
@@ -286,11 +297,11 @@ export function activate(context: vscode.ExtensionContext): void {
   const sessionId = vscode.env.sessionId;
   const extensionVersion = String(context.extension.packageJSON.version);
   ensureStorageDirectory(storageDirectoryPath);
+  const hostRuntimeBridge = new HostRuntimeBridge(createHostRuntimeIpcEndpoint(sessionId, storageDirectoryPath));
+  hostRuntimeBridge.start();
+  context.subscriptions.push(hostRuntimeBridge);
   updateDebugSwitch(readDebugSwitchFromConfig());
-  // 激活时将当前开关状态写入标志文件，供运行时进程监听。
-  writeRawApiToolsFlag(storageDirectoryPath, sessionId, configStore.getExposeRawApiTools());
-  // 激活时将当前自定义指令写入标志文件，供运行时进程监听。
-  writeAgentInstructionsFlag(storageDirectoryPath, sessionId, configStore.getAgentInstructions());
+  hostRuntimeBridge.updateSettings(configStore.getExposeRawApiTools(), configStore.getAgentInstructions());
   context.subscriptions.push(configStore);
   context.subscriptions.push(new vscode.Disposable(() => {
     stopManualStdioRuntimeProcess();
@@ -301,8 +312,9 @@ export function activate(context: vscode.ExtensionContext): void {
     storageDirectoryPath,
     sessionId,
     configStore,
+    hostRuntimeBridge,
     async () => {
-      await startManualStdioRuntimeProcess(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion);
+      await startManualStdioRuntimeProcess(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion, hostRuntimeBridge);
     },
     async () => {
       await stopManualStdioRuntimeProcessFromSidebar();
@@ -329,12 +341,10 @@ export function activate(context: vscode.ExtensionContext): void {
       }
       if (event.affectsConfiguration('jlcMcpServer.exposeRawApiTools')) {
         sidebarProvider.notifyExposeRawApiToolsChanged();
-        // 写入标志文件，运行时进程通过文件监听感知变化并动态推送通知，无需重启进程。
-        writeRawApiToolsFlag(storageDirectoryPath, sessionId, configStore.getExposeRawApiTools());
+        hostRuntimeBridge.updateSettings(configStore.getExposeRawApiTools(), configStore.getAgentInstructions());
       }
       if (event.affectsConfiguration('jlcMcpServer.agentInstructions')) {
-        // 写入标志文件，运行时进程通过文件监听感知变化并动态更新指令，无需重启进程。
-        writeAgentInstructionsFlag(storageDirectoryPath, sessionId, configStore.getAgentInstructions());
+        hostRuntimeBridge.updateSettings(configStore.getExposeRawApiTools(), configStore.getAgentInstructions());
       }
     })
   );
@@ -357,7 +367,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(vscode.lm.registerMcpServerDefinitionProvider('jlcMcpControl.provider', provider));
 
   // HTTP MCP 传输已启用时，扩展激活阶段自动拉起运行时，确保外部工具可立即连接。
-  autoStartStdioRuntime(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion);
+  autoStartStdioRuntime(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion, hostRuntimeBridge);
 
   // 配置变更时停止旧运行时进程并用新配置重新拉起，确保设置保存后立即生效。
   context.subscriptions.push(configStore.onDidChangeConfig(() => {
@@ -370,7 +380,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
     sidebarProvider.resetRuntimeErrorState();
     stopManualStdioRuntimeProcess();
-    autoStartStdioRuntime(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion, true);
+    autoStartStdioRuntime(context.extensionPath, storageDirectoryPath, sessionId, configStore, extensionVersion, hostRuntimeBridge, true);
   }));
 }
 

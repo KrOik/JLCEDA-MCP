@@ -21,20 +21,14 @@ import {
 	type BridgeDisconnectEvent,
 	type BridgeVersionMismatchEvent,
 } from './bridge/broker';
-import * as fs from 'fs';
-import * as path from 'path';
 import { DEBUG_SWITCH, updateDebugSwitch } from '../debug';
+import { RuntimeHostClient } from '../ipc/runtime-host-client';
 import type { UnifiedLogLevel } from '../logging/server-log';
 import { RuntimeLogPipeline, type RuntimeLogExtra } from '../logging/runtime-log';
-import { STATUS_FILE_FLAG, writeRuntimeStatusSnapshot } from '../state/runtime-status';
-import {
-	clearSidebarInteractionRequest,
-	clearSidebarInteractionResponse,
-} from '../state/sidebar-interaction';
 import { ServerStateManager } from '../state/server-state-manager';
 import type { BridgeDisconnectSnapshot, BridgeVersionMismatch, RuntimeStatus, RuntimeStatusSnapshot } from '../state/status';
 import { RpcHandler } from './mcp/rpc-handler';
-import { ToolDispatcher } from './mcp/tool-dispatcher';
+import { ToolDispatcher, type ToolDispatcherInteractionChannel } from './mcp/tool-dispatcher';
 import { createStdioLineTransport } from './core/transports/line-transport';
 import { toSafeErrorMessage } from '../utils';
 import { startBridgeWebSocketServer } from './core/transports/bridge-server';
@@ -44,12 +38,13 @@ const HOST_FLAG = '--host';
 const PORT_FLAG = '--port';
 const STORAGE_DIRECTORY_FLAG = '--storage-directory';
 const SESSION_ID_FLAG = '--session-id';
-const STATUS_FILE_PATH_FLAG = STATUS_FILE_FLAG;
 const EXTENSION_VERSION_FLAG = '--extension-version';
 const AGENT_INSTRUCTIONS_FLAG = '--agent-instructions';
 const DEBUG_ENABLE_SYSTEM_LOG_FLAG = '--enable-system-log';
 const DEBUG_ENABLE_CONNECTION_LIST_FLAG = '--enable-connection-list';
 const HTTP_PORT_FLAG = '--http-port';
+const HOST_IPC_ENDPOINT_FLAG = '--host-ipc-endpoint';
+const EXPOSE_RAW_API_TOOLS_FLAG = '--expose-raw-api-tools';
 const BRIDGE_WS_PATH = '/bridge/ws';
 const RUNTIME_STATUS_HEARTBEAT_INTERVAL_MS = 1000;
 const SERVER_STATUS_TEXT = ServerStateManager.text;
@@ -78,18 +73,25 @@ class McpRuntimeServer {
 	private lastDisconnect: BridgeDisconnectSnapshot | null = null;
 	private lastVersionMismatch: BridgeVersionMismatch | null = null;
 	private readonly runtimeLogPipeline: RuntimeLogPipeline;
+	private stdioTransport: ReturnType<typeof createStdioLineTransport> | undefined;
+	private httpMcpServer: ReturnType<typeof startHttpMcpServer> | undefined;
 
 	public constructor(
 		private readonly host: string,
 		private readonly port: number,
 		private readonly httpPort: number,
 		private readonly rpcHandler: RpcHandler,
-		private readonly statusFilePath: string,
 		private readonly toolDispatcher: ToolDispatcher,
-		private readonly rawApiToolsFlagFilePath: string,
-		private readonly agentInstructionsFlagFilePath: string,
+		private readonly hostRuntimeClient: RuntimeHostClient,
 	) {
 		this.runtimeLogPipeline = new RuntimeLogPipeline(host, port);
+	}
+
+	public handleHostSettingsSync(exposeRawApiTools: boolean, agentInstructions: string): void {
+		this.toolDispatcher.updateExposeRawApiTools(exposeRawApiTools);
+		this.rpcHandler.updateAgentInstructions(agentInstructions);
+		this.httpMcpServer?.broadcastToolsListChanged();
+		this.stdioTransport?.write({ jsonrpc: '2.0', method: 'notifications/tools/list_changed', params: {} });
 	}
 
 	/**
@@ -161,14 +163,13 @@ class McpRuntimeServer {
 			},
 		});
 
-		const stdioTransport = createStdioLineTransport(async (line: string) => {
-			await this.handleStdioLine(line, stdioTransport.write);
+		this.stdioTransport = createStdioLineTransport(async (line: string) => {
+			await this.handleStdioLine(line, this.stdioTransport!.write);
 		});
-		stdioTransport.start();
+		this.stdioTransport.start();
 
-		let httpMcpServer: ReturnType<typeof startHttpMcpServer> | undefined;
 		if (this.httpPort > 0) {
-			httpMcpServer = startHttpMcpServer({
+			this.httpMcpServer = startHttpMcpServer({
 				port: this.httpPort,
 				rpcHandler: this.rpcHandler,
 				onListening: () => {
@@ -188,41 +189,7 @@ class McpRuntimeServer {
 			});
 		}
 
-		// 监听透传 EDA API 工具开关标志文件，变化时动态更新工具列表并推送通知。
-		let lastFlagContent = '';
-		// 监听 AI 助手自定义指令标志文件，变化时动态更新 RpcHandler。
-		let lastInstructionsContent = '';
-		const watchFlagFile = (): void => {
-			try {
-				const content = fs.existsSync(this.rawApiToolsFlagFilePath)
-					? fs.readFileSync(this.rawApiToolsFlagFilePath, 'utf8').trim()
-					: '';
-				if (content !== lastFlagContent) {
-					lastFlagContent = content;
-					const newValue = content === '1';
-					this.toolDispatcher.updateExposeRawApiTools(newValue);
-					// 向已连接的 SSE 客户端广播工具列表变更通知。
-					httpMcpServer?.broadcastToolsListChanged();
-					// 向 stdio 客户端（VS Code Copilot）发送工具列表变更通知。
-					stdioTransport.write({ jsonrpc: '2.0', method: 'notifications/tools/list_changed', params: {} });
-				}
-			} catch {
-				// 文件读取失败时忽略，等待下次轮询。
-			}
-			try {
-				const instructionsContent = fs.existsSync(this.agentInstructionsFlagFilePath)
-					? fs.readFileSync(this.agentInstructionsFlagFilePath, 'utf8')
-					: '';
-				if (instructionsContent !== lastInstructionsContent) {
-					lastInstructionsContent = instructionsContent;
-					this.rpcHandler.updateAgentInstructions(instructionsContent.trim());
-				}
-			} catch {
-				// 文件读取失败时忽略。
-			}
-		};
-		fs.watchFile(this.rawApiToolsFlagFilePath, { interval: 500, persistent: false }, watchFlagFile);
-		fs.watchFile(this.agentInstructionsFlagFilePath, { interval: 500, persistent: false }, watchFlagFile);
+		this.hostRuntimeClient.start();
 
 		const shutdown = async (exitCode = 0, writeStoppedStatus = true): Promise<void> => {
 			if (shuttingDown) {
@@ -239,11 +206,10 @@ class McpRuntimeServer {
 				client.close(1001, SERVER_STATUS_TEXT.bridge.serverClosingReason);
 			}
 			await bridgeWebSocketServer.close();
-			if (httpMcpServer) {
-				await httpMcpServer.close();
+			if (this.httpMcpServer) {
+				await this.httpMcpServer.close();
 			}
-			fs.unwatchFile(this.rawApiToolsFlagFilePath);
-			fs.unwatchFile(this.agentInstructionsFlagFilePath);
+			this.hostRuntimeClient.dispose();
 			setBridgeDisconnectHandler(undefined);
 			setVersionMismatchHandler(undefined);
 			this.writeLog('info', 'runtime.stopped', '服务已停止', SERVER_STATUS_TEXT.runtime.stopped, {
@@ -315,7 +281,7 @@ class McpRuntimeServer {
 			lastDisconnect: this.lastDisconnect,
 			updatedAt,
 		};
-		writeRuntimeStatusSnapshot(this.statusFilePath, snapshot);
+		this.hostRuntimeClient.publishStatus(snapshot);
 	}
 
 	// 处理 stdio 单行 JSON-RPC 请求。
@@ -379,15 +345,6 @@ function getHttpPort(): number {
 	return httpPort;
 }
 
-// 读取状态文件参数。
-function getStatusFilePath(): string {
-	const statusFilePath = String(getArgValue(STATUS_FILE_PATH_FLAG) ?? '').trim();
-	if (statusFilePath.length === 0) {
-		throw new Error(`缺少运行时状态文件参数: ${STATUS_FILE_PATH_FLAG}`);
-	}
-	return statusFilePath;
-}
-
 // 读取扩展全局存储目录参数。
 function getStorageDirectoryPath(): string {
 	const storageDirectoryPath = String(getArgValue(STORAGE_DIRECTORY_FLAG) ?? '').trim();
@@ -415,7 +372,19 @@ function getExtensionVersion(): string {
 	return extensionVersion;
 }
 
-	// 运行时启动入口。
+function getHostIpcEndpoint(): string {
+	const endpoint = String(getArgValue(HOST_IPC_ENDPOINT_FLAG) ?? '').trim();
+	if (endpoint.length === 0) {
+		throw new Error(`缺少宿主 IPC 端点参数: ${HOST_IPC_ENDPOINT_FLAG}`);
+	}
+	return endpoint;
+}
+
+function getExposeRawApiTools(): boolean {
+	return getArgValue(EXPOSE_RAW_API_TOOLS_FLAG) === '1';
+}
+
+// 运行时启动入口。
 function startRuntimeServer(): void {
 	// 从 CLI 参数读取调试开关配置并应用。
 	const enableSystemLog = getArgValue(DEBUG_ENABLE_SYSTEM_LOG_FLAG) !== 'false';
@@ -426,31 +395,35 @@ function startRuntimeServer(): void {
 		enableDebugControlCard: true,
 	});
 	const { host, port } = getServerConfig();
-	const statusFilePath = getStatusFilePath();
 	const storageDirectoryPath = getStorageDirectoryPath();
 	const sessionId = getSessionId();
 	const extensionVersion = getExtensionVersion();
+	const hostIpcEndpoint = getHostIpcEndpoint();
+	const exposeRawApiTools = getExposeRawApiTools();
 	const agentInstructionsB64 = getArgValue(AGENT_INSTRUCTIONS_FLAG) ?? '';
-	const agentInstructions = agentInstructionsB64.length > 0
+	const initialInstructions = agentInstructionsB64.length > 0
 		? Buffer.from(agentInstructionsB64, 'base64').toString('utf8')
 		: '';
-	clearSidebarInteractionRequest(storageDirectoryPath, sessionId);
-	clearSidebarInteractionResponse(storageDirectoryPath, sessionId);
-	const rawApiToolsFlagFilePath = path.join(storageDirectoryPath, `${sessionId}_raw_api_tools.flag`);
-	const agentInstructionsFlagFilePath = path.join(storageDirectoryPath, `${sessionId}_agent_instructions.flag`);
-	// 从标志文件读取初始开关状态，由扩展主进程在启动前写入。
-	const exposeRawApiTools = fs.existsSync(rawApiToolsFlagFilePath)
-		? fs.readFileSync(rawApiToolsFlagFilePath, 'utf8').trim() === '1'
-		: false;
-	// 从指令标志文件读取初始自定义指令，由扩展主进程写入。
-	const initialInstructions = fs.existsSync(agentInstructionsFlagFilePath)
-		? fs.readFileSync(agentInstructionsFlagFilePath, 'utf8').trim()
-		: agentInstructions;
-	const toolDispatcher = new ToolDispatcher(storageDirectoryPath, sessionId, exposeRawApiTools);
+	let runtimeServer: McpRuntimeServer;
+	const hostRuntimeClient = new RuntimeHostClient(hostIpcEndpoint, sessionId, (payload) => {
+		runtimeServer.handleHostSettingsSync(payload.exposeRawApiTools, payload.agentInstructions);
+	});
+	const interactionChannel: ToolDispatcherInteractionChannel = {
+		publish: (request) => {
+			hostRuntimeClient.publishInteraction(request);
+		},
+		waitForResponse: (requestId, acceptedActions, timeoutMs) => {
+			return hostRuntimeClient.waitForInteractionResponse(requestId, acceptedActions, timeoutMs);
+		},
+		tryConsumeResponse: (requestId, acceptedActions) => {
+			return hostRuntimeClient.tryConsumeInteractionResponse(requestId, acceptedActions);
+		},
+	};
+	const toolDispatcher = new ToolDispatcher(storageDirectoryPath, sessionId, exposeRawApiTools, interactionChannel);
 	const rpcHandler = new RpcHandler(toolDispatcher, extensionVersion, initialInstructions);
 	setServerVersion(extensionVersion);
 	const httpPort = getHttpPort();
-	const runtimeServer = new McpRuntimeServer(host, port, httpPort, rpcHandler, statusFilePath, toolDispatcher, rawApiToolsFlagFilePath, agentInstructionsFlagFilePath);
+	runtimeServer = new McpRuntimeServer(host, port, httpPort, rpcHandler, toolDispatcher, hostRuntimeClient);
 	runtimeServer.start();
 }
 

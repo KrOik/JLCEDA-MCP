@@ -12,7 +12,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { DEBUG_SWITCH } from '../../debug';
-import { getRuntimeStatusFilePath, STATUS_FILE_FLAG } from '../../state/runtime-status';
+import { createHostRuntimeIpcEndpoint } from '../../ipc/host-runtime-endpoint';
 import type { ServerConfig } from '../../state/status';
 
 const STORAGE_DIRECTORY_FLAG = '--storage-directory';
@@ -20,6 +20,9 @@ const SESSION_ID_FLAG = '--session-id';
 const EXTENSION_VERSION_FLAG = '--extension-version';
 const DEBUG_ENABLE_SYSTEM_LOG_FLAG = '--enable-system-log';
 const DEBUG_ENABLE_CONNECTION_LIST_FLAG = '--enable-connection-list';
+const HOST_IPC_ENDPOINT_FLAG = '--host-ipc-endpoint';
+const EXPOSE_RAW_API_TOOLS_FLAG = '--expose-raw-api-tools';
+const AGENT_INSTRUCTIONS_FLAG = '--agent-instructions';
 
 // Cursor 侧注册使用的 MCP 服务名称。
 export const JLC_MCP_SERVER_NAME = 'chengbin.jlceda-mcp-hub';
@@ -44,8 +47,16 @@ function getRuntimeScriptPath(extensionPath: string): string {
 }
 
 // 统一构造 stdio 运行时启动参数。
-function getRuntimeArgs(extensionPath: string, storageDirectoryPath: string, sessionId: string, config: ServerConfig, extensionVersion: string, httpPort: number): string[] {
-  const statusFilePath = getRuntimeStatusFilePath(storageDirectoryPath, config, sessionId);
+function getRuntimeArgs(
+  extensionPath: string,
+  storageDirectoryPath: string,
+  sessionId: string,
+  config: ServerConfig,
+  extensionVersion: string,
+  httpPort: number,
+  exposeRawApiTools: boolean,
+  agentInstructions: string,
+): string[] {
   const args = [
     getRuntimeScriptPath(extensionPath),
     STORAGE_DIRECTORY_FLAG,
@@ -56,14 +67,18 @@ function getRuntimeArgs(extensionPath: string, storageDirectoryPath: string, ses
     config.host,
     '--port',
     String(config.port),
-    STATUS_FILE_FLAG,
-    statusFilePath,
+    HOST_IPC_ENDPOINT_FLAG,
+    createHostRuntimeIpcEndpoint(sessionId, storageDirectoryPath),
     EXTENSION_VERSION_FLAG,
     extensionVersion,
     DEBUG_ENABLE_SYSTEM_LOG_FLAG,
     String(DEBUG_SWITCH.enableSystemLog),
     DEBUG_ENABLE_CONNECTION_LIST_FLAG,
     String(DEBUG_SWITCH.enableConnectionList),
+    EXPOSE_RAW_API_TOOLS_FLAG,
+    exposeRawApiTools ? '1' : '0',
+    AGENT_INSTRUCTIONS_FLAG,
+    Buffer.from(agentInstructions, 'utf8').toString('base64'),
   ];
   if (httpPort > 0) {
     args.push('--http-port', String(httpPort));
@@ -85,12 +100,14 @@ export function createVscodeStdioServerDefinition(
   sessionId: string,
   config: ServerConfig,
   version: string,
-  httpPort: number
+  httpPort: number,
+  exposeRawApiTools: boolean,
+  agentInstructions: string,
 ): vscode.McpStdioServerDefinition {
   const definition = new vscode.McpStdioServerDefinition(
     '嘉立创 EDA',
     getRuntimeCommand(),
-    getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, httpPort),
+    getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, httpPort, exposeRawApiTools, agentInstructions),
     {},
     version
   );
@@ -112,13 +129,15 @@ export function createCursorStdioServerConfig(
   sessionId: string,
   config: ServerConfig,
   version: string,
-  httpPort: number
+  httpPort: number,
+  exposeRawApiTools: boolean,
+  agentInstructions: string,
 ): CursorStdioServerConfig {
   return {
     name: JLC_MCP_SERVER_NAME,
     server: {
       command: getRuntimeCommand(),
-      args: getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, httpPort),
+      args: getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, httpPort, exposeRawApiTools, agentInstructions),
       env: {}
     }
   };

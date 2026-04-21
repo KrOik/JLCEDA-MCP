@@ -14,6 +14,9 @@
 
 - `schematic_read`：读取当前原理图页面的完整电路语义快照，包含器件列表、引脚网络连接关系与 DRC 检查结果。
 - `schematic_review`：读取全工程所有原理图页面的网表文件，覆盖多页电路，适合全局审查、BOM 核查与跨页信号追踪。
+- `pcb_snapshot`：读取当前 PCB 页面归一化后的几何关系快照，返回图层、走线、圆弧、过孔、覆铜、fill、region、image、object、实际覆铜填充区域、器件、焊盘与板框信息。
+- `pcb_geometry_analyze`：分析当前 PCB 的几何关系，返回规范化 `relations`、`features` 与证据字段，可覆盖路由拓扑、参考面连续性、换层回流过孔距离、平面投影 loop area proxy 与 trace/object 空间关系等事实型分析。
+- `pcb_constraint_snapshot`：读取当前 PCB 的第二层约束与结构上下文快照，返回规则配置、差分对、等长组、网络类以及更细的 pad/via 结构细节。
 - `component_select`：搜索器件候选项并返回确认结果。
 - `component_place`：引导放置已确认的器件列表。
 

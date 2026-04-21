@@ -30,6 +30,9 @@ describe('ToolDispatcher', () => {
 		expect(dispatcher.getToolDefinitions().map((item) => item.name)).toEqual([
 			'schematic_read',
 			'schematic_review',
+			'pcb_snapshot',
+			'pcb_geometry_analyze',
+			'pcb_constraint_snapshot',
 			'component_select',
 			'component_place',
 		]);
@@ -46,12 +49,15 @@ describe('ToolDispatcher', () => {
 			'eda_context',
 			'schematic_read',
 			'schematic_review',
+			'pcb_snapshot',
+			'pcb_geometry_analyze',
+			'pcb_constraint_snapshot',
 			'component_select',
 			'component_place',
 		]);
 
 		dispatcher.updateExposeRawApiTools(false);
-		expect(dispatcher.getToolDefinitions()).toHaveLength(4);
+		expect(dispatcher.getToolDefinitions()).toHaveLength(7);
 	});
 
 	it('rejects unknown tools before reaching the bridge', async () => {
@@ -114,6 +120,77 @@ describe('ToolDispatcher', () => {
 		});
 		expect(contextResult).toMatchObject({
 			structuredContent: { ok: true, scope: 'pcb' },
+		});
+	});
+
+	it('forwards pcb geometry tools to the bridge with normalized payloads', async () => {
+		enqueueBridgeRequestMock
+			.mockResolvedValueOnce({ ok: true, snapshot: { summary: { objectCounts: { lines: 2 } } } })
+			.mockResolvedValueOnce({ ok: true, summary: { featureCount: 3 } })
+			.mockResolvedValueOnce({ ok: true, snapshot: { summary: { viaCount: 2 } } });
+
+		const { ToolDispatcher } = await import('./tool-dispatcher');
+		const dispatcher = new ToolDispatcher('C:\\tmp', 'session-a', false, createInteractionChannelMock());
+
+		const snapshotResult = await dispatcher.dispatch({
+			name: 'pcb_snapshot',
+			arguments: {
+				nets: [' GND ', 'VCC'],
+				layerIds: [1, 2],
+				include: { lines: true, vias: false },
+				timeoutMs: 5000,
+			},
+		});
+		const analyzeResult = await dispatcher.dispatch({
+			name: 'pcb_geometry_analyze',
+			arguments: {
+				tracePrimitiveIds: [' track-1 '],
+				spatialObjectKinds: [' region ', 'fill'],
+				analysisModes: ['reference_grounding', 'loop_area_proxy'],
+				sampleStep: 12,
+				includeSnapshot: true,
+			},
+		});
+		const constraintResult = await dispatcher.dispatch({
+			name: 'pcb_constraint_snapshot',
+			arguments: {
+				nets: [' USB_DP '],
+				viaPrimitiveIds: [' via-1 '],
+				padPrimitiveIds: [' pad-1 '],
+				include: { ruleConfiguration: true, vias: true, pads: false },
+			},
+		});
+
+		expect(enqueueBridgeRequestMock).toHaveBeenNthCalledWith(1, '/bridge/jlceda/pcb/snapshot', {
+			nets: ['GND', 'VCC'],
+			layerIds: [1, 2],
+			include: { lines: true, vias: false },
+		}, 5000);
+		expect(enqueueBridgeRequestMock).toHaveBeenNthCalledWith(2, '/bridge/jlceda/pcb/geometry/analyze', {
+			nets: undefined,
+			layerIds: undefined,
+			include: undefined,
+			tracePrimitiveIds: ['track-1'],
+			referenceNetNames: undefined,
+			spatialObjectKinds: ['region', 'fill'],
+			analysisModes: ['reference_grounding', 'loop_area_proxy'],
+			sampleStep: 12,
+			includeSnapshot: true,
+		}, 15000);
+		expect(enqueueBridgeRequestMock).toHaveBeenNthCalledWith(3, '/bridge/jlceda/pcb/constraint/snapshot', {
+			nets: ['USB_DP'],
+			viaPrimitiveIds: ['via-1'],
+			padPrimitiveIds: ['pad-1'],
+			include: { ruleConfiguration: true, vias: true, pads: false },
+		}, 15000);
+		expect(snapshotResult).toMatchObject({
+			structuredContent: { ok: true },
+		});
+		expect(analyzeResult).toMatchObject({
+			structuredContent: { ok: true },
+		});
+		expect(constraintResult).toMatchObject({
+			structuredContent: { ok: true },
 		});
 	});
 

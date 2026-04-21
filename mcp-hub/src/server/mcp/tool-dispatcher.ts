@@ -14,7 +14,10 @@ import {
   handleApiIndex,
   handleApiInvoke,
   handleApiSearch,
+  handlePcbConstraintSnapshot,
   handleEdaContext,
+  handlePcbGeometryAnalyze,
+  handlePcbSnapshot,
   handleSchematicRead,
   handleSchematicReview,
 } from './tool-dispatcher-bridge';
@@ -65,6 +68,12 @@ export class ToolDispatcher {
         return this.toToolContent(await handleSchematicRead());
       case 'schematic_review':
         return this.toToolContent(await handleSchematicReview());
+      case 'pcb_snapshot':
+        return this.toToolContent(await handlePcbSnapshot(args));
+      case 'pcb_geometry_analyze':
+        return this.toToolContent(await handlePcbGeometryAnalyze(args));
+      case 'pcb_constraint_snapshot':
+        return this.toToolContent(await handlePcbConstraintSnapshot(args));
       case 'component_select':
         return this.toToolContent(await handleComponentSelectFlow(args, this.getInteractiveFlowDependencies()));
       case 'component_place':

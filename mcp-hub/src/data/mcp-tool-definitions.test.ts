@@ -11,6 +11,9 @@ describe('mcp-tool-definitions contract', () => {
 			'eda_context',
 			'schematic_read',
 			'schematic_review',
+			'pcb_snapshot',
+			'pcb_geometry_analyze',
+			'pcb_constraint_snapshot',
 			'component_select',
 			'component_place',
 		]);
@@ -29,6 +32,9 @@ describe('mcp-tool-definitions contract', () => {
 		const byName = new Map(definitions.map(item => [item.name, item]));
 		const apiSearchLimit = byName.get('api_search')?.inputSchema.properties?.limit as Record<string, unknown>;
 		const apiInvokeTimeout = byName.get('api_invoke')?.inputSchema.properties?.timeoutMs as Record<string, unknown>;
+		const pcbSnapshotTimeout = byName.get('pcb_snapshot')?.inputSchema.properties?.timeoutMs as Record<string, unknown>;
+		const pcbAnalyzeSampleStep = byName.get('pcb_geometry_analyze')?.inputSchema.properties?.sampleStep as Record<string, unknown>;
+		const pcbConstraintTimeout = byName.get('pcb_constraint_snapshot')?.inputSchema.properties?.timeoutMs as Record<string, unknown>;
 		const componentSelectLimit = byName.get('component_select')?.inputSchema.properties?.limit as Record<string, unknown>;
 		const componentPlaceTimeout = byName.get('component_place')?.inputSchema.properties?.timeoutSeconds as Record<string, unknown>;
 
@@ -36,9 +42,62 @@ describe('mcp-tool-definitions contract', () => {
 		expect(apiSearchLimit.maximum).toBe(50);
 		expect(apiInvokeTimeout.minimum).toBe(1000);
 		expect(apiInvokeTimeout.maximum).toBe(120000);
+		expect(pcbSnapshotTimeout.minimum).toBe(1000);
+		expect(pcbSnapshotTimeout.maximum).toBe(120000);
+		expect(pcbAnalyzeSampleStep.minimum).toBe(1);
+		expect(pcbAnalyzeSampleStep.maximum).toBe(500);
+		expect(pcbConstraintTimeout.minimum).toBe(1000);
+		expect(pcbConstraintTimeout.maximum).toBe(120000);
 		expect(componentSelectLimit.minimum).toBe(2);
 		expect(componentSelectLimit.maximum).toBe(20);
 		expect(componentPlaceTimeout.minimum).toBe(30);
 		expect(componentPlaceTimeout.maximum).toBe(180);
+	});
+
+	it('exposes the refined pcb geometry analysis modes', () => {
+		const byName = new Map(definitions.map(item => [item.name, item]));
+		const geometryAnalyze = byName.get('pcb_geometry_analyze');
+		const analysisModes = (geometryAnalyze?.inputSchema.properties?.analysisModes as {
+			items?: { enum?: string[] };
+		})?.items?.enum ?? [];
+		const snapshotInclude = geometryAnalyze?.inputSchema.properties?.include as {
+			properties?: Record<string, unknown>;
+		};
+		const snapshotToolInclude = byName.get('pcb_snapshot')?.inputSchema.properties?.include as {
+			properties?: Record<string, unknown>;
+		};
+		const spatialObjectKinds = (geometryAnalyze?.inputSchema.properties?.spatialObjectKinds as {
+			items?: { enum?: string[] };
+		})?.items?.enum ?? [];
+
+		expect(analysisModes).toEqual([
+			'net_stats',
+			'reference_grounding',
+			'board_edge_clearance',
+			'return_via_clearance',
+			'plane_connectivity',
+			'loop_area_proxy',
+			'spatial_relations',
+		]);
+		expect(Object.keys(snapshotInclude.properties ?? {})).toEqual(expect.arrayContaining(['fills', 'regions', 'images', 'objects']));
+		expect(Object.keys(snapshotToolInclude.properties ?? {})).toEqual(expect.arrayContaining(['fills', 'regions', 'images', 'objects']));
+		expect(spatialObjectKinds).toEqual(['pour', 'fill', 'region', 'image', 'object']);
+
+		const constraintSnapshot = byName.get('pcb_constraint_snapshot');
+		const constraintInclude = constraintSnapshot?.inputSchema.properties?.include as {
+			properties?: Record<string, unknown>;
+		};
+		expect(Object.keys(constraintInclude.properties ?? {})).toEqual([
+			'ruleConfiguration',
+			'netRules',
+			'netByNetRules',
+			'regionRules',
+			'differentialPairs',
+			'equalLengthNetGroups',
+			'netClasses',
+			'padPairGroups',
+			'vias',
+			'pads',
+		]);
 	});
 });

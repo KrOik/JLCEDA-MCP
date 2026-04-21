@@ -1,6 +1,6 @@
 {
 	"name": "pro-api-sdk",
-	"version": "1.3.2",
+	"version": "1.5.5",
 	"description": "嘉立创EDA & EasyEDA 专业版扩展 API 开发工具",
 	"author": "JLCEDA <support@lceda.cn>",
 	"license": "Apache-2.0",
@@ -9,10 +9,11 @@
 		"node": ">=20.17.0"
 	},
 	"scripts": {
-		"compile": "rimraf ./dist/ && ts-node ./config/esbuild.prod.ts",
-		"lint": "eslint",
+		"compile": "call \"%NODE%\" -e \"require('fs').rmSync('./dist',{recursive:true,force:true})\" && call \"%NODE%\" ./node_modules/ts-node/dist/bin.js ./config/esbuild.prod.ts",
+		"lint": "call \"%NODE%\" ./node_modules/eslint/bin/eslint.js src config build --ext .ts,.js",
+		"test": "call \"%NODE%\" ./node_modules/vitest/vitest.mjs run",
 		"fix": "eslint --fix",
-		"build": "npm run compile && ts-node ./build/packaged.ts"
+		"build": "call \"%NODE%\" -e \"require('fs').rmSync('./dist',{recursive:true,force:true})\" && call \"%NODE%\" ./node_modules/ts-node/dist/bin.js ./config/esbuild.prod.ts && call \"%NODE%\" ./node_modules/ts-node/dist/bin.js ./build/packaged.ts"
 	},
 	"devDependencies": {
 		"@antfu/eslint-config": "^5.4.1",
@@ -29,7 +30,8 @@
 		"rimraf": "^6.0.1",
 		"simple-git-hooks": "^2.13.1",
 		"ts-node": "^10.9.2",
-		"typescript": "^5.7.3"
+		"typescript": "^5.7.3",
+		"vitest": "^2.1.8"
 	},
 	"simple-git-hooks": {
 		"pre-commit": "npx lint-staged"

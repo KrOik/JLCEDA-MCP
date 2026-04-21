@@ -1,11 +1,13 @@
 .omx/
 references/easyeda/
-references/
+references/*
 node_modules/
 out/
 dist/
 build/
 docs/
+.worktrees/
+.claude/
 graphify-out/
 *.log
 *.vsix

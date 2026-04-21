@@ -11,8 +11,6 @@
 
 import { enqueueBridgeRequest } from '../bridge/broker';
 import {
-	clearSidebarInteractionRequest,
-	clearSidebarInteractionResponse,
 	type SidebarComponentPlaceInteraction,
 	type SidebarComponentPlaceItem,
 	type SidebarComponentPlaceRowState,
@@ -20,8 +18,6 @@ import {
 	type SidebarComponentSelectInteraction,
 	type SidebarInteractionRequest,
 	type SidebarInteractionResponse,
-	readSidebarInteractionResponse,
-	writeSidebarInteractionRequest,
 } from '../../state/sidebar-interaction';
 import { isPlainObjectRecord, parseBoundedIntegerValue, toSafeErrorMessage } from '../../utils';
 import _rawToolDefinitions from '../../data/mcp-tool-definitions.json';
@@ -39,7 +35,6 @@ export interface ToolDefinition {
 
 const DEFAULT_BRIDGE_TIMEOUT_MS = 15_000;
 const SIDEBAR_INTERACTION_TIMEOUT_MS = 15 * 60 * 1000;
-const SIDEBAR_INTERACTION_POLL_INTERVAL_MS = 250;
 const COMPONENT_PLACE_CHECK_INTERVAL_MS = 400;
 
 const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
@@ -88,6 +83,33 @@ interface ComponentPlaceCheckResult {
 	placed?: boolean;
 	userCancelled?: boolean;
 	error?: string;
+}
+
+export interface ToolDispatcherInteractionChannel {
+	publish(request: SidebarInteractionRequest | null): void;
+	waitForResponse(
+		requestId: string,
+		acceptedActions: SidebarInteractionResponse['action'][],
+		timeoutMs: number,
+	): Promise<SidebarInteractionResponse>;
+	tryConsumeResponse(
+		requestId: string,
+		acceptedActions: SidebarInteractionResponse['action'][],
+	): SidebarInteractionResponse | null;
+}
+
+class NoopInteractionChannel implements ToolDispatcherInteractionChannel {
+	public publish(): void {
+		return;
+	}
+
+	public tryConsumeResponse(): SidebarInteractionResponse | null {
+		return null;
+	}
+
+	public async waitForResponse(): Promise<SidebarInteractionResponse> {
+		throw new Error('宿主交互通道未就绪，无法继续当前交互流程。');
+	}
 }
 
 function sleep(ms: number): Promise<void> {
@@ -208,6 +230,7 @@ export class ToolDispatcher {
 		private readonly storageDirectoryPath: string,
 		private readonly sessionId: string,
 		private exposeRawApiTools: boolean = false,
+		private readonly interactionChannel: ToolDispatcherInteractionChannel = new NoopInteractionChannel(),
 	) { }
 
 	/**
@@ -338,40 +361,19 @@ export class ToolDispatcher {
 	}
 
 	private writeInteractionRequest(request: SidebarInteractionRequest): void {
-		writeSidebarInteractionRequest(this.storageDirectoryPath, this.sessionId, request);
+		this.interactionChannel.publish(request);
 	}
 
 	private clearInteractionState(): void {
-		clearSidebarInteractionRequest(this.storageDirectoryPath, this.sessionId);
-		clearSidebarInteractionResponse(this.storageDirectoryPath, this.sessionId);
-	}
-
-	private consumeInteractionResponse(requestId: string, acceptedActions: SidebarInteractionResponse['action'][]): SidebarInteractionResponse | null {
-		const response = readSidebarInteractionResponse(this.storageDirectoryPath, this.sessionId);
-		if (!response || response.requestId !== requestId || !acceptedActions.includes(response.action)) {
-			return null;
-		}
-
-		clearSidebarInteractionResponse(this.storageDirectoryPath, this.sessionId);
-		return response;
+		this.interactionChannel.publish(null);
 	}
 
 	private async waitForInteractionResponse(requestId: string, acceptedActions: SidebarInteractionResponse['action'][]): Promise<SidebarInteractionResponse> {
-		const startedAt = Date.now();
-		while (Date.now() - startedAt < SIDEBAR_INTERACTION_TIMEOUT_MS) {
-			const response = this.consumeInteractionResponse(requestId, acceptedActions);
-			if (response) {
-				return response;
-			}
-
-			await sleep(SIDEBAR_INTERACTION_POLL_INTERVAL_MS);
-		}
-
-		throw new Error('侧边栏交互等待超时，请重新发起当前工具调用。');
+		return await this.interactionChannel.waitForResponse(requestId, acceptedActions, SIDEBAR_INTERACTION_TIMEOUT_MS);
 	}
 
 	private tryConsumeInteractionCancel(requestId: string): boolean {
-		const response = this.consumeInteractionResponse(requestId, ['cancel']);
+		const response = this.interactionChannel.tryConsumeResponse(requestId, ['cancel']);
 		return response?.action === 'cancel';
 	}
 

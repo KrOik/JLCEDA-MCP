@@ -12,11 +12,13 @@
 import type {
 	BridgeClientMessage,
 	BridgeDebugSwitch,
-	BridgeQueueTask,
+	BridgeProtocolError,
 	BridgeServerMessage,
 	BridgeServerRoleMessage,
+	BridgeTaskEnvelope,
 } from '../bridge/protocol.ts';
 import type { UnifiedLogEntry } from '../logging/log.ts';
+import { isBridgeServerMessageType } from '../bridge/protocol.ts';
 import { bridgeLogPipeline } from '../logging/log.ts';
 import { BridgeStateManager } from '../state/state-manager.ts';
 import { isPlainObjectRecord, toSafeErrorMessage } from '../utils.ts';
@@ -37,13 +39,8 @@ const BRIDGE_STATUS_TEXT = BridgeStateManager.text;
 interface BridgeTransportCallbacks {
 	onRoleChanged: (message: BridgeServerRoleMessage) => void;
 	onDebugSwitchChanged: (debugSwitch: BridgeDebugSwitch) => void;
-	onTask: (task: BridgeQueueTask) => void | Promise<void>;
+	onTask: (task: BridgeTaskEnvelope) => void | Promise<void>;
 	onLost: (message: string) => void;
-}
-
-interface BridgeTaskError {
-	message: string;
-	stack?: string;
 }
 
 type TimerHandle = ReturnType<typeof globalThis.setTimeout>;
@@ -70,15 +67,6 @@ async function decodeMessageData(data: unknown): Promise<string> {
 }
 
 // 服务端允许发出的消息类型白名单。
-const VALID_SERVER_MESSAGE_TYPES = new Set([
-	'bridge/welcome',
-	'bridge/role',
-	'bridge/debug-switch',
-	'bridge/heartbeat-ack',
-	'bridge/task',
-	'bridge/error',
-]);
-
 // 将任意输入解析为服务端消息结构。
 async function parseServerMessage(data: unknown): Promise<BridgeServerMessage> {
 	const text = await decodeMessageData(data);
@@ -92,7 +80,7 @@ async function parseServerMessage(data: unknown): Promise<BridgeServerMessage> {
 		throw new Error(BRIDGE_STATUS_TEXT.transport.missingType);
 	}
 
-	if (!VALID_SERVER_MESSAGE_TYPES.has(messageType)) {
+	if (!isBridgeServerMessageType(messageType)) {
 		throw new Error(`${BRIDGE_STATUS_TEXT.transport.unknownTypePrefix}${messageType}。`);
 	}
 
@@ -163,7 +151,7 @@ export class BridgeTransport {
 	 * @param result 任务结果。
 	 * @param taskError 任务错误。
 	 */
-	public completeTask(requestId: string, leaseTerm: number, result: unknown, taskError?: BridgeTaskError): void {
+	public completeTask(requestId: string, leaseTerm: number, result: unknown, taskError?: BridgeProtocolError): void {
 		this.sendMessage({
 			type: 'bridge/result',
 			clientId: this.clientId,

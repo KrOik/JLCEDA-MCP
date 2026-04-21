@@ -13,8 +13,11 @@ import WebSocket, { type RawData } from 'ws';
 import {
 	type BridgeClientMessage,
 	type BridgeDebugSwitch,
-	type BridgeQueueRequest,
+	type BridgeProtocolError,
 	type BridgeServerMessage,
+	type BridgeTaskEnvelope,
+	isBridgeClientMessageType,
+	isBridgeProtocolError,
 } from './protocol';
 import { DEBUG_SWITCH } from '../../debug';
 import { BridgeLogPipeline } from '../../logging/bridge-log';
@@ -179,14 +182,6 @@ function decodeWebSocketData(data: RawData): string {
 }
 
 // 客户端允许发出的消息类型白名单。
-const VALID_CLIENT_MESSAGE_TYPES = new Set([
-	'bridge/hello',
-	'bridge/heartbeat',
-	'bridge/result',
-	'bridge/ready',
-	'bridge/log',
-]);
-
 // 校验并解析客户端消息。
 function parseClientMessage(data: RawData): BridgeClientMessage {
 	const parsed = JSON.parse(decodeWebSocketData(data)) as unknown;
@@ -199,7 +194,7 @@ function parseClientMessage(data: RawData): BridgeClientMessage {
 		throw new Error(BRIDGE_BROKER_TEXT.protocol.missingMessageType);
 	}
 
-	if (!VALID_CLIENT_MESSAGE_TYPES.has(messageType)) {
+	if (!isBridgeClientMessageType(messageType)) {
 		throw new Error(`${BRIDGE_BROKER_TEXT.protocol.unknownClientMessageTypePrefix}: ${messageType}。`);
 	}
 
@@ -553,7 +548,7 @@ async function waitForActivePeer(timeoutMs: number): Promise<void> {
 }
 
 // 完成请求回调。
-function completePendingRequest(message: { clientId: string; requestId: string; leaseTerm: number; result?: unknown; error?: unknown }): void {
+function completePendingRequest(message: { clientId: string; requestId: string; leaseTerm: number; result?: unknown; error?: BridgeProtocolError }): void {
 	const pending = pendingRequests.get(message.requestId);
 	if (!pending) {
 		return;
@@ -566,11 +561,11 @@ function completePendingRequest(message: { clientId: string; requestId: string; 
 	clearTimeout(pending.timer);
 	pendingRequests.delete(message.requestId);
 	if (message.error !== undefined && message.error !== null) {
-		if (isPlainObjectRecord(message.error) && typeof message.error.message === 'string') {
+		if (isBridgeProtocolError(message.error)) {
 			pending.reject(new Error(message.error.message));
 			return;
 		}
-		pending.reject(message.error);
+		pending.reject(new Error(String(message.error)));
 		return;
 	}
 
@@ -706,11 +701,12 @@ export async function enqueueBridgeRequest(path: string, payload: unknown, timeo
 
 		const currentLeaseTerm = leaseTerm;
 		const requestId = createRequestId();
-		const request: BridgeQueueRequest = {
+		const request: BridgeTaskEnvelope = {
 			requestId,
 			path,
 			payload,
 			createdAt: nowMs(),
+			leaseTerm: currentLeaseTerm,
 		};
 
 		const resultPromise = new Promise<unknown | BridgeRequestTimeoutResult>((resolve, reject) => {
@@ -733,11 +729,7 @@ export async function enqueueBridgeRequest(path: string, payload: unknown, timeo
 		try {
 			await sendBridgeMessage(readyActivePeer.socket, {
 				type: 'bridge/task',
-				requestId: request.requestId,
-				path: request.path,
-				payload: request.payload,
-				createdAt: request.createdAt,
-				leaseTerm: currentLeaseTerm,
+				...request,
 			});
 		}
 		catch {

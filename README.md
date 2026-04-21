@@ -83,7 +83,8 @@ MCP 客户端（Copilot / Cursor Chat / Claude Code / Codex 等）
 ```text
 JLCEDA-MCP/
 ├─ mcp-hub/         VS Code/Cursor 扩展与 stdio MCP 运行时
-├─ mcp-bridge/   嘉立创 EDA 扩展与桥接 WebSocket 客户端
+├─ mcp-bridge/      嘉立创 EDA 扩展与桥接 WebSocket 客户端
+├─ shared/          Hub / Bridge 共用的桥接协议与消息契约
 ├─ build/           构建产物输出目录（VSIX / EEXT）
 └─ tool/            离线文档与资源生成辅助脚本
 ```
@@ -105,7 +106,7 @@ npm install
 npm run build
 ```
 
-产物：`build/jlceda-mcp-hub.vsix`
+产物：`build/jlceda-mcp-hub-<version>.vsix`
 
 **构建 mcp-bridge：**
 
@@ -115,7 +116,29 @@ npm install
 npm run build
 ```
 
-产物：`build/jlceda-mcp-bridge.eext`
+产物：`build/jlceda-mcp-bridge-<version>.eext`
+
+### 验证
+
+**验证 mcp-hub：**
+
+```bash
+cd mcp-hub
+npm run test
+npm run lint
+npm run typecheck
+```
+
+**验证 mcp-bridge：**
+
+```bash
+cd mcp-bridge
+npm run test
+npm run lint
+npm run typecheck
+```
+
+CI 质量门会在 Windows 环境按 `test -> lint -> typecheck -> build` 顺序校验 `mcp-hub` 与 `mcp-bridge`。
 
 ### 本地联调流程
 
@@ -130,7 +153,7 @@ npm run build
 1. 新增或变更工具定义时，同步更新 `mcp-hub/resources/mcp-tool-definitions.json`、对应 README 与 CHANGELOG。
 2. 新增或变更桥接任务路径时，必须同时修改 mcp-hub 与 mcp-bridge 两端处理逻辑。
 3. 调整桥接地址、端口、协议字段或角色模型时，同步更新相关 README 与 CHANGELOG。
-4. 发布前执行两端构建，确认 VSIX 与 EEXT 均可成功生成。
+4. 发布前执行两端 `test`、`lint`、`typecheck` 与 `build`，确认 VSIX 与 EEXT 均可成功生成。
 
 ### 相关文档
 

@@ -9,29 +9,19 @@
  * ------------------------------------------------------------------------
  */
 
-/**
- * 统一日志级别。
- */
-export type UnifiedLogLevel = 'info' | 'success' | 'warning' | 'error';
+import type {
+	UnifiedLogEntry,
+	UnifiedLogFieldSchema,
+	UnifiedLogLevel,
+} from '../../../shared/bridge-contract';
 
-/**
- * 统一日志字段定义。
- */
-export interface UnifiedLogFieldSchema {
-	fieldOrder: string[];
-	fieldLabels: Record<string, string>;
-	defaultVisibleFields: string[];
-}
+export type {
+	UnifiedLogEntry,
+	UnifiedLogFieldSchema,
+	UnifiedLogLevel,
+} from '../../../shared/bridge-contract';
 
-/**
- * 统一日志记录结构。
- */
-export interface UnifiedLogEntry {
-	id: string;
-	timestamp: string;
-	level: UnifiedLogLevel;
-	fields: Record<string, string>;
-}
+export { isUnifiedLogEntry } from '../../../shared/bridge-contract';
 
 const LOG_FIELD_ORDER = [
 	'timestamp',
@@ -243,37 +233,6 @@ export function formatUnifiedLogOutput(logEntry: UnifiedLogEntry): string {
 		level: logEntry.level,
 		...logEntry.fields,
 	});
-}
-
-/**
- * 校验统一日志结构。
- * @param value 待校验对象。
- * @returns 是否为合法的 UnifiedLogEntry。
- */
-export function isUnifiedLogEntry(value: unknown): value is UnifiedLogEntry {
-	if (!value || typeof value !== 'object') {
-		return false;
-	}
-
-	const logEntry = value as Record<string, unknown>;
-	if (typeof logEntry.id !== 'string' || logEntry.id.trim().length === 0) {
-		return false;
-	}
-
-	if (typeof logEntry.timestamp !== 'string' || logEntry.timestamp.trim().length === 0) {
-		return false;
-	}
-
-	if (!['info', 'success', 'warning', 'error'].includes(String(logEntry.level ?? ''))) {
-		return false;
-	}
-
-	if (!logEntry.fields || typeof logEntry.fields !== 'object' || Array.isArray(logEntry.fields)) {
-		return false;
-	}
-
-	const fields = logEntry.fields as Record<string, unknown>;
-	return Object.values(fields).every((fieldValue) => typeof fieldValue === 'string');
 }
 
 /**

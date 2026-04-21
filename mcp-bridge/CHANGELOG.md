@@ -1,5 +1,9 @@
 ## [1.5.5] - 2026-04-21
 
+### 新增
+
+- 新增 bridge plugin 方式接入的 PCB 几何/约束分析引擎，并开放 `pcb_snapshot`、`pcb_geometry_analyze`、`pcb_constraint_snapshot` 三个规范化接口。
+
 ### 修复
 
 - 优化 API 搜索排序，更优先返回名称、命名空间与关键词更匹配的接口，减少无关结果排在前面的情况。

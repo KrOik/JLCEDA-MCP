@@ -111,10 +111,11 @@ describe('component-place-handler', () => {
 	it('supports start/check/close task flow with mocked EDA primitives', async () => {
 		const addEventListener = vi.fn();
 		const removeEventListener = vi.fn();
-		(globalThis as typeof globalThis & { document?: unknown }).document = {
+		const documentMock = {
 			addEventListener,
 			removeEventListener,
 		};
+		(globalThis as typeof globalThis & { document?: Document }).document = documentMock as unknown as Document;
 		const { primitiveApi, messageApi } = installEdaMocks({
 			getAllPrimitiveId: vi
 				.fn()
@@ -178,10 +179,11 @@ describe('component-place-handler', () => {
 		const { messageApi } = installEdaMocks({
 			getAllPrimitiveId: vi.fn().mockResolvedValue(['existing-1']),
 		});
-		(globalThis as typeof globalThis & { document?: unknown }).document = {
+		const documentMock = {
 			addEventListener,
 			removeEventListener,
 		};
+		(globalThis as typeof globalThis & { document?: Document }).document = documentMock as unknown as Document;
 
 		const started = await handleComponentPlaceStartTask({
 			component: {

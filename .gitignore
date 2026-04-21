@@ -1,0 +1,13 @@
+.omx/
+references/easyeda/
+references/
+node_modules/
+out/
+dist/
+build/
+docs/
+graphify-out/
+*.log
+*.vsix
+*.eext
+*.tsbuildinfo

@@ -12,6 +12,7 @@
 		"compile": "call \"%NODE%\" -e \"require('fs').rmSync('./dist',{recursive:true,force:true})\" && call \"%NODE%\" ./node_modules/ts-node/dist/bin.js ./config/esbuild.prod.ts",
 		"lint": "call \"%NODE%\" ./node_modules/eslint/bin/eslint.js src config build --ext .ts,.js",
 		"test": "call \"%NODE%\" ./node_modules/vitest/vitest.mjs run",
+		"typecheck": "call \"%NODE%\" ./node_modules/typescript/bin/tsc -p ./tsconfig.typecheck.json --noEmit",
 		"fix": "eslint --fix",
 		"build": "call \"%NODE%\" -e \"require('fs').rmSync('./dist',{recursive:true,force:true})\" && call \"%NODE%\" ./node_modules/ts-node/dist/bin.js ./config/esbuild.prod.ts && call \"%NODE%\" ./node_modules/ts-node/dist/bin.js ./build/packaged.ts"
 	},

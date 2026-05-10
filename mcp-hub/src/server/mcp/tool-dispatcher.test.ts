@@ -29,6 +29,7 @@ describe('ToolDispatcher', () => {
 
 		expect(dispatcher.getToolDefinitions().map((item) => item.name)).toEqual([
 			'schematic_read',
+			'schematic_locate',
 			'schematic_review',
 			'pcb_snapshot',
 			'pcb_geometry_analyze',
@@ -48,6 +49,7 @@ describe('ToolDispatcher', () => {
 			'api_invoke',
 			'eda_context',
 			'schematic_read',
+			'schematic_locate',
 			'schematic_review',
 			'pcb_snapshot',
 			'pcb_geometry_analyze',
@@ -57,7 +59,32 @@ describe('ToolDispatcher', () => {
 		]);
 
 		dispatcher.updateExposeRawApiTools(false);
-		expect(dispatcher.getToolDefinitions()).toHaveLength(7);
+		expect(dispatcher.getToolDefinitions()).toHaveLength(8);
+	});
+
+	it('forwards schematic_locate to the bridge with bounded parameters', async () => {
+		enqueueBridgeRequestMock.mockResolvedValueOnce({ ok: true, matches: [] });
+		const { ToolDispatcher } = await import('./tool-dispatcher');
+		const dispatcher = new ToolDispatcher('C:\\tmp', 'session-a', false, createInteractionChannelMock());
+
+		const result = await dispatcher.dispatch({
+			name: 'schematic_locate',
+			arguments: {
+				query: ' ESP32-PICO-V3-02 ',
+				scope: 'all-schematics',
+				limit: 12,
+				timeoutMs: 20000,
+			},
+		});
+
+		expect(enqueueBridgeRequestMock).toHaveBeenCalledWith('/bridge/jlceda/schematic/locate', {
+			query: 'ESP32-PICO-V3-02',
+			scope: 'all-schematics',
+			limit: 12,
+		}, 20000);
+		expect(result).toMatchObject({
+			structuredContent: { ok: true, matches: [] },
+		});
 	});
 
 	it('rejects unknown tools before reaching the bridge', async () => {
@@ -182,6 +209,7 @@ describe('ToolDispatcher', () => {
 			viaPrimitiveIds: ['via-1'],
 			padPrimitiveIds: ['pad-1'],
 			include: { ruleConfiguration: true, vias: true, pads: false },
+			timeoutMs: 15000,
 		}, 15000);
 		expect(snapshotResult).toMatchObject({
 			structuredContent: { ok: true },

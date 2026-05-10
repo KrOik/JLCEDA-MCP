@@ -10,6 +10,7 @@ describe('mcp-tool-definitions contract', () => {
 			'api_invoke',
 			'eda_context',
 			'schematic_read',
+			'schematic_locate',
 			'schematic_review',
 			'pcb_snapshot',
 			'pcb_geometry_analyze',
@@ -24,6 +25,7 @@ describe('mcp-tool-definitions contract', () => {
 
 		expect(byName.get('api_search')?.inputSchema.required).toEqual(['query']);
 		expect(byName.get('api_invoke')?.inputSchema.required).toEqual(['apiFullName']);
+		expect(byName.get('schematic_locate')?.inputSchema.required).toEqual(['query']);
 		expect(byName.get('component_select')?.inputSchema.required).toEqual(['keyword']);
 		expect(byName.get('component_place')?.inputSchema.required).toEqual(['components']);
 	});
@@ -35,6 +37,7 @@ describe('mcp-tool-definitions contract', () => {
 		const pcbSnapshotTimeout = byName.get('pcb_snapshot')?.inputSchema.properties?.timeoutMs as Record<string, unknown>;
 		const pcbAnalyzeSampleStep = byName.get('pcb_geometry_analyze')?.inputSchema.properties?.sampleStep as Record<string, unknown>;
 		const pcbConstraintTimeout = byName.get('pcb_constraint_snapshot')?.inputSchema.properties?.timeoutMs as Record<string, unknown>;
+		const schematicLocateLimit = byName.get('schematic_locate')?.inputSchema.properties?.limit as Record<string, unknown>;
 		const componentSelectLimit = byName.get('component_select')?.inputSchema.properties?.limit as Record<string, unknown>;
 		const componentPlaceTimeout = byName.get('component_place')?.inputSchema.properties?.timeoutSeconds as Record<string, unknown>;
 
@@ -48,6 +51,8 @@ describe('mcp-tool-definitions contract', () => {
 		expect(pcbAnalyzeSampleStep.maximum).toBe(500);
 		expect(pcbConstraintTimeout.minimum).toBe(1000);
 		expect(pcbConstraintTimeout.maximum).toBe(120000);
+		expect(schematicLocateLimit.minimum).toBe(1);
+		expect(schematicLocateLimit.maximum).toBe(12);
 		expect(componentSelectLimit.minimum).toBe(2);
 		expect(componentSelectLimit.maximum).toBe(20);
 		expect(componentPlaceTimeout.minimum).toBe(30);

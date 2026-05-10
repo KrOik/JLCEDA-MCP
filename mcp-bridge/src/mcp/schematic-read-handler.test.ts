@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { handleSchematicReadTask } from './schematic-read-handler';
+import { collectSchematicSemanticSnapshot, handleSchematicReadTask } from './schematic-read-handler';
 
 function createStateObject(state: Record<string, unknown>): Record<string, () => unknown> {
 	return Object.fromEntries(
@@ -9,6 +9,11 @@ function createStateObject(state: Record<string, unknown>): Record<string, () =>
 }
 
 interface SchematicReadMock {
+	dmt_Schematic: {
+		getCurrentSchematicInfo: ReturnType<typeof vi.fn>;
+		getCurrentSchematicPageInfo: ReturnType<typeof vi.fn>;
+		getCurrentSchematicAllSchematicPagesInfo: ReturnType<typeof vi.fn>;
+	};
 	sch_PrimitiveComponent: {
 		getAll: ReturnType<typeof vi.fn>;
 		getAllPinsByPrimitiveId: ReturnType<typeof vi.fn>;
@@ -23,6 +28,11 @@ interface SchematicReadMock {
 
 function installSchematicReadMock(overrides?: Partial<SchematicReadMock>): SchematicReadMock {
 	const edaMock: SchematicReadMock = {
+		dmt_Schematic: {
+			getCurrentSchematicInfo: vi.fn().mockResolvedValue(createStateObject({ Name: 'Main', Uuid: 'sch-1' })),
+			getCurrentSchematicPageInfo: vi.fn().mockResolvedValue(createStateObject({ Name: 'Page 1', Uuid: 'page-1' })),
+			getCurrentSchematicAllSchematicPagesInfo: vi.fn().mockResolvedValue([createStateObject({ Name: 'Page 1', Uuid: 'page-1' })]),
+		},
 		sch_PrimitiveComponent: {
 			getAll: vi.fn().mockResolvedValue([]),
 			getAllPinsByPrimitiveId: vi.fn().mockResolvedValue([]),
@@ -157,6 +167,12 @@ describe('handleSchematicReadTask', () => {
 				componentDesignator: 'VCC',
 				componentSymbolName: 'VCC',
 				schematicSubPartName: '',
+				footprintName: '',
+				manufacturer: '',
+				manufacturerId: '',
+				supplier: '',
+				supplierId: '',
+				uniqueId: '',
 				pins: [
 					{
 						pinNumber: '1',
@@ -172,6 +188,12 @@ describe('handleSchematicReadTask', () => {
 				componentDesignator: 'R1',
 				componentSymbolName: 'RES',
 				schematicSubPartName: 'A',
+				footprintName: '',
+				manufacturer: '',
+				manufacturerId: '',
+				supplier: '',
+				supplierId: '',
+				uniqueId: '',
 				pins: [
 					{
 						pinNumber: '1',
@@ -183,5 +205,69 @@ describe('handleSchematicReadTask', () => {
 				],
 			},
 		]);
+	});
+
+	it('normalizes object-shaped footprint metadata into strings for downstream consumers', async () => {
+		installSchematicReadMock({
+			sch_PrimitiveComponent: {
+				getAll: vi.fn().mockResolvedValue([
+					createStateObject({
+						PrimitiveId: 'comp-obj-1',
+						Designator: 'U1',
+						Name: 'ESP32',
+						SubPartName: 'ESP32.1',
+						Footprint: {
+							uuid: 'fp-1',
+							name: 'QFN-48',
+						},
+						Manufacturer: 'Espressif',
+						ManufacturerId: 'ESP32-PICO-V3-02',
+						Supplier: 'LCSC',
+						SupplierId: 'C2913206',
+						UniqueId: 'uid-u1',
+						Net: '',
+					}),
+				]),
+				getAllPinsByPrimitiveId: vi.fn().mockResolvedValue([]),
+			},
+		});
+
+		const result = await handleSchematicReadTask({}) as {
+			ok: boolean;
+			schematicCircuitSnapshot: string;
+		};
+		const snapshot = JSON.parse(result.schematicCircuitSnapshot) as {
+			components: Array<{ footprintName: unknown }>;
+		};
+
+		expect(result.ok).toBe(true);
+		expect(snapshot.components[0]?.footprintName).toBe('QFN-48');
+	});
+
+	it('reads page context from plain-object schematic metadata returned by live dmt APIs', async () => {
+		installSchematicReadMock({
+			dmt_Schematic: {
+				getCurrentSchematicInfo: vi.fn().mockResolvedValue({ name: 'Main Schematic', uuid: 'sch-live-1' }),
+				getCurrentSchematicPageInfo: vi.fn().mockResolvedValue({ name: 'Power Page', uuid: 'page-live-1' }),
+				getCurrentSchematicAllSchematicPagesInfo: vi.fn().mockResolvedValue([
+					{ name: 'Power Page', uuid: 'page-live-1' },
+					{ name: 'MCU Page', uuid: 'page-live-2' },
+				]),
+			},
+		});
+
+		const result = await collectSchematicSemanticSnapshot();
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			return;
+		}
+
+		expect(result.snapshot.pageContext).toEqual({
+			pageName: 'Power Page',
+			pageUuid: 'page-live-1',
+			schematicName: 'Main Schematic',
+			schematicUuid: 'sch-live-1',
+			allPageNames: ['Power Page', 'MCU Page'],
+		});
 	});
 });

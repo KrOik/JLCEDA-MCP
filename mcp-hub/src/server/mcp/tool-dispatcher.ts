@@ -18,6 +18,7 @@ import {
   handleEdaContext,
   handlePcbGeometryAnalyze,
   handlePcbSnapshot,
+  handleSchematicLocate,
   handleSchematicRead,
   handleSchematicReview,
 } from './tool-dispatcher-bridge';
@@ -66,6 +67,8 @@ export class ToolDispatcher {
     switch (toolCallParams.name) {
       case 'schematic_read':
         return this.toToolContent(await handleSchematicRead());
+      case 'schematic_locate':
+        return this.toToolContent(await handleSchematicLocate(args));
       case 'schematic_review':
         return this.toToolContent(await handleSchematicReview());
       case 'pcb_snapshot':

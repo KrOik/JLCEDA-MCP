@@ -4,6 +4,7 @@ import type { ToolDefinition } from './tool-dispatcher-types';
 
 const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
   'schematic_read',
+  'schematic_locate',
   'schematic_review',
   'pcb_snapshot',
   'pcb_geometry_analyze',

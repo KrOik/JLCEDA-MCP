@@ -106,6 +106,46 @@
     }
   },
   {
+    "name": "schematic_locate",
+    "description": "按用户话术定位原理图中的器件或网络，并返回匹配器件的引脚号、引脚名称与连接网络。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "必填。用户提及的器件位号、型号/名称、封装、制造商料号、唯一 ID 或网络名。"
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "current-page",
+            "current-schematic",
+            "all-schematics"
+          ],
+          "default": "current-schematic",
+          "description": "定位范围。默认 current-schematic；需要全工程器件/网络候选时使用 all-schematics。"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "default": 8,
+          "description": "返回匹配数量上限，范围 1-12，默认 8。"
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 120000,
+          "default": 15000,
+          "description": "桥接超时（毫秒）。"
+        }
+      },
+      "required": [
+        "query"
+      ]
+    }
+  },
+  {
     "name": "schematic_review",
     "description": "读取全工程所有原理图页面的网表文件。",
     "inputSchema": {

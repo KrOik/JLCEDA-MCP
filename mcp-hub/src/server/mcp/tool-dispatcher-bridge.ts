@@ -114,6 +114,27 @@ export async function handlePcbConstraintSnapshot(argumentsObject: Record<string
     viaPrimitiveIds: normalizeStringArray(argumentsObject.viaPrimitiveIds),
     padPrimitiveIds: normalizeStringArray(argumentsObject.padPrimitiveIds),
     include: normalizeRecord(argumentsObject.include),
+    timeoutMs,
+  }, timeoutMs);
+}
+
+export async function handleSchematicLocate(argumentsObject: Record<string, unknown>): Promise<unknown> {
+  const query = String(argumentsObject.query ?? '').trim();
+  if (query.length === 0) {
+    throw new Error('schematic_locate 缺少 query 参数。');
+  }
+
+  const scope = String(argumentsObject.scope ?? 'current-schematic').trim();
+  if (!['current-page', 'current-schematic', 'all-schematics'].includes(scope)) {
+    throw new Error('scope 仅支持 current-page/current-schematic/all-schematics。');
+  }
+
+  const limit = parseBoundedIntegerValue(argumentsObject.limit, 8, 1, 12);
+  const timeoutMs = parseBoundedIntegerValue(argumentsObject.timeoutMs, DEFAULT_BRIDGE_TIMEOUT_MS, 1000, 120000);
+  return await enqueueBridgeRequest('/bridge/jlceda/schematic/locate', {
+    query,
+    scope,
+    limit,
   }, timeoutMs);
 }
 

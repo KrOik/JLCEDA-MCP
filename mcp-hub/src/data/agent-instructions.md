@@ -9,6 +9,7 @@
 
 ## 工具调用约束
 
+- `schematic_locate`：当用户用自然话术要求“找到某个器件/型号/封装/网络”“某网络连接到该器件哪个引脚”“SPI_MOSI 接到 ESP32-PICO-V3-02 的哪个 pin”等定位问题时，必须优先调用此工具。`query` 只写用户提到的目标器件、位号、型号、封装、料号、唯一 ID 或网络名；若用户同时提到器件和网络，应先用器件型号/位号定位器件，再在返回的 `component.pins` 中按 `networkName` 查找对应 `pinNumber` 和 `pinName`。该工具返回受限匹配列表，避免 `schematic_read` / `schematic_review` 的大 JSON 截断问题。
 - `schematic_read`：仅在执行器件选型（`component_select`）或器件放置（`component_place`）任务时，需要了解当前页已有器件与网络连接关系时才调用，用于获取辅助上下文。仅覆盖当前激活页面。禁止在原理图检查、审查、功能分析、连线核查等场景调用此工具；此类场景必须使用 `schematic_review`。
   返回字段说明：`drcCheckPassed` 为 DRC 检查是否通过；`components` 为器件列表，每个器件含 `componentDesignator`（位号）、`componentSymbolName`（符号名）、`pins`（引脚列表，每个引脚含 `pinNumber`、`pinSignalName`、`pinElectricalType`、`connectedNetworkName`（引脚所连网络名，空字符串表示工具未能识别到连接——可能是引脚真正悬空，也可能是该引脚位于复用块（Reuse Block）内部、复用块内部导线对 API 不可见所致；若 `drcCheckPassed` 为 `true`，则空值大概率属于工具限制而非真实错误，应提示用户自行在原理图中核实）、`hasNoConnectMark`）；`networks` 为网络列表，每个网络含 `networkName` 和 `connectedPinRefs`（连接该网络的所有引脚引用，格式为位号.引脚号）。
 - `schematic_review`：当用户需要检查或审查原理图、分析电路功能、审查器件选型合理性、核对连线逻辑、判断电路能否正常工作、输出功能性分析报告，或分析多页原理图、查看完整 BOM、追踪跨页信号时，必须调用此工具。
@@ -22,7 +23,7 @@
 
 ## 透传 API 工具约束
 
-**优先级规则**：`schematic_read`、`schematic_review`、`pcb_snapshot`、`pcb_geometry_analyze`、`pcb_constraint_snapshot`、`component_select`、`component_place` 七个基础工具**优先级高于**下方四个透传 API 工具。只有当基础工具无法完成所需操作时，才可使用透传 API 工具。**禁止**用 `api_invoke` 重复实现基础工具已能完成的功能。
+**优先级规则**：`schematic_locate`、`schematic_read`、`schematic_review`、`pcb_snapshot`、`pcb_geometry_analyze`、`pcb_constraint_snapshot`、`component_select`、`component_place` 八个基础工具**优先级高于**下方四个透传 API 工具。只有当基础工具无法完成所需操作时，才可使用透传 API 工具。**禁止**用 `api_invoke` 重复实现基础工具已能完成的功能。
 
 - `eda_context`：获取当前 EDA 工作区环境快照，包括当前文档类型（原理图 / PCB）、工程信息、当前图页信息、已选中图元 ID 列表。适用场景：①执行 `api_invoke` 前需要确认当前文档类型或获取选中图元 ID 时；②任务描述依赖当前环境状态时。已明确知道当前上下文的情况下禁止重复调用。
 

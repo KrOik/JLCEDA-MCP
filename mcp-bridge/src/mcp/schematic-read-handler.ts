@@ -12,6 +12,53 @@
 
 import { safeCall } from '../utils';
 
+export interface SchematicSemanticPin {
+	pinNumber: string;
+	pinSignalName: string;
+	pinElectricalType: string;
+	connectedNetworkName: string;
+	hasNoConnectMark: boolean;
+}
+
+export interface SchematicSemanticComponent {
+	componentInstanceId: string;
+	componentDesignator: string;
+	componentSymbolName: string;
+	schematicSubPartName: string;
+	footprintName: string;
+	manufacturer: string;
+	manufacturerId: string;
+	supplier: string;
+	supplierId: string;
+	uniqueId: string;
+	pins: SchematicSemanticPin[];
+}
+
+export interface SchematicSemanticNetwork {
+	networkName: string;
+	connectedPinRefs: string[];
+}
+
+export interface SchematicSemanticPageContext {
+	pageName: string;
+	pageUuid: string;
+	schematicName: string;
+	schematicUuid: string;
+	allPageNames: string[];
+}
+
+export interface SchematicSemanticSnapshot {
+	pageContext: SchematicSemanticPageContext;
+	drcCheckPassed: boolean;
+	components: SchematicSemanticComponent[];
+	networks: SchematicSemanticNetwork[];
+}
+
+export interface SchematicSemanticReadOptions {
+	includeAllCurrentSchematicPages?: boolean;
+	pageContextOverride?: Partial<SchematicSemanticPageContext>;
+}
+
 // 安全调用同步 getter 方法，获取指定类型的值。
 function getSyncState<T>(obj: unknown, method: string, fallback: T): T {
 	try {
@@ -23,6 +70,45 @@ function getSyncState<T>(obj: unknown, method: string, fallback: T): T {
 	}
 	catch { /* ignore */ }
 	return fallback;
+}
+
+function normalizeStringMetadata(value: unknown): string {
+	if (typeof value === 'string') {
+		return value;
+	}
+	if (typeof value === 'number' || typeof value === 'boolean') {
+		return String(value);
+	}
+	if (value && typeof value === 'object') {
+		const record = value as Record<string, unknown>;
+		for (const key of ['name', 'Name', 'value', 'Value', 'title', 'Title']) {
+			const candidate = record[key];
+			if (typeof candidate === 'string' && candidate.trim().length > 0) {
+				return candidate;
+			}
+		}
+	}
+	return '';
+}
+
+function readMetadataString(obj: unknown, getterMethod: string, plainKeys: string[]): string {
+	const getterValue = getSyncState<unknown>(obj, getterMethod, undefined);
+	const normalizedGetterValue = normalizeStringMetadata(getterValue);
+	if (normalizedGetterValue.length > 0) {
+		return normalizedGetterValue;
+	}
+
+	if (obj && typeof obj === 'object') {
+		const record = obj as Record<string, unknown>;
+		for (const key of plainKeys) {
+			const normalizedValue = normalizeStringMetadata(record[key]);
+			if (normalizedValue.length > 0) {
+				return normalizedValue;
+			}
+		}
+	}
+
+	return '';
 }
 
 // 引脚连接点坐标键，用于在坐标→网络名映射中查找。
@@ -104,12 +190,17 @@ function propagateNetworkNamesViaBFS(
 }
 
 // 扫描原理图并输出电路语义 JSON 字符串。
-async function readSchematicCircuit(): Promise<{ ok: true; data: string } | { ok: false; error: string }> {
+async function readSchematicCircuit(options?: SchematicSemanticReadOptions): Promise<{ ok: true; snapshot: SchematicSemanticSnapshot } | { ok: false; error: string }> {
 	// ── 第一步：获取所有器件实例 ──────────────────────────────────────────
-	const componentListRaw = await safeCall<unknown>(() => Promise.resolve(eda.sch_PrimitiveComponent.getAll(undefined, true)));
+	const includeAllCurrentSchematicPages = options?.includeAllCurrentSchematicPages !== false;
+	const componentListRaw = await safeCall<unknown>(() => Promise.resolve(eda.sch_PrimitiveComponent.getAll(undefined, includeAllCurrentSchematicPages)));
 	if (!Array.isArray(componentListRaw)) {
 		return { ok: false, error: '器件列表获取失败，sch_PrimitiveComponent.getAll 未返回数组。' };
 	}
+
+	const currentSchematicInfo = await safeCall<unknown>(() => eda.dmt_Schematic.getCurrentSchematicInfo());
+	const currentSchematicPageInfo = await safeCall<unknown>(() => eda.dmt_Schematic.getCurrentSchematicPageInfo());
+	const currentSchematicPagesInfo = await safeCall<unknown>(() => eda.dmt_Schematic.getCurrentSchematicAllSchematicPagesInfo());
 
 	// ── 第二步：构建坐标→网络名映射（BFS 沿导线传播） ──────────────────────
 	// 种子来源 1：网络标志器件坐标（VCC/GND 等），net name = getState_Net()。
@@ -154,21 +245,27 @@ async function readSchematicCircuit(): Promise<{ ok: true; data: string } | { ok
 	propagateNetworkNamesViaBFS(coordinateToNetworkNameMap, wireAdjacencyGraph);
 
 	// ── 第三步：遍历器件，组装语义输出结构 ──────────────────────────────────
-	interface PinSemanticInfo {
-		pinNumber: string;
-		pinSignalName: string;
-		pinElectricalType: string;
-		connectedNetworkName: string;
-		hasNoConnectMark: boolean;
-	}
+		interface PinSemanticInfo {
+			pinNumber: string;
+			pinSignalName: string;
+			pinElectricalType: string;
+			connectedNetworkName: string;
+			hasNoConnectMark: boolean;
+		}
 
-	interface ComponentSemanticInfo {
-		componentInstanceId: string;
-		componentDesignator: string;
-		componentSymbolName: string;
-		schematicSubPartName: string;
-		pins: PinSemanticInfo[];
-	}
+		interface ComponentSemanticInfo {
+			componentInstanceId: string;
+			componentDesignator: string;
+			componentSymbolName: string;
+			schematicSubPartName: string;
+			footprintName: string;
+			manufacturer: string;
+			manufacturerId: string;
+			supplier: string;
+			supplierId: string;
+			uniqueId: string;
+			pins: PinSemanticInfo[];
+		}
 
 	const networkToPinRefSetMap: Map<string, Set<string>> = new Map();
 	const components: ComponentSemanticInfo[] = [];
@@ -196,6 +293,12 @@ async function readSchematicCircuit(): Promise<{ ok: true; data: string } | { ok
 				componentDesignator: netFlagNetworkName,
 				componentSymbolName: netFlagNetworkName,
 				schematicSubPartName: '',
+				footprintName: '',
+				manufacturer: '',
+				manufacturerId: '',
+				supplier: '',
+				supplierId: '',
+				uniqueId: '',
 				pins: [{
 					pinNumber: '1',
 					pinSignalName: netFlagNetworkName,
@@ -242,8 +345,14 @@ async function readSchematicCircuit(): Promise<{ ok: true; data: string } | { ok
 		components.push({
 			componentInstanceId: primitiveId,
 			componentDesignator,
-			componentSymbolName: getSyncState<string>(rawComponent, 'getState_Name', ''),
-			schematicSubPartName: getSyncState<string>(rawComponent, 'getState_SubPartName', ''),
+			componentSymbolName: normalizeStringMetadata(getSyncState<unknown>(rawComponent, 'getState_Name', '')),
+			schematicSubPartName: normalizeStringMetadata(getSyncState<unknown>(rawComponent, 'getState_SubPartName', '')),
+			footprintName: normalizeStringMetadata(getSyncState<unknown>(rawComponent, 'getState_Footprint', '')),
+			manufacturer: normalizeStringMetadata(getSyncState<unknown>(rawComponent, 'getState_Manufacturer', '')),
+			manufacturerId: normalizeStringMetadata(getSyncState<unknown>(rawComponent, 'getState_ManufacturerId', '')),
+			supplier: normalizeStringMetadata(getSyncState<unknown>(rawComponent, 'getState_Supplier', '')),
+			supplierId: normalizeStringMetadata(getSyncState<unknown>(rawComponent, 'getState_SupplierId', '')),
+			uniqueId: normalizeStringMetadata(getSyncState<unknown>(rawComponent, 'getState_UniqueId', '')),
 			pins,
 		});
 	}
@@ -269,14 +378,41 @@ async function readSchematicCircuit(): Promise<{ ok: true; data: string } | { ok
 
 	return {
 		ok: true,
-		data: JSON.stringify({
+		snapshot: {
+			pageContext: {
+				pageName: options?.pageContextOverride?.pageName ?? readMetadataString(currentSchematicPageInfo, 'name', ['name', 'Name']),
+				pageUuid: options?.pageContextOverride?.pageUuid ?? readMetadataString(currentSchematicPageInfo, 'uuid', ['uuid', 'Uuid']),
+				schematicName: options?.pageContextOverride?.schematicName ?? readMetadataString(currentSchematicInfo, 'name', ['name', 'Name']),
+				schematicUuid: options?.pageContextOverride?.schematicUuid ?? readMetadataString(currentSchematicInfo, 'uuid', ['uuid', 'Uuid']),
+				allPageNames: options?.pageContextOverride?.allPageNames ?? (Array.isArray(currentSchematicPagesInfo)
+					? currentSchematicPagesInfo
+						.map(page => readMetadataString(page, 'name', ['name', 'Name']))
+						.filter(pageName => pageName.length > 0)
+					: []),
+			},
 			drcCheckPassed,
-			componentCount: components.length,
-			networkCount: networks.length,
 			components,
 			networks,
-		}),
+		},
 	};
+}
+
+export async function collectSchematicSemanticSnapshot(): Promise<{ ok: true; snapshot: SchematicSemanticSnapshot } | { ok: false; error: string }> {
+	return await readSchematicCircuit();
+}
+
+export async function collectSchematicSemanticSnapshotForCurrentPage(): Promise<{ ok: true; snapshot: SchematicSemanticSnapshot } | { ok: false; error: string }> {
+	return await readSchematicCircuit({ includeAllCurrentSchematicPages: false });
+}
+
+function toLegacySnapshotJson(snapshot: SchematicSemanticSnapshot): string {
+	return JSON.stringify({
+		drcCheckPassed: snapshot.drcCheckPassed,
+		componentCount: snapshot.components.length,
+		networkCount: snapshot.networks.length,
+		components: snapshot.components,
+		networks: snapshot.networks,
+	});
 }
 
 /**
@@ -292,6 +428,6 @@ export async function handleSchematicReadTask(_payload: unknown): Promise<unknow
 
 	return {
 		ok: true,
-		schematicCircuitSnapshot: result.data,
+		schematicCircuitSnapshot: toLegacySnapshotJson(result.snapshot),
 	};
 }

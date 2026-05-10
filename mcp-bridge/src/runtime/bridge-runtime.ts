@@ -74,6 +74,7 @@ let socketSequence = 0;
 const statusReporter = new BridgeStatusReporter();
 const bridgeLogDispatchPipeline = new BridgeLogDispatchPipeline();
 const BRIDGE_STATUS_TEXT = BridgeStateManager.text;
+const TASK_SLOW_LOG_THRESHOLD_MS = 3000;
 
 function writeRuntimeWarningLog(event: string, summary: string, message: string, detail = '', errorCode = ''): void {
 	const logEntry = bridgeLogPipeline.append(bridgeLogPipeline.createEntry({
@@ -89,6 +90,37 @@ function writeRuntimeWarningLog(event: string, summary: string, message: string,
 		errorCode,
 	}));
 	console.warn(bridgeLogPipeline.format(logEntry));
+}
+
+function createTaskLogDetail(task: BridgeTaskEnvelope, extra: Record<string, unknown> = {}): string {
+	return JSON.stringify({
+		requestId: task.requestId,
+		path: task.path,
+		leaseTerm: task.leaseTerm,
+		payloadKeys: task.payload && typeof task.payload === 'object' && !Array.isArray(task.payload)
+			? Object.keys(task.payload as Record<string, unknown>).sort()
+			: [],
+		...extra,
+	});
+}
+
+function writeRuntimeTaskLog(level: 'info' | 'warning', event: string, summary: string, message: string, task: BridgeTaskEnvelope, extra: Record<string, unknown> = {}, errorCode = ''): void {
+	const logEntry = bridgeLogPipeline.append(bridgeLogPipeline.createEntry({
+		level,
+		module: 'bridge-runtime',
+		event,
+		summary,
+		message,
+		bridgeWebSocketUrl: getConfiguredMcpUrl(),
+		clientId: clientId || undefined,
+		activeClientId: currentActiveClientId || undefined,
+		leaseTerm: String(task.leaseTerm),
+		detail: createTaskLogDetail(task, extra),
+		errorCode,
+	}));
+	if (level === 'warning') {
+		console.warn(bridgeLogPipeline.format(logEntry));
+	}
 }
 
 // 显示桥接连接成功提示。
@@ -167,7 +199,14 @@ function applyRole(message: BridgeServerRoleMessage): void {
 // 调度任务执行并回传结果。
 function enqueueTask(task: BridgeTaskEnvelope, currentTransport: BridgeTransport): void {
 	taskChain = taskChain.then(async () => {
+		const taskStartedAt = Date.now();
+		const queueDelayMs = Math.max(0, taskStartedAt - task.createdAt);
+		writeRuntimeTaskLog('info', 'bridge.task.received', '桥接任务开始执行', `开始处理 ${task.path}`, task, {
+			queueDelayMs,
+		});
+
 		if (currentRole !== 'active') {
+			writeRuntimeTaskLog('warning', 'bridge.task.rejected.standby', '桥接任务被拒绝', BRIDGE_STATUS_TEXT.runtime.taskRejectedStandby, task, {}, 'bridge_task_rejected_standby');
 			currentTransport.completeTask(task.requestId, task.leaseTerm, undefined, {
 				message: BRIDGE_STATUS_TEXT.runtime.taskRejectedStandby,
 			});
@@ -175,6 +214,9 @@ function enqueueTask(task: BridgeTaskEnvelope, currentTransport: BridgeTransport
 		}
 
 		if (task.leaseTerm !== currentLeaseTerm) {
+			writeRuntimeTaskLog('warning', 'bridge.task.rejected.lease_expired', '桥接任务租约过期', BRIDGE_STATUS_TEXT.runtime.taskLeaseExpired, task, {
+				currentLeaseTerm,
+			}, 'bridge_task_lease_expired');
 			currentTransport.completeTask(task.requestId, task.leaseTerm, undefined, {
 				message: BRIDGE_STATUS_TEXT.runtime.taskLeaseExpired,
 			});
@@ -183,6 +225,7 @@ function enqueueTask(task: BridgeTaskEnvelope, currentTransport: BridgeTransport
 
 		const handler = BRIDGE_TASK_HANDLERS[task.path];
 		if (!handler) {
+			writeRuntimeTaskLog('warning', 'bridge.task.rejected.unsupported_path', '桥接任务路径不支持', `${BRIDGE_STATUS_TEXT.runtime.taskPathUnsupportedPrefix}${task.path}`, task, {}, 'bridge_task_path_unsupported');
 			currentTransport.completeTask(task.requestId, task.leaseTerm, undefined, {
 				message: `${BRIDGE_STATUS_TEXT.runtime.taskPathUnsupportedPrefix}${task.path}`,
 			});
@@ -191,11 +234,32 @@ function enqueueTask(task: BridgeTaskEnvelope, currentTransport: BridgeTransport
 
 		let result: unknown;
 		let taskError: BridgeProtocolError | undefined;
+		let handlerElapsedMs = 0;
 		try {
-			result = await toSerializableAsync(await handler(task.payload));
+			const handlerStartedAt = Date.now();
+			const handlerResult = await handler(task.payload);
+			handlerElapsedMs = Math.max(0, Date.now() - handlerStartedAt);
+			const serializeStartedAt = Date.now();
+			result = await toSerializableAsync(handlerResult);
+			const serializeElapsedMs = Math.max(0, Date.now() - serializeStartedAt);
+			const totalElapsedMs = Math.max(0, Date.now() - taskStartedAt);
+			writeRuntimeTaskLog(totalElapsedMs >= TASK_SLOW_LOG_THRESHOLD_MS ? 'warning' : 'info', 'bridge.task.completed', '桥接任务执行完成', `任务 ${task.path} 已完成`, task, {
+				queueDelayMs,
+				handlerElapsedMs,
+				serializeElapsedMs,
+				totalElapsedMs,
+				resultType: result == null ? 'nullish' : Array.isArray(result) ? 'array' : typeof result,
+			}, totalElapsedMs >= TASK_SLOW_LOG_THRESHOLD_MS ? 'bridge_task_slow' : '');
 		}
 		catch (error: unknown) {
+			const totalElapsedMs = Math.max(0, Date.now() - taskStartedAt);
 			taskError = toBridgeProtocolError(error, toSafeErrorMessage(error));
+			writeRuntimeTaskLog('warning', 'bridge.task.failed', BRIDGE_STATUS_TEXT.runtime.taskFailedSummary, toSafeErrorMessage(error), task, {
+				queueDelayMs,
+				handlerElapsedMs,
+				totalElapsedMs,
+				errorMessage: toSafeErrorMessage(error),
+			}, 'bridge_task_failed');
 		}
 
 		currentTransport.completeTask(task.requestId, task.leaseTerm, result, taskError);

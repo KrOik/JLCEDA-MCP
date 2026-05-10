@@ -66,6 +66,16 @@ function rejectPendingRequestsByClient(clientId: string, reason: string): void {
   }
 }
 
+function hasPendingRequestForClient(clientId: string): boolean {
+  for (const pending of bridgeBrokerState.pendingRequests.values()) {
+    if (pending.clientId === clientId) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export async function sendRoleToPeer(peer: BridgePeerState, reason: string): Promise<void> {
   const role = peer.clientId === bridgeBrokerState.activeClientId ? 'active' : 'standby';
   await sendBridgeMessage(peer.socket, {
@@ -185,6 +195,12 @@ export async function cleanupExpiredPeers(): Promise<void> {
     }
 
     if (current - peer.lastSeenAt > BRIDGE_CLIENT_TTL_MS) {
+      // Long-running bridge tasks can legitimately starve heartbeats on the EDA side.
+      // Keep the active peer alive until its in-flight request resolves or times out.
+      if (hasPendingRequestForClient(peer.clientId)) {
+        continue;
+      }
+
       await removeSocket(peer.socket, BRIDGE_BROKER_TEXT.connection.heartbeatTimeoutDetail, {
         disconnectType: 'heartbeat_timeout',
         disconnectActor: 'timeout',

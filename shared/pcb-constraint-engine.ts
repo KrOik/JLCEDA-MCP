@@ -19,6 +19,7 @@ export interface PcbConstraintSnapshotRequest {
 	viaPrimitiveIds?: string[];
 	padPrimitiveIds?: string[];
 	include?: PcbConstraintIncludeOptions;
+	timeoutMs?: number;
 }
 
 export interface PcbConstraintEnginePluginMetadata {

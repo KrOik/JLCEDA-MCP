@@ -55,11 +55,15 @@ function normalizeIncludeOptions(include: PcbConstraintSnapshotRequest['include'
 
 function normalizeRequest(payload: unknown): PcbConstraintSnapshotRequest {
 	const input = isRecord(payload) ? payload : {};
+	const timeoutMsRaw = typeof input.timeoutMs === 'number' && Number.isFinite(input.timeoutMs)
+		? Math.max(1, Math.round(input.timeoutMs))
+		: undefined;
 	return {
 		nets: asTrimmedStringArray(input.nets),
 		viaPrimitiveIds: asTrimmedStringArray(input.viaPrimitiveIds),
 		padPrimitiveIds: asTrimmedStringArray(input.padPrimitiveIds),
 		include: normalizeIncludeOptions(input.include as PcbConstraintSnapshotRequest['include'] | undefined),
+		timeoutMs: timeoutMsRaw,
 	};
 }
 
@@ -136,6 +140,30 @@ async function callOptional<T>(warnings: string[], label: string, fn: () => Prom
 		warnings.push(`${label} 读取失败：${message}`);
 		return fallback;
 	}
+}
+
+async function callOptionalWithTimeout<T>(warnings: string[], label: string, fn: () => Promise<T>, fallback: T, timeoutMs: number | undefined): Promise<T> {
+	if (!timeoutMs || timeoutMs <= 0) {
+		return await callOptional(warnings, label, fn, fallback);
+	}
+
+	const timeoutErrorMessage = `timeout after ${timeoutMs} ms`;
+	return await callOptional(warnings, label, async () => {
+		return await Promise.race([
+			fn(),
+			new Promise<T>((_, reject) => {
+				setTimeout(() => reject(new Error(timeoutErrorMessage)), timeoutMs);
+			}),
+		]);
+	}, fallback);
+}
+
+function resolveDrcCallTimeoutMs(timeoutMs: number | undefined): number | undefined {
+	if (!timeoutMs || timeoutMs <= 0) {
+		return 3000;
+	}
+
+	return Math.max(50, Math.min(3000, Math.floor(timeoutMs / 3)));
 }
 
 function normalizeDifferentialPairs(items: Record<string, unknown>[], netFilters: Set<string>): PcbConstraintSnapshotPayload['differentialPairs'] {
@@ -337,47 +365,48 @@ async function buildSnapshot(request: PcbConstraintSnapshotRequest): Promise<{ w
 	const warnings: string[] = [];
 	const include = normalizeIncludeOptions(request.include);
 	const netFilters = toFilterSet(request.nets);
+	const drcCallTimeoutMs = resolveDrcCallTimeoutMs(request.timeoutMs);
 
 	if (request.nets?.length && include.padPairGroups) {
 		warnings.push('padPairGroups 当前不支持按 nets 精确过滤，返回全量焊盘对组。');
 	}
 
 	const currentRuleConfigurationName = include.ruleConfiguration
-		? await callOptional(warnings, '当前规则配置名称', () => eda.pcb_Drc.getCurrentRuleConfigurationName(), undefined)
+		? await callOptionalWithTimeout(warnings, '当前规则配置名称', () => eda.pcb_Drc.getCurrentRuleConfigurationName(), undefined, drcCallTimeoutMs)
 		: undefined;
 	const ruleConfiguration = include.ruleConfiguration
-		? await callOptional(warnings, '当前规则配置', () => eda.pcb_Drc.getCurrentRuleConfiguration(), undefined)
+		? await callOptionalWithTimeout(warnings, '当前规则配置', () => eda.pcb_Drc.getCurrentRuleConfiguration(), undefined, drcCallTimeoutMs)
 		: undefined;
 	const netRules = include.netRules
-		? toSerializableRecordArray(await callOptional(warnings, '网络规则', () => eda.pcb_Drc.getNetRules(), [] as unknown[]))
+		? toSerializableRecordArray(await callOptionalWithTimeout(warnings, '网络规则', () => eda.pcb_Drc.getNetRules(), [] as unknown[], drcCallTimeoutMs))
 		: [];
 	const netByNetRules = include.netByNetRules
-		? toSerializableRecord(await callOptional(warnings, '网络-网络规则', () => eda.pcb_Drc.getNetByNetRules(), {}))
+		? toSerializableRecord(await callOptionalWithTimeout(warnings, '网络-网络规则', () => eda.pcb_Drc.getNetByNetRules(), {}, drcCallTimeoutMs))
 		: {};
 	const regionRules = include.regionRules
-		? toSerializableRecordArray(await callOptional(warnings, '区域规则', () => eda.pcb_Drc.getRegionRules(), [] as unknown[]))
+		? toSerializableRecordArray(await callOptionalWithTimeout(warnings, '区域规则', () => eda.pcb_Drc.getRegionRules(), [] as unknown[], drcCallTimeoutMs))
 		: [];
 	const differentialPairs = include.differentialPairs
 		? normalizeDifferentialPairs(
-				toSerializableRecordArray(await callOptional(warnings, '差分对', () => eda.pcb_Drc.getAllDifferentialPairs(), [] as unknown[])),
+				toSerializableRecordArray(await callOptionalWithTimeout(warnings, '差分对', () => eda.pcb_Drc.getAllDifferentialPairs(), [] as unknown[], drcCallTimeoutMs)),
 				netFilters,
 			)
 		: [];
 	const equalLengthNetGroups = include.equalLengthNetGroups
 		? normalizeNetGroups(
-				toSerializableRecordArray(await callOptional(warnings, '等长网络组', () => eda.pcb_Drc.getAllEqualLengthNetGroups(), [] as unknown[])),
+				toSerializableRecordArray(await callOptionalWithTimeout(warnings, '等长网络组', () => eda.pcb_Drc.getAllEqualLengthNetGroups(), [] as unknown[], drcCallTimeoutMs)),
 				netFilters,
 			)
 		: [];
 	const netClasses = include.netClasses
 		? normalizeNetClasses(
-				toSerializableRecordArray(await callOptional(warnings, '网络类', () => eda.pcb_Drc.getAllNetClasses(), [] as unknown[])),
+				toSerializableRecordArray(await callOptionalWithTimeout(warnings, '网络类', () => eda.pcb_Drc.getAllNetClasses(), [] as unknown[], drcCallTimeoutMs)),
 				netFilters,
 			)
 		: [];
 	const padPairGroups = include.padPairGroups
 		? await normalizePadPairGroups(
-				toSerializableRecordArray(await callOptional(warnings, '焊盘对组', () => eda.pcb_Drc.getAllPadPairGroups(), [] as unknown[])),
+				toSerializableRecordArray(await callOptionalWithTimeout(warnings, '焊盘对组', () => eda.pcb_Drc.getAllPadPairGroups(), [] as unknown[], drcCallTimeoutMs)),
 				warnings,
 			)
 		: [];

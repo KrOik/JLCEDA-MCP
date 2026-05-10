@@ -284,4 +284,55 @@ describe('pcbConstraintEnginePlugin', () => {
 		});
 		expect(result.warnings).toContain('via 邻接图元 读取失败：adjacency read failed');
 	});
+
+	it('times out slow rule-configuration reads into warnings instead of hanging the whole snapshot', async () => {
+		vi.useFakeTimers();
+		try {
+			const pcbEda = (globalThis as typeof globalThis & {
+				eda: {
+					pcb_Drc: {
+						getCurrentRuleConfigurationName: ReturnType<typeof vi.fn>;
+						getCurrentRuleConfiguration: ReturnType<typeof vi.fn>;
+					};
+				};
+			}).eda;
+			pcbEda.pcb_Drc.getCurrentRuleConfigurationName.mockImplementationOnce(() => new Promise(() => undefined));
+			pcbEda.pcb_Drc.getCurrentRuleConfiguration.mockImplementationOnce(() => new Promise(() => undefined));
+
+			const resultPromise = pcbConstraintEnginePlugin.execute('snapshot', {
+				timeoutMs: 50,
+				include: {
+					ruleConfiguration: true,
+					netRules: false,
+					netByNetRules: false,
+					regionRules: false,
+					differentialPairs: false,
+					equalLengthNetGroups: false,
+					netClasses: false,
+					padPairGroups: false,
+					vias: false,
+					pads: false,
+				},
+			}) as Promise<{
+				warnings: string[];
+				snapshot: {
+					rules: {
+						configurationName: string | null;
+						ruleConfiguration: Record<string, unknown> | null;
+					};
+				};
+			}>;
+
+			await vi.advanceTimersByTimeAsync(100);
+			const result = await resultPromise;
+
+			expect(result.snapshot.rules.configurationName).toBeNull();
+			expect(result.snapshot.rules.ruleConfiguration).toBeNull();
+			expect(result.warnings).toContain('当前规则配置名称 读取失败：timeout after 50 ms');
+			expect(result.warnings).toContain('当前规则配置 读取失败：timeout after 50 ms');
+		}
+		finally {
+			vi.useRealTimers();
+		}
+	});
 });

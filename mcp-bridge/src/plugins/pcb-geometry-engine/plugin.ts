@@ -165,7 +165,11 @@ function normalizeAnalyzeRequest(payload: unknown): PcbAnalyzeRequest {
 		: DEFAULT_SAMPLE_STEP;
 
 	return {
-		...normalizeSnapshotRequest(payload),
+		nets: asTrimmedStringArray(input.nets),
+		layerIds: asIntegerArray(input.layerIds),
+		include: typeof input.include === 'object' && input.include !== null && !Array.isArray(input.include)
+			? input.include as PcbSnapshotIncludeOptions
+			: undefined,
 		tracePrimitiveIds: asTrimmedStringArray(input.tracePrimitiveIds),
 		referenceNetNames: asTrimmedStringArray(input.referenceNetNames),
 		spatialObjectKinds: asTrimmedStringArray(input.spatialObjectKinds)
@@ -173,6 +177,23 @@ function normalizeAnalyzeRequest(payload: unknown): PcbAnalyzeRequest {
 		analysisModes,
 		sampleStep,
 		includeSnapshot: input.includeSnapshot === true,
+	};
+}
+
+function createAnalyzeIncludeOptions(include: PcbSnapshotIncludeOptions | undefined): Required<PcbSnapshotIncludeOptions> {
+	return {
+		lines: include?.lines === true,
+		arcs: include?.arcs === true,
+		vias: include?.vias === true,
+		pours: include?.pours === true,
+		fills: include?.fills === true,
+		regions: include?.regions === true,
+		images: include?.images === true,
+		objects: include?.objects === true,
+		components: include?.components === true,
+		pads: include?.pads === true,
+		boardOutline: include?.boardOutline === true,
+		layers: include?.layers === true,
 	};
 }
 
@@ -1883,13 +1904,10 @@ function buildPlaneConnectivityFeatures(
 }
 
 function buildAnalyzeSnapshotRequest(request: PcbAnalyzeRequest, analysisModes: PcbGeometryAnalysisMode[]): PcbSnapshotRequest {
-	const include = normalizeIncludeOptions(request.include);
+	const include = createAnalyzeIncludeOptions(request.include);
 	if (analysisModes.includes('net_stats')) {
 		include.lines = true;
 		include.arcs = true;
-		include.pads = true;
-		include.components = true;
-		include.vias = true;
 	}
 	if (analysisModes.includes('reference_grounding')) {
 		include.lines = true;
@@ -1911,8 +1929,6 @@ function buildAnalyzeSnapshotRequest(request: PcbAnalyzeRequest, analysisModes: 
 	if (analysisModes.includes('loop_area_proxy')) {
 		include.lines = true;
 		include.arcs = true;
-		include.vias = true;
-		include.pads = true;
 	}
 	if (analysisModes.includes('spatial_relations')) {
 		include.lines = true;

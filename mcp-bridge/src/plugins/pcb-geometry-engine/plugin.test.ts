@@ -363,6 +363,11 @@ describe('pcbGeometryEnginePlugin', () => {
 		const result = await pcbGeometryEnginePlugin.execute('analyze', {
 			tracePrimitiveIds: ['track-1a', 'track-1b', 'track-1c', 'stub-1'],
 			analysisModes: ['net_stats', 'reference_grounding', 'return_via_clearance', 'plane_connectivity', 'loop_area_proxy', 'spatial_relations'],
+			include: {
+				vias: true,
+				components: true,
+				pads: true,
+			},
 			includeSnapshot: true,
 		}) as {
 			ok: boolean;
@@ -466,6 +471,32 @@ describe('pcbGeometryEnginePlugin', () => {
 		expect(netStats?.values.branchLengthEstimate).toBeCloseTo(0);
 		expect(netStats?.evidence.tracePrimitiveIds).toEqual(['track-1a', 'track-1b']);
 		expect(loopArea?.evidence.tracePrimitiveIds).toEqual(['track-1a', 'track-1b']);
+	});
+
+	it('keeps net_stats on the lightweight trace path when pads/components/vias are explicitly disabled', async () => {
+		const result = await pcbGeometryEnginePlugin.execute('analyze', {
+			analysisModes: ['net_stats'],
+			include: {
+				lines: true,
+				arcs: true,
+				vias: false,
+				components: false,
+				pads: false,
+			},
+		}) as {
+			features: Array<{ featureType: string; values: Record<string, unknown> }>;
+			snapshot?: {
+				components: unknown[];
+				pads: unknown[];
+				vias: unknown[];
+			};
+		};
+
+		const netStats = result.features.find(item => item.featureType === 'net_path_stats');
+		expect(netStats?.values.viaCount).toBe(0);
+		expect(netStats?.values.layerTransitionCount).toBe(0);
+		expect(netStats?.values.padEndpointCount).toBe(0);
+		expect(result.snapshot).toBeUndefined();
 	});
 
 	it('skips board outline reads and warnings when board outline is excluded from the snapshot', async () => {

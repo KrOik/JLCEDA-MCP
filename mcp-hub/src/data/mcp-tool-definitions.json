@@ -107,7 +107,7 @@
   },
   {
     "name": "schematic_locate",
-    "description": "按用户话术定位原理图中的器件或网络，并返回匹配器件的引脚号、引脚名称与连接网络。",
+    "description": "按用户话术定位原理图中的器件或网络，并返回匹配器件的引脚号、引脚名称与连接网络。响应中的 matches 仅表示 exact/ambiguous factual hits，非精确候选只出现在 suggestions。",
     "inputSchema": {
       "type": "object",
       "properties": {

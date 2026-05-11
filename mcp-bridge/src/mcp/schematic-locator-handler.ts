@@ -5,6 +5,7 @@ import {
 	SCHEMATIC_LOCATOR_MAX_LIMIT,
 	type SchematicLocatorComponentMatch,
 	type SchematicLocatorMatch,
+	type SchematicLocatorSuggestion,
 	type SchematicLocatorRequest,
 	type SchematicLocatorResponse,
 	type SchematicLocatorScope,
@@ -117,6 +118,17 @@ function sortMatches(a: SchematicLocatorMatch, b: SchematicLocatorMatch): number
 	return b.score - a.score
 		|| (a.kind === b.kind ? 0 : a.kind === 'component' ? -1 : 1)
 		|| a.matchText.localeCompare(b.matchText);
+}
+
+function isExactMatch(match: SchematicLocatorMatch, normalizedQuery: string): boolean {
+	return normalizeText(match.matchText) === normalizedQuery;
+}
+
+function toSuggestion(match: SchematicLocatorMatch): SchematicLocatorSuggestion {
+	return {
+		...match,
+		matchReason: 'fuzzy_candidate',
+	};
 }
 
 function parseRequest(payload: unknown): Required<SchematicLocatorRequest> {
@@ -344,8 +356,17 @@ export async function handleSchematicLocateTask(payload: unknown): Promise<unkno
 	const netMatches = result.snapshot.networks
 		.map(network => buildNetMatch(normalizedQuery, network.networkName, network.connectedPinRefs))
 		.filter((match): match is SchematicLocatorMatch => Boolean(match));
-	const matches = [...componentMatches, ...netMatches].sort(sortMatches);
-	const exactMatchCount = matches.filter(match => normalizeText(match.matchText) === normalizedQuery).length;
+	const rankedMatches = [...componentMatches, ...netMatches].sort(sortMatches);
+	const exactMatches = rankedMatches.filter(match => isExactMatch(match, normalizedQuery));
+	const suggestions = rankedMatches
+		.filter(match => !isExactMatch(match, normalizedQuery))
+		.slice(0, request.limit)
+		.map(toSuggestion);
+	const matches = exactMatches.slice(0, request.limit);
+	const exactMatchCount = exactMatches.length;
+	const matchStatus = exactMatchCount > 0
+		? exactMatchCount === 1 ? 'exact_match' : 'ambiguous'
+		: 'no_exact_match';
 
 	const response: SchematicLocatorResponse = {
 		ok: true,
@@ -353,13 +374,17 @@ export async function handleSchematicLocateTask(payload: unknown): Promise<unkno
 		normalizedQuery,
 		scope: request.scope,
 		limit: request.limit,
+		matchStatus,
+		matchPolicy: 'exact_then_suggest',
 		totalCandidates: matches.length,
 		pageContext,
-		matches: matches.slice(0, request.limit),
+		matches,
+		suggestions,
 		summary: {
 			componentCount: result.snapshot.components.length,
 			networkCount: result.snapshot.networks.length,
 			exactMatchCount,
+			suggestionCount: suggestions.length,
 		},
 	};
 	return response;

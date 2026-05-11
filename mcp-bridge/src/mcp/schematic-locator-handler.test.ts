@@ -165,12 +165,15 @@ describe('handleSchematicLocateTask', () => {
 			scope: 'current-schematic',
 			limit: 1,
 			totalCandidates: 1,
+			matchStatus: 'exact_match',
+			matchPolicy: 'exact_then_suggest',
 			summary: {
 				componentCount: 3,
 				networkCount: 2,
 				exactMatchCount: 1,
 			},
 		});
+		expect(result.suggestions).toEqual([]);
 		expect(matches).toHaveLength(1);
 		expect(matches[0]?.component?.designator).toBe('U1');
 		expect(matches[0]?.component?.pins).toEqual([
@@ -236,7 +239,12 @@ describe('handleSchematicLocateTask', () => {
 
 		expect((currentSchematic.matches as Array<{ component?: { designator: string } }>)[0]?.component?.designator).toBe('U1');
 		expect((allSchematics.matches as Array<{ component?: { designator: string } }>)[0]?.component?.designator).toBe('U1');
-		expect(allSchematics.totalCandidates).toBeGreaterThan(currentSchematic.totalCandidates as number);
+		expect((allSchematics.suggestions as Array<{ matchText: string }>).length).toBeGreaterThan(
+			(currentSchematic.suggestions as Array<{ matchText: string }>).length,
+		);
+		expect((allSchematics.summary as { suggestionCount: number }).suggestionCount).toBeGreaterThan(
+			(currentSchematic.summary as { suggestionCount: number }).suggestionCount,
+		);
 	});
 
 	it('deduplicates current-schematic and netlist copies of the same component in all-schematics', async () => {
@@ -245,6 +253,33 @@ describe('handleSchematicLocateTask', () => {
 		const exactU1Count = matchTexts.filter(text => text === 'U1').length;
 
 		expect(exactU1Count).toBe(1);
+	});
+
+	it('returns explicit no-exact-match semantics and keeps fuzzy candidates in suggestions only', async () => {
+		const result = await handleSchematicLocateTask({ query: 'U16', scope: 'all-schematics', limit: 5 }) as Record<string, unknown>;
+
+		expect(result).toMatchObject({
+			ok: true,
+			query: 'U16',
+			normalizedQuery: 'u16',
+			matchStatus: 'no_exact_match',
+			matchPolicy: 'exact_then_suggest',
+			totalCandidates: 0,
+			summary: {
+				exactMatchCount: 0,
+			},
+		});
+		expect(result.matches).toEqual([]);
+		expect(result.suggestions).toEqual([
+			expect.objectContaining({
+				kind: 'component',
+				matchText: 'U1',
+				matchReason: 'fuzzy_candidate',
+				component: expect.objectContaining({
+					designator: 'U1',
+				}),
+			}),
+		]);
 	});
 
 	it('rejects empty query and invalid scope before scanning EDA state', async () => {

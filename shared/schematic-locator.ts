@@ -1,4 +1,6 @@
 export type SchematicLocatorScope = 'current-page' | 'current-schematic' | 'all-schematics';
+export type SchematicLocatorMatchStatus = 'exact_match' | 'ambiguous' | 'no_exact_match';
+export type SchematicLocatorMatchPolicy = 'exact_then_suggest';
 
 export interface SchematicLocatorRequest {
 	query: string;
@@ -54,19 +56,27 @@ export interface SchematicLocatorMatch {
 	connectedPins?: string[];
 }
 
+export interface SchematicLocatorSuggestion extends SchematicLocatorMatch {
+	matchReason: 'fuzzy_candidate';
+}
+
 export interface SchematicLocatorResponse {
 	ok: true;
 	query: string;
 	normalizedQuery: string;
 	scope: SchematicLocatorScope;
 	limit: number;
+	matchStatus: SchematicLocatorMatchStatus;
+	matchPolicy: SchematicLocatorMatchPolicy;
 	totalCandidates: number;
 	pageContext: SchematicLocatorPageContext;
 	matches: SchematicLocatorMatch[];
+	suggestions: SchematicLocatorSuggestion[];
 	summary: {
 		componentCount: number;
 		networkCount: number;
 		exactMatchCount: number;
+		suggestionCount: number;
 	};
 }
 

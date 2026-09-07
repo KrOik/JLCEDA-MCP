@@ -3,14 +3,20 @@ import _rawToolDefinitions from '../../data/mcp-tool-definitions.json';
 import type { ToolDefinition } from './tool-dispatcher-types';
 
 const EXPOSED_MCP_TOOL_NAMES = new Set<string>([
+  'result_read',
   'schematic_read',
   'schematic_locate',
   'schematic_review',
+  'schematic_relayout',
+  'schematic_place_rows',
   'pcb_snapshot',
   'pcb_geometry_analyze',
   'pcb_constraint_snapshot',
   'component_select',
   'component_place',
+  'pin_net_configure',
+  'bridge_status',
+  'document_focus',
 ]);
 
 const RAW_API_TOOL_NAMES = new Set<string>([
@@ -49,7 +55,7 @@ function loadToolDefinitions(predicate: (name: string) => boolean): readonly Too
     definitions.push({
       name,
       description,
-      inputSchema: item.inputSchema,
+      inputSchema: { ...item.inputSchema, properties: { ...(item.inputSchema.properties as object), ...(name === 'result_read' ? {} : { responseDetail: { type: 'string', enum: ['compact', 'full'], default: 'compact', description: '默认精简；full 为兼容性完整返回。详情优先使用 result_read，勿重放写操作。' } }) } },
     });
   }
 

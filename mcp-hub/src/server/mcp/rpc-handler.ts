@@ -12,13 +12,8 @@
 import type { ToolDispatcher } from './tool-dispatcher';
 import { isPlainObjectRecord, toSafeErrorMessage } from '../../utils';
 import _defaultInstructions from '../../data/agent-instructions.md';
-import { waitForBridgeReady } from '../bridge/broker';
 
 const DEFAULT_AGENT_INSTRUCTIONS = _defaultInstructions.trimEnd();
-
-// 工具调用等待桥接就绪的最长时间（毫秒）。
-// 该值需覆盖 Bridge 侧空闲检测超时（5s）+ 重连间隔（1.2s）+ 连接握手的最坏时序。
-const BRIDGE_READY_TIMEOUT_MS = 10000;
 
 interface RpcRequest {
 	jsonrpc: '2.0';
@@ -114,16 +109,6 @@ export class RpcHandler {
 			const toolName = String(payload.params.name ?? '').trim();
 			if (toolName.length === 0) {
 				return needsResponse ? this.createErrorResponse(requestId, -32602, 'tools/call 缺少 name 参数。') : null;
-			}
-
-			// 等待桥接活动客户端就绪，最多等待 BRIDGE_READY_TIMEOUT_MS 毫秒。
-			try {
-				await waitForBridgeReady(BRIDGE_READY_TIMEOUT_MS);
-			}
-			catch (bridgeError: unknown) {
-				return needsResponse
-					? this.createErrorResponse(requestId, -32000, toSafeErrorMessage(bridgeError))
-					: null;
 			}
 
 			try {

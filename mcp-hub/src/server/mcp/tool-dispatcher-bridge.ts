@@ -138,10 +138,15 @@ export async function handleSchematicLocate(argumentsObject: Record<string, unkn
   }, timeoutMs);
 }
 
-export async function handleSchematicRead(): Promise<unknown> {
-  return await enqueueBridgeRequest('/bridge/jlceda/schematic/read', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
+export async function handleSchematicRead(args: Record<string, unknown> = {}): Promise<unknown> {
+  return await enqueueBridgeRequest('/bridge/jlceda/schematic/read', args.includeGeometry === true ? { includeGeometry: true } : {}, DEFAULT_BRIDGE_TIMEOUT_MS);
 }
 
 export async function handleSchematicReview(): Promise<unknown> {
   return await enqueueBridgeRequest('/bridge/jlceda/schematic/review', {}, DEFAULT_BRIDGE_TIMEOUT_MS);
+}
+
+export async function handleSchematicRelayout(argumentsObject: Record<string, unknown>): Promise<unknown> {
+  const timeoutMs = parseBoundedIntegerValue(argumentsObject.timeoutMs, DEFAULT_BRIDGE_TIMEOUT_MS, 1000, 120000);
+  return await enqueueBridgeRequest('/bridge/jlceda/schematic/relayout', argumentsObject, timeoutMs);
 }

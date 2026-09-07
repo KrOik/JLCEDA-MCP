@@ -1,0 +1,670 @@
+{
+  "clientId": "bridge_1788760601390_nlsiuc4m",
+  "originalPage": "63a8283c2c17dc7a",
+  "schematic": "bf484d4cc07e854f",
+  "phase": "done",
+  "previous": {
+    "clientId": "bridge_1788760601390_nlsiuc4m",
+    "originalPage": "63a8283c2c17dc7a",
+    "schematic": "bf484d4cc07e854f",
+    "phase": "inspect-failure",
+    "page": "2c2aaaca9a92e47b",
+    "placement": {
+      "ok": true,
+      "mode": "grid",
+      "layoutNotice": "已使用显式坐标/固定间距的 grid 布局，不是 compact/elk 紧凑布局。",
+      "results": [
+        {
+          "index": 0,
+          "uuid": "accfc2f6010745268febab2459577079",
+          "designator": "U2901",
+          "nets": {},
+          "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+          "x": 600,
+          "y": 400,
+          "rotation": 0,
+          "mirror": false,
+          "ok": true,
+          "primitiveId": "0d13bbd3693e3f31",
+          "uniqueId": "0d13bbd3693e3f31",
+          "clearance": 20,
+          "collisionChecked": true,
+          "geometry": {
+            "source": "sdk-bbox",
+            "measured": true,
+            "box": "[MaxDepthExceeded]"
+          },
+          "executionState": "confirmed"
+        }
+      ],
+      "total": 1,
+      "attempted": 1,
+      "remainingIndices": []
+    },
+    "componentId": "0d13bbd3693e3f31",
+    "assignments": [
+      {
+        "componentId": "0d13bbd3693e3f31",
+        "pinNumber": "1",
+        "netName": "LABEL_TEST_1"
+      },
+      {
+        "componentId": "0d13bbd3693e3f31",
+        "pinNumber": "2",
+        "netName": "LABEL_TEST_2"
+      },
+      {
+        "componentId": "0d13bbd3693e3f31",
+        "pinNumber": "3",
+        "netName": "LABEL_TEST_3"
+      },
+      {
+        "componentId": "0d13bbd3693e3f31",
+        "pinNumber": "4",
+        "netName": "LABEL_TEST_4"
+      },
+      {
+        "componentId": "0d13bbd3693e3f31",
+        "pinNumber": "45",
+        "netName": "LABEL_TEST_45"
+      },
+      {
+        "componentId": "0d13bbd3693e3f31",
+        "pinNumber": "46",
+        "netName": "LABEL_TEST_46"
+      },
+      {
+        "componentId": "0d13bbd3693e3f31",
+        "pinNumber": "47",
+        "netName": "LABEL_TEST_47"
+      },
+      {
+        "componentId": "0d13bbd3693e3f31",
+        "pinNumber": "48",
+        "netName": "LABEL_TEST_48"
+      }
+    ],
+    "connection": {
+      "ok": false,
+      "results": [
+        {
+          "componentId": "0d13bbd3693e3f31",
+          "pinNumber": "1",
+          "netName": "LABEL_TEST_1",
+          "terminal": "none",
+          "x": 515,
+          "y": 515,
+          "rotation": 180,
+          "line": [
+            515,
+            515,
+            495,
+            515,
+            495,
+            535,
+            335,
+            535
+          ],
+          "alreadyConnected": false,
+          "ok": false,
+          "primitiveId": "13aee625c7559cba",
+          "executionState": "label_unconfirmed",
+          "netlistConfirmed": true,
+          "error": "连接已回读，文字布局未确认：LABEL_COLLISION: 外侧网名区两侧均被占用，请增加器件间距或重新布局；保留已知导线，禁止重复创建。"
+        },
+        {
+          "componentId": "0d13bbd3693e3f31",
+          "pinNumber": "2",
+          "netName": "LABEL_TEST_2",
+          "terminal": "none",
+          "x": 515,
+          "y": 505,
+          "rotation": 180,
+          "line": [
+            515,
+            505,
+            485,
+            505,
+            485,
+            515,
+            335,
+            515
+          ],
+          "alreadyConnected": false,
+          "ok": false,
+          "primitiveId": "09ccb548f28e40f3",
+          "executionState": "label_unconfirmed",
+          "netlistConfirmed": true,
+          "error": "连接已回读，文字布局未确认：LABEL_COLLISION: 外侧网名区两侧均被占用，请增加器件间距或重新布局；保留已知导线，禁止重复创建。"
+        },
+        {
+          "componentId": "0d13bbd3693e3f31",
+          "pinNumber": "3",
+          "netName": "LABEL_TEST_3",
+          "terminal": "none",
+          "x": 515,
+          "y": 495,
+          "rotation": 180,
+          "line": [
+            515,
+            495,
+            335,
+            495
+          ],
+          "alreadyConnected": false,
+          "ok": false,
+          "primitiveId": "1e974933effb16a0",
+          "executionState": "label_unconfirmed",
+          "netlistConfirmed": true,
+          "error": "连接已回读，文字布局未确认：LABEL_COLLISION: 外侧网名区两侧均被占用，请增加器件间距或重新布局；保留已知导线，禁止重复创建。"
+        },
+        {
+          "componentId": "0d13bbd3693e3f31",
+          "pinNumber": "4",
+          "netName": "LABEL_TEST_4",
+          "terminal": "none",
+          "x": 515,
+          "y": 485,
+          "rotation": 180,
+          "line": [
+            515,
+            485,
+            495,
+            485,
+            495,
+            475,
+            335,
+            475
+          ],
+          "alreadyConnected": false,
+          "ok": false,
+          "primitiveId": "4dcca91eeb84361d",
+          "executionState": "label_unconfirmed",
+          "netlistConfirmed": true,
+          "error": "连接已回读，文字布局未确认：LABEL_COLLISION: 外侧网名区两侧均被占用，请增加器件间距或重新布局；保留已知导线，禁止重复创建。"
+        },
+        {
+          "componentId": "0d13bbd3693e3f31",
+          "pinNumber": "45",
+          "netName": "LABEL_TEST_45",
+          "terminal": "none",
+          "x": 685,
+          "y": 485,
+          "rotation": 0,
+          "line": [
+            685,
+            485,
+            705,
+            485,
+            705,
+            475,
+            865,
+            475
+          ],
+          "alreadyConnected": false,
+          "ok": false,
+          "primitiveId": "5554729ecc5d9107",
+          "executionState": "label_unconfirmed",
+          "netlistConfirmed": true,
+          "error": "连接已回读，文字布局未确认：LABEL_COLLISION: 外侧网名区两侧均被占用，请增加器件间距或重新布局；保留已知导线，禁止重复创建。"
+        },
+        {
+          "componentId": "0d13bbd3693e3f31",
+          "pinNumber": "46",
+          "netName": "LABEL_TEST_46",
+          "terminal": "none",
+          "x": 685,
+          "y": 495,
+          "rotation": 0,
+          "line": [
+            685,
+            495,
+            865,
+            495
+          ],
+          "alreadyConnected": false,
+          "ok": false,
+          "primitiveId": "04e851ab23247b78",
+          "executionState": "label_unconfirmed",
+          "netlistConfirmed": true,
+          "error": "连接已回读，文字布局未确认：LABEL_COLLISION: 外侧网名区两侧均被占用，请增加器件间距或重新布局；保留已知导线，禁止重复创建。"
+        },
+        {
+          "componentId": "0d13bbd3693e3f31",
+          "pinNumber": "47",
+          "netName": "LABEL_TEST_47",
+          "terminal": "none",
+          "x": 685,
+          "y": 505,
+          "rotation": 0,
+          "line": [
+            685,
+            505,
+            715,
+            505,
+            715,
+            515,
+            865,
+            515
+          ],
+          "alreadyConnected": false,
+          "ok": false,
+          "primitiveId": "67ad732a70307948",
+          "executionState": "label_unconfirmed",
+          "netlistConfirmed": true,
+          "error": "连接已回读，文字布局未确认：LABEL_COLLISION: 外侧网名区两侧均被占用，请增加器件间距或重新布局；保留已知导线，禁止重复创建。"
+        },
+        {
+          "componentId": "0d13bbd3693e3f31",
+          "pinNumber": "48",
+          "netName": "LABEL_TEST_48",
+          "terminal": "none",
+          "x": 685,
+          "y": 515,
+          "rotation": 0,
+          "line": [
+            685,
+            515,
+            705,
+            515,
+            705,
+            535,
+            865,
+            535
+          ],
+          "alreadyConnected": false,
+          "ok": false,
+          "primitiveId": "c5452a114e1519d9",
+          "executionState": "label_unconfirmed",
+          "netlistConfirmed": true,
+          "error": "连接已回读，文字布局未确认：LABEL_COLLISION: 外侧网名区两侧均被占用，请增加器件间距或重新布局；保留已知导线，禁止重复创建。"
+        }
+      ],
+      "total": 8,
+      "attempted": 8,
+      "routing": "staircase",
+      "netLabelPlacement": "outer",
+      "textGeometryVerified": false,
+      "drcCheckPassed": false,
+      "connectionVerification": {
+        "requested": 8,
+        "confirmed": 8,
+        "connectionsConfirmed": true
+      },
+      "remainingIndices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "verification": "请调用 schematic_review 核对实际网表与 DRC；失败项先回读再续做，不要重放整批。"
+    },
+    "cleanedUp": true
+  },
+  "revision": "dd248a484fe8b9d8fb678e242773f1880f19324bdc5192a2b8ba027c74ab1e80",
+  "page": "d83e19a03d507237",
+  "placement": {
+    "ok": true,
+    "mode": "grid",
+    "layoutNotice": "已使用显式坐标/固定间距的 grid 布局，不是 compact/elk 紧凑布局。",
+    "results": [
+      {
+        "index": 0,
+        "uuid": "accfc2f6010745268febab2459577079",
+        "designator": "U2901",
+        "nets": {},
+        "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+        "x": 600,
+        "y": 400,
+        "rotation": 0,
+        "mirror": false,
+        "ok": true,
+        "primitiveId": "9cc2145b77393971",
+        "uniqueId": "9cc2145b77393971",
+        "clearance": 20,
+        "collisionChecked": true,
+        "geometry": {
+          "source": "sdk-bbox",
+          "measured": true,
+          "box": "[MaxDepthExceeded]"
+        },
+        "executionState": "confirmed"
+      }
+    ],
+    "total": 1,
+    "attempted": 1,
+    "remainingIndices": []
+  },
+  "componentId": "9cc2145b77393971",
+  "assignments": [
+    {
+      "componentId": "9cc2145b77393971",
+      "pinNumber": "1",
+      "netName": "LABEL_TEST_1"
+    },
+    {
+      "componentId": "9cc2145b77393971",
+      "pinNumber": "2",
+      "netName": "LABEL_TEST_2"
+    },
+    {
+      "componentId": "9cc2145b77393971",
+      "pinNumber": "3",
+      "netName": "LABEL_TEST_3"
+    },
+    {
+      "componentId": "9cc2145b77393971",
+      "pinNumber": "4",
+      "netName": "LABEL_TEST_4"
+    },
+    {
+      "componentId": "9cc2145b77393971",
+      "pinNumber": "45",
+      "netName": "LABEL_TEST_45"
+    },
+    {
+      "componentId": "9cc2145b77393971",
+      "pinNumber": "46",
+      "netName": "LABEL_TEST_46"
+    },
+    {
+      "componentId": "9cc2145b77393971",
+      "pinNumber": "47",
+      "netName": "LABEL_TEST_47"
+    },
+    {
+      "componentId": "9cc2145b77393971",
+      "pinNumber": "48",
+      "netName": "LABEL_TEST_48"
+    }
+  ],
+  "connection": {
+    "ok": true,
+    "results": [
+      {
+        "componentId": "9cc2145b77393971",
+        "pinNumber": "1",
+        "netName": "LABEL_TEST_1",
+        "terminal": "none",
+        "x": 515,
+        "y": 515,
+        "rotation": 180,
+        "line": [
+          515,
+          515,
+          495,
+          515,
+          495,
+          535,
+          335,
+          535
+        ],
+        "alreadyConnected": false,
+        "ok": true,
+        "primitiveId": "1b1d9dd3f3d1cd6b",
+        "executionState": "net_confirmed",
+        "netlistConfirmed": true
+      },
+      {
+        "componentId": "9cc2145b77393971",
+        "pinNumber": "2",
+        "netName": "LABEL_TEST_2",
+        "terminal": "none",
+        "x": 515,
+        "y": 505,
+        "rotation": 180,
+        "line": [
+          515,
+          505,
+          485,
+          505,
+          485,
+          515,
+          335,
+          515
+        ],
+        "alreadyConnected": false,
+        "ok": true,
+        "primitiveId": "7efa8f51e26fb75d",
+        "executionState": "net_confirmed",
+        "netlistConfirmed": true
+      },
+      {
+        "componentId": "9cc2145b77393971",
+        "pinNumber": "3",
+        "netName": "LABEL_TEST_3",
+        "terminal": "none",
+        "x": 515,
+        "y": 495,
+        "rotation": 180,
+        "line": [
+          515,
+          495,
+          335,
+          495
+        ],
+        "alreadyConnected": false,
+        "ok": true,
+        "primitiveId": "06cca919ca4ec5f5",
+        "executionState": "net_confirmed",
+        "netlistConfirmed": true
+      },
+      {
+        "componentId": "9cc2145b77393971",
+        "pinNumber": "4",
+        "netName": "LABEL_TEST_4",
+        "terminal": "none",
+        "x": 515,
+        "y": 485,
+        "rotation": 180,
+        "line": [
+          515,
+          485,
+          495,
+          485,
+          495,
+          475,
+          335,
+          475
+        ],
+        "alreadyConnected": false,
+        "ok": true,
+        "primitiveId": "2152289d58095848",
+        "executionState": "net_confirmed",
+        "netlistConfirmed": true
+      },
+      {
+        "componentId": "9cc2145b77393971",
+        "pinNumber": "45",
+        "netName": "LABEL_TEST_45",
+        "terminal": "none",
+        "x": 685,
+        "y": 485,
+        "rotation": 0,
+        "line": [
+          685,
+          485,
+          705,
+          485,
+          705,
+          475,
+          865,
+          475
+        ],
+        "alreadyConnected": false,
+        "ok": true,
+        "primitiveId": "f3e14eb0c7f58258",
+        "executionState": "net_confirmed",
+        "netlistConfirmed": true
+      },
+      {
+        "componentId": "9cc2145b77393971",
+        "pinNumber": "46",
+        "netName": "LABEL_TEST_46",
+        "terminal": "none",
+        "x": 685,
+        "y": 495,
+        "rotation": 0,
+        "line": [
+          685,
+          495,
+          865,
+          495
+        ],
+        "alreadyConnected": false,
+        "ok": true,
+        "primitiveId": "59c86e63ddd3b9a8",
+        "executionState": "net_confirmed",
+        "netlistConfirmed": true
+      },
+      {
+        "componentId": "9cc2145b77393971",
+        "pinNumber": "47",
+        "netName": "LABEL_TEST_47",
+        "terminal": "none",
+        "x": 685,
+        "y": 505,
+        "rotation": 0,
+        "line": [
+          685,
+          505,
+          715,
+          505,
+          715,
+          515,
+          865,
+          515
+        ],
+        "alreadyConnected": false,
+        "ok": true,
+        "primitiveId": "505cf5e4fed44a0c",
+        "executionState": "net_confirmed",
+        "netlistConfirmed": true
+      },
+      {
+        "componentId": "9cc2145b77393971",
+        "pinNumber": "48",
+        "netName": "LABEL_TEST_48",
+        "terminal": "none",
+        "x": 685,
+        "y": 515,
+        "rotation": 0,
+        "line": [
+          685,
+          515,
+          705,
+          515,
+          705,
+          535,
+          865,
+          535
+        ],
+        "alreadyConnected": false,
+        "ok": true,
+        "primitiveId": "41d836c1b0c5c4fc",
+        "executionState": "net_confirmed",
+        "netlistConfirmed": true
+      }
+    ],
+    "total": 8,
+    "attempted": 8,
+    "routing": "staircase",
+    "netLabelPlacement": "outer",
+    "textGeometryVerified": true,
+    "netLabelGeometry": [
+      {
+        "primitiveId": "1b1d9dd3f3d1cd6b",
+        "attributeId": "f89e93f731930fcf",
+        "box": {
+          "minX": 338,
+          "maxX": 403.5229187011719,
+          "minY": 523,
+          "maxY": 533
+        }
+      },
+      {
+        "primitiveId": "7efa8f51e26fb75d",
+        "attributeId": "9757e1124e7bf68f",
+        "box": {
+          "minX": 338,
+          "maxX": 403.5229187011719,
+          "minY": 503,
+          "maxY": 513
+        }
+      },
+      {
+        "primitiveId": "06cca919ca4ec5f5",
+        "attributeId": "037811b12a424dff",
+        "box": {
+          "minX": 338,
+          "maxX": 403.5229187011719,
+          "minY": 483,
+          "maxY": 493
+        }
+      },
+      {
+        "primitiveId": "2152289d58095848",
+        "attributeId": "9adc3767fe6d8583",
+        "box": {
+          "minX": 338,
+          "maxX": 403.5229187011719,
+          "minY": 463,
+          "maxY": 473
+        }
+      },
+      {
+        "primitiveId": "f3e14eb0c7f58258",
+        "attributeId": "acbd0316388041a4",
+        "box": {
+          "minX": 732,
+          "maxX": 802.4893493652344,
+          "minY": 463,
+          "maxY": 473
+        }
+      },
+      {
+        "primitiveId": "59c86e63ddd3b9a8",
+        "attributeId": "7ce7cfb8238887de",
+        "box": {
+          "minX": 732,
+          "maxX": 802.4893493652344,
+          "minY": 483,
+          "maxY": 493
+        }
+      },
+      {
+        "primitiveId": "505cf5e4fed44a0c",
+        "attributeId": "cfac331acf4a1c0f",
+        "box": {
+          "minX": 732,
+          "maxX": 802.4893493652344,
+          "minY": 503,
+          "maxY": 513
+        }
+      },
+      {
+        "primitiveId": "41d836c1b0c5c4fc",
+        "attributeId": "8eb45b6c6dfee8cc",
+        "box": {
+          "minX": 732,
+          "maxX": 802.4893493652344,
+          "minY": 523,
+          "maxY": 533
+        }
+      }
+    ],
+    "drcCheckPassed": false,
+    "connectionVerification": {
+      "requested": 8,
+      "confirmed": 8,
+      "connectionsConfirmed": true
+    },
+    "remainingIndices": [],
+    "verification": "请调用 schematic_review 核对实际网表与 DRC；失败项先回读再续做，不要重放整批。"
+  },
+  "saved": true
+}

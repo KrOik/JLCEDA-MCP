@@ -11,7 +11,7 @@
 
 import { isPlainObjectRecord, parseBoundedIntegerValue, toSafeErrorMessage } from '../utils';
 
-interface ComponentSelectCandidate {
+export interface ComponentSelectCandidate {
 	uuid: string;
 	libraryUuid: string;
 	name: string;
@@ -142,7 +142,18 @@ export async function handleComponentSelectTask(payload: unknown): Promise<unkno
 		rawResults = await libDevice.search(keyword, undefined, undefined, undefined, limit, page);
 	}
 	catch (error: unknown) {
+		const record = error as { status?: number; statusCode?: number; retryAfterMs?: number; response?: { status?: number; headers?: Record<string, string> } };
+		if (record?.status === 429 || record?.statusCode === 429 || record?.response?.status === 429 || /429|too many requests|rate.?limit/i.test(toSafeErrorMessage(error))) {
+			const seconds = record?.response?.headers?.['retry-after'];
+			const wait = seconds && /^\d+$/.test(seconds) ? Number(seconds) * 1000 : seconds ? Date.parse(seconds) - Date.now() : record?.retryAfterMs;
+			return { ok: false, errorCode: 'RATE_LIMITED', retryAfterMs: typeof wait === 'number' && Number.isFinite(wait) ? Math.max(1000, wait) : 60000 };
+		}
 		throw new Error(`器件搜索失败：${toSafeErrorMessage(error)}`);
+	}
+	if (!Array.isArray(rawResults)) {
+		const raw = rawResults as { status?: number; code?: number; message?: string };
+		if (raw?.status === 429 || raw?.code === 429 || /429|too many requests/i.test(raw?.message ?? '')) return { ok: false, errorCode: 'RATE_LIMITED', retryAfterMs: 60000 };
+		throw new Error('器件搜索失败：商城返回格式异常');
 	}
 
 	if (!Array.isArray(rawResults) || rawResults.length === 0) {
@@ -176,4 +187,33 @@ export async function handleComponentSelectTask(payload: unknown): Promise<unkno
 		ok: true,
 		selection,
 	};
+}
+
+/** Search evidence for agent decisions. No UI confirmation and no invented library IDs. */
+export async function handleComponentMatchTask(payload: unknown): Promise<unknown> {
+	if (!isPlainObjectRecord(payload))
+		throw new TypeError('参数必须为对象');
+	if (payload.inStockOnly !== undefined && typeof payload.inStockOnly !== 'boolean')
+		throw new TypeError('inStockOnly 必须为 boolean');
+	const response = await handleComponentSelectTask(payload) as { ok: boolean; error?: string; selection?: ComponentSelectRequest };
+	if (!response.ok || !response.selection)
+		return response.error?.startsWith('未在立创商城') ? { ...response, errorCode: 'NO_MATCH' } : response;
+	const normalize = (value: unknown): string => String(value ?? '').trim().toLowerCase();
+	const keyword = normalize(payload.keyword);
+	const manufacturerId = normalize(payload.manufacturerId);
+	const supplierId = normalize(payload.supplierId);
+	const footprint = normalize(payload.footprintName);
+	if (payload.inStockOnly !== undefined && typeof payload.inStockOnly !== 'boolean')
+		throw new TypeError('inStockOnly 必须为 boolean');
+	const candidates = response.selection.candidates
+		.filter(item => (!manufacturerId || normalize(item.manufacturerId) === manufacturerId)
+			&& (!supplierId || normalize(item.supplierId) === supplierId)
+			&& (!footprint || normalize(item.footprintName) === footprint)
+			&& (!payload.inStockOnly || item.lcscInventory > 0))
+		.map((item) => {
+			const exactMatch = [item.manufacturerId, item.supplierId, item.name].some(value => normalize(value) === keyword);
+			return { ...item, exactMatch, matchReason: exactMatch ? '型号/料号/名称精确匹配' : '器件库关键词搜索候选，需核对参数' };
+		})
+		.sort((a, b) => Number(b.exactMatch) - Number(a.exactMatch) || b.lcscInventory - a.lcscInventory);
+	return { ok: candidates.length > 0, ...(candidates.length ? {} : { errorCode: 'NO_MATCH' }), candidates, page: response.selection.currentPage, pageSize: response.selection.pageSize, source: 'lib_Device.search' };
 }

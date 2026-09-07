@@ -54,6 +54,19 @@ function installSchematicReadMock(overrides?: Partial<SchematicReadMock>): Schem
 }
 
 describe('handleSchematicReadTask', () => {
+	it('exposes normalized current-page geometry only when requested', async () => {
+		const part = createStateObject({ PrimitiveId: 'c1', Designator: 'C1', ComponentType: 'part', X: 5000, Y: 1000 });
+		const mock = installSchematicReadMock();
+		mock.sch_PrimitiveComponent.getAll.mockResolvedValue([part]);
+		Object.assign(mock, {
+			sch_Primitive: { getPrimitivesBBox: async () => ({ minX: 4994.5, maxX: 5005.5, minY: 1008.5, maxY: 991.5 }) },
+			sch_PrimitiveAttribute: { getAll: async () => [] },
+		});
+		expect(await handleSchematicReadTask({ includeGeometry: true })).toMatchObject({
+			ok: true, geometryScope: 'current-page', geometry: [{ primitiveId: 'c1', width: 11, height: 17, measured: true, source: 'sdk-bbox', box: { minY: 991.5, maxY: 1008.5 } }],
+		});
+		expect(await handleSchematicReadTask({})).not.toHaveProperty('geometry');
+	});
 	beforeEach(() => {
 		vi.restoreAllMocks();
 		installSchematicReadMock();

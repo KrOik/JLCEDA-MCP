@@ -194,10 +194,15 @@ export async function cleanupExpiredPeers(): Promise<void> {
       continue;
     }
 
-    if (current - peer.lastSeenAt > BRIDGE_CLIENT_TTL_MS) {
+    if (!peer.lastPingAt || current - peer.lastPingAt >= 15000) {
+      peer.lastPingAt = current;
+      try { peer.socket.ping(); } catch { /* The socket close/error path handles transport failures. */ }
+    }
+    // App heartbeat freshness is not socket liveness. Background pages may run JS once/minute.
+    if (current - Math.max(peer.lastSeenAt, peer.lastPongAt ?? peer.connectedAt) > BRIDGE_CLIENT_TTL_MS) {
       // Long-running bridge tasks can legitimately starve heartbeats on the EDA side.
       // Keep the active peer alive until its in-flight request resolves or times out.
-      if (hasPendingRequestForClient(peer.clientId)) {
+      if (hasPendingRequestForClient(peer.clientId) || peer.uncertainRequestId) {
         continue;
       }
 
@@ -219,6 +224,12 @@ export async function registerClient(clientId: string, socket: WebSocket): Promi
   const current = nowMs();
   const existingPeer = bridgeBrokerState.peersByClientId.get(normalizedClientId);
   const isExistingSocketBinding = Boolean(existingPeer && existingPeer.socket === socket);
+  if (existingPeer && isExistingSocketBinding) {
+    // Preserve readiness, page identity and timeout quarantine across heartbeats.
+    // Replacing this object races async hello/ready handlers and loses state.
+    existingPeer.lastSeenAt = current;
+    return existingPeer;
+  }
   if (existingPeer && existingPeer.socket !== socket) {
     bridgeBrokerState.clientIdBySocket.delete(existingPeer.socket);
   }

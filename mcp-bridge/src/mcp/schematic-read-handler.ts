@@ -10,7 +10,8 @@
  * ------------------------------------------------------------------------
  */
 
-import { safeCall } from '../utils';
+import { isPlainObjectRecord, safeCall, toSafeErrorMessage } from '../utils';
+import { readComponentGeometry } from './layout-safety';
 
 export interface SchematicSemanticPin {
 	pinNumber: string;
@@ -421,6 +422,20 @@ function toLegacySnapshotJson(snapshot: SchematicSemanticSnapshot): string {
  * @returns 读取结果，含完整电路语义快照。
  */
 export async function handleSchematicReadTask(_payload: unknown): Promise<unknown> {
+	const includeGeometry = isPlainObjectRecord(_payload) && _payload.includeGeometry === true;
+	const geometry: unknown[] = [];
+	if (includeGeometry) {
+		const page = await eda.dmt_Schematic.getCurrentSchematicPageInfo();
+		for (const part of await eda.sch_PrimitiveComponent.getAll('part' as never, false)) {
+			const primitiveId = part.getState_PrimitiveId();
+			try {
+				const measured = await readComponentGeometry(part, primitiveId);
+				geometry.push({ primitiveId, designator: part.getState_Designator(), ...measured, width: measured.box.maxX - measured.box.minX, height: measured.box.maxY - measured.box.minY });
+			}
+			catch (error) { geometry.push({ primitiveId, measured: false, error: toSafeErrorMessage(error) }); }
+		}
+		if ((await eda.dmt_Schematic.getCurrentSchematicPageInfo())?.uuid !== page?.uuid) return { ok: false, error: 'DOCUMENT_CHANGED' };
+	}
 	const result = await readSchematicCircuit();
 	if (!result.ok) {
 		return { ok: false, error: result.error };
@@ -428,6 +443,7 @@ export async function handleSchematicReadTask(_payload: unknown): Promise<unknow
 
 	return {
 		ok: true,
+		...(includeGeometry ? { geometry, geometryScope: 'current-page', unitSystem: 'editor-coordinate' } : {}),
 		schematicCircuitSnapshot: toLegacySnapshotJson(result.snapshot),
 	};
 }

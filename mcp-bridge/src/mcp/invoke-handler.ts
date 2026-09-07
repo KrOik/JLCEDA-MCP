@@ -10,6 +10,7 @@
  */
 
 import { isPlainObjectRecord, toSerializableAsync } from '../utils';
+import { assertApiInvokeAllowed } from './api-invoke-policy';
 
 // 在对象上解析段名，要求精确匹配。
 function resolveSegmentKey(target: Record<string, unknown>, segment: string): string {
@@ -86,8 +87,9 @@ export async function handleApiInvokeTask(payload: unknown): Promise<unknown> {
 	}
 
 	const apiFullName = String(payload.apiFullName ?? '').trim();
-	const { callable, thisArg, resolvedPath } = resolveApiCallable(apiFullName);
 	const invokeArgs = Array.isArray(payload.args) ? payload.args : [];
+	assertApiInvokeAllowed(apiFullName, invokeArgs);
+	const { callable, thisArg, resolvedPath } = resolveApiCallable(apiFullName);
 	const invokeResult = await Promise.resolve(callable.apply(thisArg, invokeArgs));
 
 	return {

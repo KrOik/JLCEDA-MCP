@@ -105,6 +105,9 @@ function startStatusMonitor(): void {
 			if (age <= STALE_STATUS_MS) {
 				applyBridgeStatus(snapshot);
 			}
+			else {
+				setStatus('error', '连接状态已过期，等待心跳恢复', 'error', '未收到最新连接状态');
+			}
 		}
 	}, 1000);
 }

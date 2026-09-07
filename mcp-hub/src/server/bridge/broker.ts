@@ -10,6 +10,8 @@
  */
 
 import type WebSocket from 'ws';
+import { bridgeRequestContext } from './request-context';
+import { sendRoleToPeer } from './broker-lifecycle';
 import { type RawData } from 'ws';
 import type { UnifiedLogEntry } from '../../logging/server-log';
 import { isUnifiedLogEntry } from '../../logging/server-log';
@@ -84,6 +86,10 @@ async function handleClientMessage(socket: WebSocket, data: RawData): Promise<vo
   if (message.type === 'bridge/heartbeat') {
     const peer = await registerClient(message.clientId, socket);
     peer.lastSeenAt = nowMs();
+    if (message.context && typeof message.context.documentUuid === 'string'
+      && typeof message.context.documentType === 'string' && typeof message.context.title === 'string') {
+      peer.context = message.context;
+    }
     await sendBridgeMessage(peer.socket, {
       type: 'bridge/heartbeat-ack',
       clientId: peer.clientId,
@@ -96,6 +102,14 @@ async function handleClientMessage(socket: WebSocket, data: RawData): Promise<vo
   if (message.type === 'bridge/result') {
     const peer = await registerClient(message.clientId, socket);
     peer.lastSeenAt = nowMs();
+    peer.lastExecution = { requestId: message.requestId, state: message.error ? 'failed' : 'completed', completedAt: nowMs(),
+      result: JSON.stringify(message.result ?? null).length <= 20000 ? message.result : { omitted: true, message: '结果过大，请使用图元查询工具回读' }, error: message.error };
+    if (peer.uncertainRequestId === message.requestId) peer.uncertainRequestId = undefined;
+    const pending = bridgeBrokerState.pendingRequests.get(message.requestId);
+    if (pending?.path === '/bridge/jlceda/schematic/place-rows' && peer.context && message.result && typeof message.result === 'object') {
+      const job = message.result as { jobId?: string; state?: string; pending?: string };
+      if (job.jobId && job.state) peer.context.backgroundJob = ['running', 'uncertain'].includes(job.state) ? { jobId: job.jobId, state: job.state, pending: job.pending } : undefined;
+    }
     completePendingRequest({
       clientId: peer.clientId,
       requestId: String(message.requestId ?? '').trim(),
@@ -145,6 +159,12 @@ export function setBridgeDisconnectHandler(
 }
 
 export function attachBridgeClientSocket(socket: WebSocket): void {
+	// Native websocket pong does not depend on the EDA page's throttled JS timer.
+	socket.on('pong', () => {
+		const clientId = bridgeBrokerState.clientIdBySocket.get(socket);
+		const peer = clientId ? bridgeBrokerState.peersByClientId.get(clientId) : undefined;
+		if (peer?.socket === socket) peer.lastPongAt = nowMs();
+	});
   socket.on('message', (data: RawData) => {
     void handleClientMessage(socket, data).catch(async (error: unknown) => {
       await sendBridgeError(socket, error instanceof Error ? error.message : String(error));
@@ -170,7 +190,77 @@ export function attachBridgeClientSocket(socket: WebSocket): void {
   });
 }
 
-export async function enqueueBridgeRequest(
+let dispatching = false;
+
+/**
+ * Omitted routing is safe only when every live peer reports exactly the same
+ * editable document. This covers duplicate extension frames for one EDA tab
+ * without letting a second schematic/PCB window receive an accidental write.
+ */
+function inferUnambiguousPeer(peers: Array<{ clientId: string; isReady: boolean; context?: { documentUuid: string; documentType: string } }>) {
+  if (peers.length < 2 || !peers.every(peer => peer.isReady && peer.context?.documentUuid)) {
+    return undefined;
+  }
+  const documents = new Set(peers.map(peer => `${peer.context?.documentType}\u0000${peer.context?.documentUuid}`));
+  if (documents.size !== 1) {
+    return undefined;
+  }
+  const active = getReadyActivePeer();
+  return active && peers.some(peer => peer.clientId === active.clientId) ? active : undefined;
+}
+
+function hasConflictingDocumentContexts(peers: Array<{ context?: { documentUuid: string; documentType: string } }>): boolean {
+  const documents = new Set(peers
+    .filter(peer => peer.context?.documentUuid)
+    .map(peer => `${peer.context?.documentType}\u0000${peer.context?.documentUuid}`));
+  return documents.size > 1;
+}
+
+export async function enqueueBridgeRequest(path: string, payload: unknown, timeoutMs: number): Promise<unknown> {
+  if (dispatching) return { ok: false, errorCode: 'BRIDGE_BUSY', message: '另一个客户端任务正在执行，请稍后重试；未排队、未执行。' };
+  dispatching = true;
+  try {
+    const target = bridgeRequestContext.getStore();
+    const peers = [...bridgeBrokerState.peersByClientId.values()];
+    if (!peers.length) {
+      return { ok: false, errorCode: 'BRIDGE_OFFLINE', message: '没有 EDA 页面连接，未执行。请打开目标页面并检查 bridge_status。' };
+    }
+    const inferredPeer = !target?.targetClientId ? inferUnambiguousPeer(peers) : undefined;
+    if (peers.length > 1 && !target?.targetClientId && !inferredPeer) {
+      if (hasConflictingDocumentContexts(peers)) {
+        return { ok: false, errorCode: 'PAGE_CHANGE_DECLARATION_REQUIRED',
+          message: '检测到窗口/页面已切换。请先显式声明目标 targetClientId 和 targetDocumentUuid；未执行。', ...getBridgeStatus() };
+      }
+      return { ok: false, errorCode: 'TARGET_REQUIRED', message: '多个 EDA 页面在线，先调用 bridge_status，再指定 targetClientId 和 targetDocumentUuid。', ...getBridgeStatus() };
+    }
+    const peer = target?.targetClientId ? bridgeBrokerState.peersByClientId.get(target.targetClientId) : inferredPeer ?? peers[0];
+    if (target?.targetClientId && !peer) return { ok: false, errorCode: 'TARGET_OFFLINE' };
+    const owner = peers.find(p => p.context?.backgroundJob);
+    if (owner && (owner !== peer || !['/bridge/jlceda/schematic/place-rows', '/bridge/jlceda/context'].includes(path))) {
+      return { ok: false, errorCode: 'ROWS_JOB_OWNS_WRITES', jobId: owner.context!.backgroundJob!.jobId, targetClientId: owner.clientId, message: '后台排版任务持有写入权；先查询 schematic_place_rows status，不能切换客户端绕过。' };
+    }
+    if (peer && !peer.isReady) return { ok: false, errorCode: 'TARGET_NOT_READY', message: '目标页面尚未完成握手，未执行。' };
+    const needsDocument = /\/jlceda\/(pcb\/|schematic\/|component\/place|component\/match)/.test(path);
+    if (peer && needsDocument && !peer.context?.documentUuid) return { ok: false, errorCode: 'CONTEXT_NOT_READY', message: '等待页面心跳上报 documentUuid 后重试，未执行。' };
+    if (peer?.context && needsDocument) {
+      const expectedType = path.includes('/pcb/') ? 'pcb' : path.includes('/component/match') ? undefined : 'schematic';
+      if (expectedType && peer.context.documentType !== expectedType) return { ok: false, errorCode: 'DOCUMENT_TYPE_MISMATCH', context: peer.context };
+    }
+    if (peer?.uncertainRequestId) return { ok: false, errorCode: 'EXECUTION_UNCERTAIN', requestId: peer.uncertainRequestId,
+      message: '上次执行已超时但可能仍在 EDA 中运行，暂停此连接的新任务，等待原调用结束。不要重复放置。' };
+    if (peer && target?.targetDocumentUuid && peer.context?.documentUuid !== target.targetDocumentUuid) {
+      return { ok: false, errorCode: 'DOCUMENT_CHANGED', context: peer.context };
+    }
+    if (peer && peer.clientId !== bridgeBrokerState.activeClientId) {
+      bridgeBrokerState.activeClientId = peer.clientId;
+      bridgeBrokerState.leaseTerm += 1;
+      await Promise.all([...bridgeBrokerState.peersByClientId.values()].map(item => sendRoleToPeer(item, 'Explicit per-request target')));
+    }
+    return await dispatchBridgeRequest(path, payload, timeoutMs);
+  } finally { dispatching = false; }
+}
+
+async function dispatchBridgeRequest(
   path: string,
   payload: unknown,
   timeoutMs: number,
@@ -201,7 +291,10 @@ export async function enqueueBridgeRequest(
 
     const currentLeaseTerm = bridgeBrokerState.leaseTerm;
     const requestId = createRequestId();
+    readyActivePeer.lastExecution = { requestId, state: 'executing' };
     const request = {
+      deadlineAt,
+      targetDocumentUuid: bridgeRequestContext.getStore()?.targetDocumentUuid ?? readyActivePeer.context?.documentUuid,
       requestId,
       path,
       payload,
@@ -212,8 +305,11 @@ export async function enqueueBridgeRequest(
     const resultPromise = new Promise<unknown | BridgeRequestTimeoutResult>((resolve, reject) => {
       const remaining = deadlineAt - nowMs();
       const timer = setTimeout(() => {
+        readyActivePeer.uncertainRequestId = requestId;
+        readyActivePeer.lastExecution = { requestId, state: 'unknown' };
         bridgeBrokerState.pendingRequests.delete(requestId);
-        resolve(createBridgeRequestTimeoutResult(path, 'wait_result', timeoutMs, startedAt));
+        resolve({ ...createBridgeRequestTimeoutResult(path, 'wait_result', timeoutMs, startedAt), requestId,
+          executionState: 'unknown', retrySafe: false });
       }, remaining);
 
       bridgeBrokerState.pendingRequests.set(requestId, {
@@ -243,14 +339,14 @@ export async function enqueueBridgeRequest(
         disconnectActor: 'runtime',
         closeReason: 'bridge_task_send_failed',
       });
-      continue;
+      return { ok: false, errorCode: 'SEND_FAILED', executionState: 'unknown', retrySafe: false, requestId };
     }
 
     return await resultPromise;
   }
 }
 
-export function getBridgeStatus(): { connectedClients: number; pendingRequests: number; clientIds: string[] } {
+export function getBridgeStatus() {
   const clientIds = [...bridgeBrokerState.peersByClientId.keys()].sort((left, right) => left.localeCompare(right));
   if (bridgeBrokerState.activeClientId.length > 0) {
     const index = clientIds.indexOf(bridgeBrokerState.activeClientId);
@@ -261,6 +357,12 @@ export function getBridgeStatus(): { connectedClients: number; pendingRequests: 
   }
 
   return {
+    clients: [...bridgeBrokerState.peersByClientId.values()].map(peer => ({
+      clientId: peer.clientId, context: peer.context, ready: peer.isReady,
+      lastSeenAt: peer.lastSeenAt, uncertainRequestId: peer.uncertainRequestId,
+      lastExecution: peer.lastExecution,
+      active: peer.clientId === bridgeBrokerState.activeClientId,
+    })),
     connectedClients: clientIds.length,
     pendingRequests: bridgeBrokerState.pendingRequests.size,
     clientIds,

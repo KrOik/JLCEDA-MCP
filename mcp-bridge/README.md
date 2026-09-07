@@ -1,3 +1,7 @@
+# AI 自动执行模式更新
+
+当前 Bridge 支持 AI 自主选型、真实几何检查后的自动放置、引脚 NET 标签配置、精确文档绑定和回读确认。无需侧边栏选型或鼠标放置。服务入口、碰撞保护和结果未知时的恢复规则见 [执行闭环指南](../docs/agent-execution.md)。下文为历史安装与 API 说明，旧交互行为以该指南为准。
+
 # MCP Bridge
 
 本扩展为嘉立创 EDA **AI 设计助手** 的 MCP 版，支持双协议连接（stdio / http），在 VS Code / Cursor 内的聊天工具（Copilot / Chat / Claude Code / Codex 等）中提供原理图分析、器件选型、交互放置等功能，配合 VS Code / Cursor 侧的 **JLCEDA MCP Hub** 扩展使用。
@@ -99,3 +103,4 @@ EDA 页面可能未桥接成功，请回到连接设置页确认连接状态是�
 ## 许可证
 
 本扩展采用 [Apache License 2.0](LICENSE) 许可证。
+本地修复（2026-09-07）：布局只计入显式可见属性，避免隐藏元数据的原点包围盒误报碰撞。三种布局均支持指定 `designator`，重复位号在写入前拒绝；碰撞候选位置遵守 `grid/maxRadius`。

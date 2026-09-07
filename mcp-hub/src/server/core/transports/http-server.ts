@@ -10,6 +10,7 @@
  */
 
 import * as http from 'http';
+import { serveOta } from './ota-server';
 import type { RpcHandler } from '../../mcp/rpc-handler';
 import { toSafeErrorMessage } from '../../../utils';
 
@@ -19,6 +20,9 @@ const MAX_BODY_BYTES = 4 * 1024 * 1024;
 const SSE_HEARTBEAT_INTERVAL_MS = 25_000;
 
 export interface HttpMcpServerOptions {
+	otaDirectory?: string;
+	getStatus?: () => unknown;
+	requestStop?: () => boolean;
 	port: number;
 	rpcHandler: RpcHandler;
 	onListening: () => void;
@@ -59,6 +63,20 @@ export function startHttpMcpServer(options: HttpMcpServerOptions): HttpMcpServer
 	}
 
 	const server = http.createServer((req, res) => {
+		if (options.otaDirectory && serveOta(req, res, options.otaDirectory)) return;
+		if (req.method === 'POST' && req.url === '/control/stop' && options.requestStop) {
+			if (req.headers.origin || req.headers['x-jlceda-control'] !== 'stop') {
+				writeJsonResponse(res, 403, { ok: false });
+				return;
+			}
+			const accepted = options.requestStop();
+			writeJsonResponse(res, accepted ? 200 : 409, { ok: accepted, message: accepted ? '服务正在停止' : '任务尚未结束，停止请求被拒绝；先查看执行状态' });
+			return;
+		}
+		if (req.method === 'GET' && req.url === '/status' && options.getStatus) {
+			writeJsonResponse(res, 200, options.getStatus());
+			return;
+		}
 		// 健康检查端点，供外部工具探活。
 		if (req.method === 'GET' && req.url === '/health') {
 			res.writeHead(200, { 'Content-Type': 'text/plain' });

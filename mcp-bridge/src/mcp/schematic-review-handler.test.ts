@@ -86,10 +86,32 @@ describe('handleSchematicReviewTask', () => {
 			},
 		});
 
-		await expect(handleSchematicReviewTask({})).resolves.toEqual({
+		await expect(handleSchematicReviewTask({})).resolves.toMatchObject({
 			ok: true,
 			drcCheckPassed: false,
+			drcStrict: true,
 			netlistText: 'R1 1 2 10k',
 		});
+	});
+	it('uses strict boolean DRC and flags the empty-ID unconnected netlist seen in the STM32 session', async () => {
+		const mock = installSchematicReviewMock();
+		mock.sch_ManufactureData.getNetlistFile.mockResolvedValue({ text: async () => JSON.stringify({
+			components: { '': { props: { 'Unique ID': '', Designator: 'U?' }, pinInfoMap: { '1': { net: '' } } } },
+		}) });
+		const result = await handleSchematicReviewTask({});
+		expect(mock.sch_Drc.check).toHaveBeenCalledWith(true, false, false);
+		expect(result).toMatchObject({ drcCheckPassed: true, warnings: [expect.stringContaining('空唯一 ID'), expect.stringContaining('没有可识别的已连接引脚')] });
+	});
+	it('does not treat an unavailable DRC result as a checked design', async () => {
+		const mock = installSchematicReviewMock();
+		mock.sch_Drc.check.mockResolvedValue(undefined);
+		expect(await handleSchematicReviewTask({})).toMatchObject({ drcCheckPassed: false, warnings: expect.arrayContaining([expect.stringContaining('DRC 未返回')]) });
+	});
+	it('accepts a numbered connected netlist without completeness claims', async () => {
+		const mock = installSchematicReviewMock();
+		mock.sch_ManufactureData.getNetlistFile.mockResolvedValue({ text: async () => JSON.stringify({
+			components: { u1: { props: { 'Unique ID': 'u1', Designator: 'U1' }, pinInfoMap: { '1': { net: 'GND' } } } },
+		}) });
+		expect(await handleSchematicReviewTask({})).toMatchObject({ warnings: [], drcStrict: true });
 	});
 });

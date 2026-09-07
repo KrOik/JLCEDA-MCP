@@ -2,6 +2,11 @@ import type WebSocket from 'ws';
 import { BridgeLogPipeline } from '../../logging/bridge-log';
 
 export interface BridgePeerState {
+	lastPongAt?: number;
+	lastPingAt?: number;
+	lastExecution?: { requestId: string; state: string; completedAt?: number; result?: unknown; error?: unknown };
+	context?: { documentUuid: string; documentType: string; title: string; backgroundJob?: { jobId: string; state: string; pending?: string } };
+	uncertainRequestId?: string;
   clientId: string;
   connectedAt: number;
   lastSeenAt: number;

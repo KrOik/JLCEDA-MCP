@@ -60,6 +60,8 @@ export interface BridgeProtocolError {
  * 标准化任务载荷结构，Hub 队列与 Bridge 收包统一使用同一模型。
  */
 export interface BridgeTaskEnvelope<TPayload = unknown> {
+	deadlineAt?: number;
+	targetDocumentUuid?: string;
 	requestId: string;
 	path: string;
 	payload: TPayload;
@@ -80,6 +82,7 @@ export interface BridgeClientHelloMessage {
  * 客户端上报心跳消息。
  */
 export interface BridgeClientHeartbeatMessage {
+	context?: { documentUuid: string; documentType: string; title: string; backgroundJob?: { jobId: string; state: string; pending?: string } };
 	type: 'bridge/heartbeat';
 	clientId: string;
 	sentAt: number;

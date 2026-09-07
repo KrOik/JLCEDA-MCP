@@ -146,6 +146,8 @@ function resolveFollowMouseTipApi(): FollowMouseTipApi | null {
 	};
 }
 
+export function isPlacementIdle(): boolean { return activePlaceSessions.size === 0; }
+
 async function cleanupPlaceSession(sessionId: string): Promise<void> {
 	const session = activePlaceSessions.get(sessionId);
 	if (!session) {

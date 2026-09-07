@@ -1,6 +1,6 @@
 {
 	"name": "pro-api-sdk",
-	"version": "1.5.5",
+	"version": "1.7.0",
 	"description": "嘉立创EDA & EasyEDA 专业版扩展 API 开发工具",
 	"author": "JLCEDA <support@lceda.cn>",
 	"license": "Apache-2.0",
@@ -9,6 +9,7 @@
 		"node": ">=20.17.0"
 	},
 	"scripts": {
+		"ota:publish": "node ./config/publish-ota.mjs",
 		"compile": "call \"%NODE%\" -e \"require('fs').rmSync('./dist',{recursive:true,force:true})\" && call \"%NODE%\" ./node_modules/ts-node/dist/bin.js ./config/esbuild.prod.ts",
 		"lint": "call \"%NODE%\" ./node_modules/eslint/bin/eslint.js src config build --ext .ts,.js",
 		"test": "call \"%NODE%\" ./node_modules/vitest/vitest.mjs run",
@@ -39,5 +40,8 @@
 	},
 	"lint-staged": {
 		"*": "eslint --fix"
+	},
+	"dependencies": {
+		"elkjs": "0.9.3"
 	}
 }

@@ -20,6 +20,8 @@ const commonConfig = {
 	entryPoints: [
 		'./src/extension.ts',
 		'./src/server/runtime.ts',
+		'./src/server/runtime-lite.ts',
+		'./src/server/standalone.ts',
 	],
 	outbase: './src',
 	outdir: './out',

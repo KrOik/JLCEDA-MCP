@@ -248,11 +248,28 @@ describe('bridge transport', () => {
 		await expect(connectPromise).resolves.toBeUndefined();
 
 		await vi.advanceTimersByTimeAsync(5500);
+		expect(callbacks.onLost).not.toHaveBeenCalled();
+		await vi.advanceTimersByTimeAsync(40000);
 
 		expect(callbacks.onLost).toHaveBeenCalledTimes(1);
 		expect(edaMock.close).toHaveBeenCalledWith('socket-d', 1011, expect.any(String));
 	});
 
+	it('grants a fresh acknowledgement window after host suspension', async () => {
+		const edaMock = installEdaWebSocketMock();
+		const callbacks = { onRoleChanged: vi.fn(), onDebugSwitchChanged: vi.fn(), onTask: vi.fn(), onLost: vi.fn() };
+		const { BridgeTransport } = await import('./bridge-transport.ts');
+		const transport = new BridgeTransport('ws://127.0.0.1:8765/bridge/ws', 'suspended', 'client-s', '1.5.8', callbacks);
+		const connecting = transport.connect();
+		edaMock.sockets.get('suspended')?.onOpen();
+		await Promise.resolve();
+		await edaMock.sockets.get('suspended')?.onMessage({ data: JSON.stringify({ type: 'bridge/welcome', clientId: 'client-s', connectedAt: new Date().toISOString() }) });
+		await connecting;
+		vi.setSystemTime(Date.now() + 180000);
+		await vi.advanceTimersByTimeAsync(1000);
+		expect(callbacks.onLost).not.toHaveBeenCalled();
+		transport.close();
+	});
 	it('fails an established connection when the server sends malformed json', async () => {
 		const edaMock = installEdaWebSocketMock();
 		const callbacks = {

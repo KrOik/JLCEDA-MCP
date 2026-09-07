@@ -10,7 +10,7 @@ import { ServerStateManager } from '../../state/server-state-manager';
 import { isPlainObjectRecord } from '../../utils';
 import type { BridgeRequestTimeoutResult } from './broker-state';
 
-export const BRIDGE_CLIENT_TTL_MS = 8_000;
+export const BRIDGE_CLIENT_TTL_MS = 120_000;
 export const BRIDGE_BROKER_TEXT = ServerStateManager.text.broker;
 
 export class BridgePeerWaitTimeoutError extends Error {

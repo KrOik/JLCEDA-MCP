@@ -84,6 +84,11 @@ export class HostRuntimeBridge implements vscode.Disposable {
 			: this.latestSnapshot;
 	}
 
+	public updateStandaloneSnapshot(snapshot: RuntimeStatusSnapshot): void {
+		this.latestSnapshot = snapshot;
+		this.snapshotEmitter.fire(snapshot);
+	}
+
 	public getCurrentInteraction(): SidebarInteractionRequest | null {
 		return this.currentInteraction;
 	}

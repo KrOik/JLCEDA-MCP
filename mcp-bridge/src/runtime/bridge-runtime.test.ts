@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-type BridgeTransportCallbacks = {
+interface BridgeTransportCallbacks {
 	onRoleChanged: (message: {
 		role: 'active' | 'standby';
 		clientId: string;
@@ -17,9 +17,9 @@ type BridgeTransportCallbacks = {
 		leaseTerm: number;
 	}) => Promise<void>;
 	onLost: (message: string) => void;
-};
+}
 
-type MockLogEntry = {
+interface MockLogEntry {
 	level: 'info' | 'warning';
 	module: string;
 	event: string;
@@ -31,7 +31,7 @@ type MockLogEntry = {
 	leaseTerm?: string;
 	detail?: string;
 	errorCode?: string;
-};
+}
 
 const handlerMocks = {
 	handleApiIndexTask: vi.fn(async () => ({ ok: 'api-index' })),
@@ -72,6 +72,8 @@ const messageBusSubscribeMock = vi.fn(() => ({ running: () => true }));
 class MockBridgeTransport {
 	public readonly connect = vi.fn(async () => undefined);
 	public readonly reportReady = vi.fn();
+	public readonly updateContext = vi.fn();
+	public readonly setExecutingTask = vi.fn();
 	public readonly close = vi.fn();
 	public readonly completeTask = vi.fn();
 
@@ -128,12 +130,16 @@ vi.mock('../logging/log-dispatch.ts', () => ({
 vi.mock('../mcp/api-index-handler.ts', () => ({
 	handleApiIndexTask: handlerMocks.handleApiIndexTask,
 }));
+vi.mock('../mcp/type-rows-handler.ts', () => ({
+	handleTypeRowsTask: vi.fn(), isRowsIdle: () => true, rowsWriteBlocked: () => false, setOwnershipGuard: vi.fn(), getBackgroundState: () => undefined,
+}));
 
 vi.mock('../mcp/api-search-handler.ts', () => ({
 	handleApiSearchTask: handlerMocks.handleApiSearchTask,
 }));
 
 vi.mock('../mcp/component-place-handler.ts', () => ({
+	isPlacementIdle: () => true,
 	handleComponentPlaceCheckTask: handlerMocks.handleComponentPlaceCheckTask,
 	handleComponentPlaceCloseTask: handlerMocks.handleComponentPlaceCloseTask,
 	handleComponentPlaceStartTask: handlerMocks.handleComponentPlaceStartTask,
@@ -142,6 +148,7 @@ vi.mock('../mcp/component-place-handler.ts', () => ({
 
 vi.mock('../mcp/component-select-handler.ts', () => ({
 	handleComponentSelectTask: handlerMocks.handleComponentSelectTask,
+	handleComponentMatchTask: handlerMocks.handleComponentSelectTask,
 }));
 
 vi.mock('../mcp/context-handler.ts', () => ({
@@ -224,6 +231,7 @@ function installEdaMock(): void {
 			dmt_Pcb: {
 				getCurrentPcbInfo: () => null;
 			};
+			dmt_SelectControl: { getCurrentDocumentInfo: () => { uuid: string; documentType: number } };
 		};
 	}).eda = {
 		sys_Message: {
@@ -238,6 +246,7 @@ function installEdaMock(): void {
 		dmt_Pcb: {
 			getCurrentPcbInfo: () => null,
 		},
+		dmt_SelectControl: { getCurrentDocumentInfo: () => ({ uuid: 'sch-1', documentType: 1 }) },
 	};
 }
 
@@ -247,9 +256,7 @@ async function startRuntime(): Promise<{
 }> {
 	const runtimeModule = await import('./bridge-runtime.ts');
 	runtimeModule.startBridgeRuntime();
-	for (let index = 0; index < 4; index += 1) {
-		await Promise.resolve();
-	}
+	await flushTaskQueue();
 	const transport = bridgeTransportInstances.at(-1);
 	if (!transport) {
 		throw new Error('runtime transport was not created');
@@ -259,6 +266,12 @@ async function startRuntime(): Promise<{
 		startBridgeRuntime: runtimeModule.startBridgeRuntime,
 		transport,
 	};
+}
+
+async function flushTaskQueue(): Promise<void> {
+	for (let index = 0; index < 16; index += 1) {
+		await Promise.resolve();
+	}
 }
 
 describe('bridge runtime', () => {
@@ -300,7 +313,7 @@ describe('bridge runtime', () => {
 		delete (globalThis as typeof globalThis & { eda?: unknown }).eda;
 	});
 
-	it('treats schematic locate as unsupported on the runtime stability line', async () => {
+	it('dispatches schematic locate tasks through the bridge route map', async () => {
 		runtimeTransport.callbacks.onRoleChanged({
 			role: 'active',
 			clientId: 'client-a',
@@ -316,21 +329,21 @@ describe('bridge runtime', () => {
 			createdAt: Date.now(),
 			leaseTerm: 9,
 		});
-		await Promise.resolve();
+		await flushTaskQueue();
 
-		expect(handlerMocks.handleSchematicLocateTask).not.toHaveBeenCalled();
+		expect(handlerMocks.handleSchematicLocateTask).toHaveBeenCalledWith({ query: 'U1' });
 		expect(runtimeTransport.completeTask).toHaveBeenCalledWith(
 			'req-locate',
 			9,
+			{ ok: 'schematic-locate' },
 			undefined,
-			{ message: 'unsupported path: /bridge/jlceda/schematic/locate' },
 		);
-		expect(mockLogEntries.some(entry => entry.event === 'bridge.task.rejected.unsupported_path')).toBe(true);
+		expect(mockLogEntries.some(entry => entry.event === 'bridge.task.rejected.unsupported_path')).toBe(false);
 	});
 
 	it('emits a warning log for slow completed tasks with timing detail', async () => {
-		handlerMocks.handleEdaContextTask.mockImplementationOnce(async payload => {
-			await new Promise(resolve => {
+		handlerMocks.handleEdaContextTask.mockImplementationOnce(async (payload) => {
+			await new Promise((resolve) => {
 				setTimeout(resolve, 3205);
 			});
 			return { payload, ok: true };
@@ -367,7 +380,7 @@ describe('bridge runtime', () => {
 		expect(runtimeTransport.completeTask).toHaveBeenCalledWith(
 			'req-slow',
 			3,
-			{ payload: { scope: 'sch' }, ok: true },
+			expect.objectContaining({ payload: { scope: 'sch' }, ok: true, hotUpdate: expect.any(Object) }),
 			undefined,
 		);
 		expect(consoleWarnMock).toHaveBeenCalled();

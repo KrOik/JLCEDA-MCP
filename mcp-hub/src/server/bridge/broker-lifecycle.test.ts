@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import WebSocket from 'ws';
 import { bridgeBrokerState } from './broker-state';
-import { cleanupExpiredPeers } from './broker-lifecycle';
+import { cleanupExpiredPeers, registerClient } from './broker-lifecycle';
 
 function resetBridgeBrokerState(): void {
 	bridgeBrokerState.requestSequence = 0;
@@ -24,10 +24,25 @@ function createOpenSocket(): WebSocket {
 	return {
 		readyState: WebSocket.OPEN,
 		send: vi.fn(),
+		ping: vi.fn(),
 	} as unknown as WebSocket;
 }
 
 describe('bridge broker lifecycle', () => {
+	it('preserves readiness, context and quarantine when a heartbeat registers the same socket', async () => {
+		const socket = createOpenSocket();
+		const peer = { clientId: 'stable', connectedAt: 1, lastSeenAt: 1, isReady: true, socket,
+			context: { documentUuid: 'page', documentType: 'schematic', title: 'Page' }, uncertainRequestId: 'pending' };
+		bridgeBrokerState.peersByClientId.set(peer.clientId, peer);
+		bridgeBrokerState.clientIdBySocket.set(socket, peer.clientId);
+		bridgeBrokerState.activeClientId = peer.clientId;
+		expect(await registerClient(peer.clientId, socket)).toBe(peer);
+		expect(peer.isReady).toBe(true);
+		expect(peer.uncertainRequestId).toBe('pending');
+		peer.lastSeenAt = Date.now() - 20000;
+		await cleanupExpiredPeers();
+		expect(bridgeBrokerState.peersByClientId.get(peer.clientId)).toBe(peer);
+	});
 	afterEach(() => {
 		resetBridgeBrokerState();
 		vi.useRealTimers();
@@ -38,7 +53,7 @@ describe('bridge broker lifecycle', () => {
 		const peer = {
 			clientId: 'client-idle',
 			connectedAt: 1,
-			lastSeenAt: Date.now() - 9000,
+			lastSeenAt: Date.now() - 121000,
 			isReady: true,
 			socket,
 		};
@@ -51,6 +66,14 @@ describe('bridge broker lifecycle', () => {
 		expect(bridgeBrokerState.peersByClientId.size).toBe(0);
 		expect(bridgeBrokerState.clientIdBySocket.size).toBe(0);
 		expect(bridgeBrokerState.activeClientId).toBe('');
+	});
+	it('keeps a background page whose native websocket responds despite stale application heartbeat', async () => {
+		const socket = createOpenSocket();
+		const peer = { clientId: 'background', connectedAt: 1, lastSeenAt: Date.now() - 180000, lastPongAt: Date.now(), isReady: true, socket };
+		bridgeBrokerState.peersByClientId.set(peer.clientId, peer);
+		await cleanupExpiredPeers();
+		expect(bridgeBrokerState.peersByClientId.get(peer.clientId)).toBe(peer);
+		expect(socket.ping).toHaveBeenCalledTimes(1);
 	});
 
 	it('keeps an expired active peer connected while it still owns a pending request', async () => {

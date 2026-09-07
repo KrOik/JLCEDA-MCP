@@ -1,5 +1,30 @@
 [
   {
+    "name": "schematic_place_rows",
+    "description": "确定性分类行原理图包装器。新建隔离托管页，自动横向两脚器件、分类续行/分页、正交扇出、原生 NET 与标题文字定位，网表回读。不会重排原页面。start 短请求返回 jobId，必须持续 status 到 done/failed/uncertain；同 operationId 不重复创建。默认页面可用区 1000x600，超大单元明确失败。",
+    "inputSchema": {
+      "type": "object",
+      "required": ["operationId"],
+      "properties": {
+        "operationId": { "type": "string", "pattern": "^[A-Za-z0-9_.-]{1,80}$" },
+        "action": { "type": "string", "enum": ["start", "status"], "default": "start" },
+        "components": { "type": "array", "minItems": 1, "maxItems": 200, "items": {
+          "type": "object", "required": ["key", "designator"],
+          "properties": {
+            "key": { "type": "string" }, "candidateRef": { "type": "string" },
+            "uuid": { "type": "string", "description": "真实器件库 device UUID，不能用现有页面实例 component.uuid" },
+            "libraryUuid": { "type": "string" }, "designator": { "type": "string" },
+            "name": { "type": "string" },
+            "row": { "type": "string", "enum": ["switch", "capacitor", "crystal", "resistor", "connector", "ic", "other"] },
+            "nets": { "type": "object", "additionalProperties": { "type": "string" } }
+          }
+        } },
+        "targetClientId": { "type": "string" },
+        "targetDocumentUuid": { "type": "string", "description": "start 可指定起始页；后台会切换托管页，status 不要复用旧页 UUID" }
+      }
+    }
+  },
+  {
     "name": "api_index",
     "description": "获取可调用 EDA API 索引列表。",
     "inputSchema": {
@@ -8,6 +33,14 @@
         "owner": {
           "type": "string",
           "description": "可选。按命名空间过滤，例如 sch/dmt/lib，不填则返回全部。"
+        },
+        "targetClientId": {
+          "type": "string",
+          "description": "bridge_status 返回的 clientId；多个页面时必须明确指定"
+        },
+        "targetDocumentUuid": {
+          "type": "string",
+          "description": "目标页面 UUID，执行前校验；切页则拒绝"
         }
       }
     }
@@ -42,6 +75,14 @@
           "maximum": 50,
           "default": 10,
           "description": "最多返回条数，范围 1-50。"
+        },
+        "targetClientId": {
+          "type": "string",
+          "description": "bridge_status 返回的 clientId；多个页面时必须明确指定"
+        },
+        "targetDocumentUuid": {
+          "type": "string",
+          "description": "目标页面 UUID，执行前校验；切页则拒绝"
         }
       },
       "required": [
@@ -70,6 +111,14 @@
           "maximum": 120000,
           "default": 15000,
           "description": "桥接超时（毫秒）。"
+        },
+        "targetClientId": {
+          "type": "string",
+          "description": "bridge_status 返回的 clientId；多个页面时必须明确指定"
+        },
+        "targetDocumentUuid": {
+          "type": "string",
+          "description": "目标页面 UUID，执行前校验；切页则拒绝"
         }
       },
       "required": [
@@ -93,16 +142,34 @@
           "maximum": 120000,
           "default": 15000,
           "description": "桥接超时（毫秒）。"
+        },
+        "targetClientId": {
+          "type": "string",
+          "description": "bridge_status 返回的 clientId；多个页面时必须明确指定"
+        },
+        "targetDocumentUuid": {
+          "type": "string",
+          "description": "目标页面 UUID，执行前校验；切页则拒绝"
         }
       }
     }
   },
   {
     "name": "schematic_read",
-    "description": "读取当前原理图页面的完整电路语义快照。",
+    "description": "读取原理图电路语义快照；includeGeometry 可附带当前页面器件真实边界、引脚坐标和尺寸来源。",
     "inputSchema": {
       "type": "object",
-      "properties": {}
+      "properties": {
+        "includeGeometry": { "type": "boolean", "default": false, "description": "附带当前页归一化尺寸（符号、引脚、属性）、来源和 measured 标记；不将回退估算冒充实测。" },
+        "targetClientId": {
+          "type": "string",
+          "description": "bridge_status 返回的 clientId；多个页面时必须明确指定"
+        },
+        "targetDocumentUuid": {
+          "type": "string",
+          "description": "目标页面 UUID，执行前校验；切页则拒绝"
+        }
+      }
     }
   },
   {
@@ -138,6 +205,14 @@
           "maximum": 120000,
           "default": 15000,
           "description": "桥接超时（毫秒）。"
+        },
+        "targetClientId": {
+          "type": "string",
+          "description": "bridge_status 返回的 clientId；多个页面时必须明确指定"
+        },
+        "targetDocumentUuid": {
+          "type": "string",
+          "description": "目标页面 UUID，执行前校验；切页则拒绝"
         }
       },
       "required": [
@@ -150,7 +225,45 @@
     "description": "读取全工程所有原理图页面的网表文件。",
     "inputSchema": {
       "type": "object",
-      "properties": {}
+      "properties": {
+        "targetClientId": {
+          "type": "string",
+          "description": "bridge_status 返回的 clientId；多个页面时必须明确指定"
+        },
+        "targetDocumentUuid": {
+          "type": "string",
+          "description": "目标页面 UUID，执行前校验；切页则拒绝"
+        }
+      }
+    }
+  },
+  {
+    "name": "schematic_relayout",
+    "description": "为当前页已有物理器件生成基于真实符号、属性和引脚边界的 compact/ELK 重排预览。默认只读；检测到导线时永远拒绝 apply，避免不可靠的 Wire.modify 破坏导线索引或电气连接。无导线页面可显式 apply=true，逐项回读确认。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "componentIds": { "type": "array", "minItems": 1, "maxItems": 50, "items": { "type": "string", "minLength": 1 }, "description": "可选，仅重排这些物理器件 ID；省略则当前页全部物理器件。" },
+        "apply": { "type": "boolean", "default": false, "description": "默认 false，仅预览。仅无导线页面允许 true；有导线时将拒绝写入并返回计划。" },
+        "layout": {
+          "type": "object",
+          "properties": {
+            "mode": { "type": "string", "enum": ["compact", "elk"], "default": "compact" },
+            "startX": { "type": "number", "default": 0 },
+            "startY": { "type": "number", "default": 0 },
+            "grid": { "type": "number", "exclusiveMinimum": 0, "default": 10 },
+            "groupGap": { "type": "number", "minimum": 10, "default": 60 },
+            "padding": { "type": "number", "minimum": 0, "default": 20 },
+            "columns": { "type": "integer", "minimum": 1, "maximum": 50, "default": 4 },
+            "maxRadius": { "type": "number", "exclusiveMinimum": 0, "default": 1000 },
+            "weakNets": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+          }
+        },
+        "clearance": { "type": "number", "minimum": 10, "default": 20 },
+        "timeoutMs": { "type": "integer", "minimum": 1000, "maximum": 120000, "default": 15000 },
+        "targetClientId": { "type": "string", "description": "bridge_status 返回的 clientId；多个页面时必须明确指定" },
+        "targetDocumentUuid": { "type": "string", "description": "目标页面 UUID，执行前校验；切页则拒绝" }
+      }
     }
   },
   {
@@ -221,6 +334,14 @@
           "maximum": 120000,
           "default": 15000,
           "description": "桥接超时（毫秒）。"
+        },
+        "targetClientId": {
+          "type": "string",
+          "description": "bridge_status 返回的 clientId；多个页面时必须明确指定"
+        },
+        "targetDocumentUuid": {
+          "type": "string",
+          "description": "目标页面 UUID，执行前校验；切页则拒绝"
         }
       }
     }
@@ -349,6 +470,14 @@
           "maximum": 120000,
           "default": 15000,
           "description": "桥接超时（毫秒）。"
+        },
+        "targetClientId": {
+          "type": "string",
+          "description": "bridge_status 返回的 clientId；多个页面时必须明确指定"
+        },
+        "targetDocumentUuid": {
+          "type": "string",
+          "description": "目标页面 UUID，执行前校验；切页则拒绝"
         }
       }
     }
@@ -422,45 +551,93 @@
           "maximum": 120000,
           "default": 15000,
           "description": "桥接超时（毫秒）。"
+        },
+        "targetClientId": {
+          "type": "string",
+          "description": "bridge_status 返回的 clientId；多个页面时必须明确指定"
+        },
+        "targetDocumentUuid": {
+          "type": "string",
+          "description": "目标页面 UUID，执行前校验；切页则拒绝"
         }
       }
     }
   },
   {
     "name": "component_select",
-    "description": "搜索器件候选项并返回确认结果。",
+    "description": "缓存与限流保护的器件选型。keyword 单项或 queries 批量串行搜索，默认 5 候选；candidateRef 可直接用于放置。429 冷却期间不再请求商城。",
     "inputSchema": {
       "type": "object",
       "properties": {
         "keyword": {
           "type": "string",
-          "description": "器件搜索关键词（必填）。"
+          "description": "单项搜索关键词；与 queries 二选一。"
+        },
+        "queries": {
+          "type": "array", "minItems": 1, "maxItems": 10,
+          "items": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "object", "properties": {
+            "keyword": { "type": "string", "minLength": 1 },
+            "limit": { "type": "integer", "minimum": 2, "maximum": 20, "default": 5 },
+            "page": { "type": "integer", "minimum": 1, "maximum": 9999 },
+            "manufacturerId": { "type": "string" }, "supplierId": { "type": "string" },
+            "footprintName": { "type": "string" }, "inStockOnly": { "type": "boolean" }
+          }, "required": ["keyword"] }] }
         },
         "limit": {
           "type": "integer",
           "minimum": 2,
           "maximum": 20,
-          "default": 20,
-          "description": "返回候选数量上限，范围 2-20，默认 20。"
+          "default": 5,
+          "description": "候选上限，范围 2-20，默认 5。"
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9999,
+          "default": 1
+        },
+        "manufacturerId": {
+          "type": "string",
+          "description": "精确制造商型号过滤"
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "精确商城料号，如 Cxxxx"
+        },
+        "footprintName": {
+          "type": "string",
+          "description": "精确封装过滤"
+        },
+        "inStockOnly": {
+          "type": "boolean",
+          "default": false
+        },
+        "targetClientId": {
+          "type": "string",
+          "description": "bridge_status 返回的 clientId；多个页面时必须明确指定"
+        },
+        "targetDocumentUuid": {
+          "type": "string",
+          "description": "目标页面 UUID，执行前校验；切页则拒绝"
         }
       },
-      "required": [
-        "keyword"
-      ]
+      "oneOf": [{ "required": ["keyword"], "not": { "required": ["queries"] } }, { "required": ["queries"], "not": { "required": ["keyword"] } }]
     }
   },
   {
     "name": "component_place",
-    "description": "引导放置已确认的器件列表。",
+    "description": "按真实符号、引脚和属性边界紧凑放置原理图器件；支持 group 功能块与 ELK 固定引脚布局。未指定坐标默认 compact；显式 x/y 或固定间距会明确切换为 grid，绝不宣称紧凑布局。先放置再创建命名引线并核验连接。返回图元 ID，失败不重放。坐标为 EDA 原生单位；禁止用 api_invoke 创建或移动器件绕过本工具。",
     "inputSchema": {
       "type": "object",
       "properties": {
         "components": {
           "type": "array",
-          "description": "待放置器件数组（必填），按最终放置顺序排列。每个器件必须提供 uuid 和 libraryUuid。",
+          "description": "待放置器件；提供本会话 candidateRef 或真实 uuid/libraryUuid，重复器件可复用同一引用。",
           "items": {
             "type": "object",
             "properties": {
+              "candidateRef": { "type": "string", "description": "component_select 返回的当前 Hub 内引用，最长 30 分钟有效；失效后重新选型或使用真实 UUID。" },
+              "designator": { "type": "string", "pattern": "^[A-Za-z]+[0-9]+$", "description": "指定实际位号，如 C6；省略自动分配，已占用时返回 DESIGNATOR_CONFLICT，不静默改号。" },
               "uuid": {
                 "type": "string",
                 "description": "器件 UUID（必填）。"
@@ -477,23 +654,209 @@
                 "type": "string",
                 "description": "封装名称（可选）。"
               },
+              "group": {
+                "type": "string",
+                "minLength": 1,
+                "description": "compact/elk 功能块标识，如 power、reset、clock；同组先布局，再整体排列。省略为 default。"
+              },
+              "nets": {
+                "type": "object",
+                "additionalProperties": { "type": "string", "minLength": 1 },
+                "description": "可选引脚号到 NET 名映射，例如 {\"1\":\"3V3\"}。先放置再连接并核验网表；连接失败不要重复放置。每次最多 50 个引脚。"
+              },
               "subPartName": {
                 "type": "string",
                 "description": "多子部件器件的子部件名称（可选）。"
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "rotation": {
+                "type": "integer",
+                "enum": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "default": 0
+              },
+              "mirror": {
+                "type": "boolean",
+                "default": false
               }
+            },
+            "anyOf": [{ "required": ["candidateRef"] }, { "required": ["uuid", "libraryUuid"] }]
+          },
+          "minItems": 1,
+          "maxItems": 50
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false
+        },
+        "layout": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["compact", "elk", "grid"],
+              "description": "无坐标默认 compact（按真实尺寸局部压紧）；elk 使用真实固定引脚与非电源网络计算布局；grid 保留精确 x/y 和固定间距。compact/elk 不接受单器件 x/y。"
+            },
+            "grid": { "type": "number", "exclusiveMinimum": 0, "default": 10 },
+            "leadLength": { "type": "number", "minimum": 30, "maximum": 1000, "default": 40, "description": "compact/elk 命名引线长度；布局预留与实际连网使用同一数值。" },
+            "groupGap": { "type": "number", "minimum": 10, "default": 60, "description": "功能块间最小间隔，必须 >= clearance。" },
+            "padding": { "type": "number", "minimum": 0, "default": 20, "description": "功能块边界留白。" },
+            "maxRadius": { "type": "number", "exclusiveMinimum": 0, "default": 1000, "description": "局部避障搜索半径，maxRadius/grid 必须在 1..200。" },
+            "weakNets": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "ELK 布局不用于牵引器件的网络名；替换默认 GND/VCC/VDD/VSS/3V3/+3V3/5V/+5V。不会改变电气连网。" },
+            "startX": {
+              "type": "number",
+              "default": 0
+            },
+            "startY": {
+              "type": "number",
+              "default": 0
+            },
+            "spacingX": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "仅 grid：固定中心间距。省略时保守间距为 500+clearance+100；紧凑布局请用 compact/elk。"
+            },
+            "spacingY": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "仅 grid：固定中心间距。省略时保守间距为 500+clearance+100；紧凑布局请用 compact/elk。"
+            },
+            "columns": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 4
             }
           }
         },
-        "timeoutSeconds": {
-          "type": "integer",
-          "minimum": 30,
-          "maximum": 180,
-          "default": 60,
-          "description": "单个器件放置超时时间，单位秒，范围 30-180，默认 60。"
+        "targetClientId": {
+          "type": "string",
+          "description": "bridge_status 返回的 clientId；多个页面时必须明确指定"
+        },
+        "targetDocumentUuid": {
+          "type": "string",
+          "description": "目标页面 UUID，执行前校验；切页则拒绝"
+        },
+        "clearance": {
+          "type": "number",
+          "minimum": 10,
+          "default": 20,
+          "description": "器件包围盒（含引脚）与其他器件/导线/标签的最小间距；拒绝冲突并清理本次暂存图元"
         }
       },
       "required": [
         "components"
+      ]
+    }
+  },
+  {
+    "name": "pin_net_configure",
+    "description": "放置后从真实引脚端点创建带 NET 名的原生导线，默认不放符号；可在外移引线末端放端口或电源/地符号。端点重叠不等于连接，必须回读导线及实际网表才成功。拒绝短接；失败后按 Escape Hatch 回读并直接调用原生 API，不要重试包装器或重放整批。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "assignments": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "properties": {
+              "componentId": {
+                "type": "string"
+              },
+              "pinNumber": {
+                "type": "string"
+              },
+              "netName": {
+                "type": "string"
+              },
+              "terminal": {
+                "type": "string",
+                "enum": ["none", "port", "power", "ground"],
+                "default": "none",
+                "description": "先引出导线，再在外移端点放可选符号，不直接叠放芯片引脚。"
+              }
+            },
+            "required": [
+              "componentId",
+              "pinNumber",
+              "netName"
+            ]
+          }
+        },
+        "routing": { "type": "string", "enum": ["straight", "staircase"], "default": "straight", "description": "staircase：按真实引脚位置分侧排序，阶梯引线及外侧独立网名区；测量原生字框并避让，回读网表。一次提交同器件全部目标引脚；保留已有连接，不重排已有线。仅支持 terminal=none。" },
+        "netLabelPlacement": { "type": "string", "enum": ["native", "outer"], "description": "staircase 默认 outer：外侧网名区、真实字框回读与避让。straight 默认 native。已有连接的标签保持原位，不能据此声称文字已验证。" },
+        "lanePitch": { "type": "number", "minimum": 20, "maximum": 200, "multipleOf": 10, "default": 20, "description": "staircase 外侧引线最小间距，EDA 原生单位。" },
+        "leadLength": {
+          "type": "number",
+          "minimum": 30,
+          "default": 80,
+          "description": "NET 引线长度，使用 EDA 原生坐标单位。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false
+        },
+        "targetClientId": {
+          "type": "string",
+          "description": "bridge_status 返回的 clientId；多个页面时必须明确指定"
+        },
+        "targetDocumentUuid": {
+          "type": "string",
+          "description": "目标页面 UUID，执行前校验；切页则拒绝"
+        }
+      },
+      "required": [
+        "assignments"
+      ]
+    }
+  },
+  {
+    "name": "bridge_status",
+    "description": "立即查询共享服务的连接列表、原理图/PCB 页面 UUID、活动状态和超时隔离状态。无需 EDA 就绪；多页面操作前使用。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "result_read",
+    "description": "分页读取当前 Hub 已保存的完整工具结果，不重复检索或执行写操作。引用有效期 30 分钟，受容量限制可能提前淘汰。",
+    "inputSchema": { "type": "object", "properties": {
+      "resultRef": { "type": "string" },
+      "offset": { "type": "integer", "minimum": 0, "default": 0 },
+      "limit": { "type": "integer", "minimum": 1, "maximum": 12000, "default": 6000 }
+    }, "required": ["resultRef"] }
+  },
+  {
+    "name": "document_focus",
+    "description": "在指定 EDA 客户端打开并激活明确文档 UUID，回读当前文档确认。仅切换 EDA 标签页，不保证操作系统前台唤起；无响应会超时并隔离。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "documentUuid": {
+          "type": "string"
+        },
+        "targetClientId": {
+          "type": "string"
+        },
+        "targetDocumentUuid": {
+          "type": "string",
+          "description": "调用前该客户端当前文档 UUID，可用于防止选错来源窗口"
+        }
+      },
+      "required": [
+        "documentUuid"
       ]
     }
   }

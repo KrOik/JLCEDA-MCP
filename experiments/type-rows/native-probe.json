@@ -1,0 +1,515 @@
+{
+  "originalPage": "f2151c03f53ba786",
+  "schematicUuid": "bf484d4cc07e854f",
+  "createdIds": [
+    "371d9d971e2bbf62",
+    "377a8b2778202269",
+    "486ee9408edc5817",
+    "b3193435a0a22527",
+    "b3193435a0a22527",
+    "b3193435a0a22527",
+    "155edf36f9b938d8",
+    "155edf36f9b938d8",
+    "155edf36f9b938d8"
+  ],
+  "phase": "wiring",
+  "uncertainRequestId": "bridge_req_1788751736602_332",
+  "createdAt": "2026-09-07T03:28:27.856Z",
+  "page": "65f0708b2a9413dc",
+  "recovery": {
+    "clientId": "bridge_1788752279545_nw413drw",
+    "previousRuntimeStopped": true,
+    "emptyPageReadbackBeforeFreshLibraryCreate": true,
+    "deviceUuid": "accfc2f6010745268febab2459577079"
+  },
+  "placement": {
+    "ok": true,
+    "results": [
+      {
+        "primitiveId": "371d9d971e2bbf62"
+      }
+    ]
+  },
+  "componentId": "371d9d971e2bbf62",
+  "review": {
+    "ok": true,
+    "drcCheckPassed": false,
+    "drcStrict": true,
+    "warnings": [],
+    "netlistText": "{\n    \"version\": \"2.0.0\",\n    \"components\": {\n        \"4e8865fba5c9580d\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Symbol\": \"b6470622a8ae3703\",\n                \"Designator\": \"U1\",\n                \"Device\": \"b6ce5dc26facc13d\",\n                \"Unique ID\": \"4e8865fba5c9580d\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Part\": \"STM32F103C8T6.1\",\n                \"Manufacturer\": \"ST(意法半导体)\",\n                \"Manufacturer Part\": \"STM32F103C8T6\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Supplier\": \"LCSC\",\n                \"Footprint\": \"a6a1412ce8ec3f56\",\n                \"3D Model\": \"093be70396ff421eb2cdb946d5311efc|0819f05c4eef4c71ace90d822a990e87\",\n                \"3D Model Title\": \"LQFP-48_L7.0-W7.0-H1.4-LS9.0-P0.50\",\n                \"3D Model Transform\": \"354.331,354.331,0,0,0,0,0,0,0\",\n                \"CPU Core\": \"\",\n                \"CPU Maximum Speed\": \"\",\n                \"Core Size\": \"\",\n                \"Program Storage Size\": \"\",\n                \"Program Memory Type\": \"\",\n                \"RAM Size\": \"\",\n                \"EEPROM\": \"\",\n                \"Number of I/O\": \"\",\n                \"ADC (Bit)\": \"\",\n                \"Oscillator Type\": \"\",\n                \"Voltage - Supply\": \"\",\n                \"Operating Temperature\": \"\",\n                \"Name\": \"={Manufacturer Part}\",\n                \"Description\": \"\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I127\",\n                \"DeviceName\": \"STM32F103C8T6\",\n                \"FootprintName\": \"LQFP-48_L7.0-W7.0-P0.50-LS9.0-BL\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"VBAT\",\n                    \"number\": \"1\",\n                    \"net\": \"+3V3\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"PC13-TAMPER-RTC\",\n                    \"number\": \"2\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                },\n                \"3\": {\n                    \"name\": \"PC14-OSC32_IN\",\n                    \"number\": \"3\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"3\"\n                    }\n                },\n                \"4\": {\n                    \"name\": \"PC15-OSC32_OUT\",\n                    \"number\": \"4\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"4\"\n                    }\n                },\n                \"5\": {\n                    \"name\": \"PD0-OSC_IN\",\n                    \"number\": \"5\",\n                    \"net\": \"HSE_IN\",\n                    \"props\": {\n                        \"Pin Number\": \"5\"\n                    }\n                },\n                \"6\": {\n                    \"name\": \"PD1-OSC_OUT\",\n                    \"number\": \"6\",\n                    \"net\": \"HSE_OUT\",\n                    \"props\": {\n                        \"Pin Number\": \"6\"\n                    }\n                },\n                \"7\": {\n                    \"name\": \"NRST\",\n                    \"number\": \"7\",\n                    \"net\": \"NRST\",\n                    \"props\": {\n                        \"Pin Number\": \"7\"\n                    }\n                },\n                \"8\": {\n                    \"name\": \"VSSA\",\n                    \"number\": \"8\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"8\"\n                    }\n                },\n                \"9\": {\n                    \"name\": \"VDDA\",\n                    \"number\": \"9\",\n                    \"net\": \"+3V3\",\n                    \"props\": {\n                        \"Pin Number\": \"9\"\n                    }\n                },\n                \"10\": {\n                    \"name\": \"PA0-WKUP\",\n                    \"number\": \"10\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"10\"\n                    }\n                },\n                \"11\": {\n                    \"name\": \"PA1\",\n                    \"number\": \"11\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"11\"\n                    }\n                },\n                \"12\": {\n                    \"name\": \"PA2\",\n                    \"number\": \"12\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"12\"\n                    }\n                },\n                \"13\": {\n                    \"name\": \"PA3\",\n                    \"number\": \"13\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"13\"\n                    }\n                },\n                \"14\": {\n                    \"name\": \"PA4\",\n                    \"number\": \"14\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"14\"\n                    }\n                },\n                \"15\": {\n                    \"name\": \"PA5\",\n                    \"number\": \"15\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"15\"\n                    }\n                },\n                \"16\": {\n                    \"name\": \"PA6\",\n                    \"number\": \"16\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"16\"\n                    }\n                },\n                \"17\": {\n                    \"name\": \"PA7\",\n                    \"number\": \"17\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"17\"\n                    }\n                },\n                \"18\": {\n                    \"name\": \"PB0\",\n                    \"number\": \"18\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"18\"\n                    }\n                },\n                \"19\": {\n                    \"name\": \"PB1\",\n                    \"number\": \"19\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"19\"\n                    }\n                },\n                \"20\": {\n                    \"name\": \"PB2\",\n                    \"number\": \"20\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"20\"\n                    }\n                },\n                \"21\": {\n                    \"name\": \"PB10\",\n                    \"number\": \"21\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"21\"\n                    }\n                },\n                \"22\": {\n                    \"name\": \"PB11\",\n                    \"number\": \"22\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"22\"\n                    }\n                },\n                \"23\": {\n                    \"name\": \"VSS_1\",\n                    \"number\": \"23\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"23\"\n                    }\n                },\n                \"24\": {\n                    \"name\": \"VDD_1\",\n                    \"number\": \"24\",\n                    \"net\": \"+3V3\",\n                    \"props\": {\n                        \"Pin Number\": \"24\"\n                    }\n                },\n                \"25\": {\n                    \"name\": \"PB12\",\n                    \"number\": \"25\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"25\"\n                    }\n                },\n                \"26\": {\n                    \"name\": \"PB13\",\n                    \"number\": \"26\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"26\"\n                    }\n                },\n                \"27\": {\n                    \"name\": \"PB14\",\n                    \"number\": \"27\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"27\"\n                    }\n                },\n                \"28\": {\n                    \"name\": \"PB15\",\n                    \"number\": \"28\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"28\"\n                    }\n                },\n                \"29\": {\n                    \"name\": \"PA8\",\n                    \"number\": \"29\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"29\"\n                    }\n                },\n                \"30\": {\n                    \"name\": \"PA9\",\n                    \"number\": \"30\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"30\"\n                    }\n                },\n                \"31\": {\n                    \"name\": \"PA10\",\n                    \"number\": \"31\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"31\"\n                    }\n                },\n                \"32\": {\n                    \"name\": \"PA11\",\n                    \"number\": \"32\",\n                    \"net\": \"USB_DM\",\n                    \"props\": {\n                        \"Pin Number\": \"32\"\n                    }\n                },\n                \"33\": {\n                    \"name\": \"PA12\",\n                    \"number\": \"33\",\n                    \"net\": \"USB_DP\",\n                    \"props\": {\n                        \"Pin Number\": \"33\"\n                    }\n                },\n                \"34\": {\n                    \"name\": \"PA13\",\n                    \"number\": \"34\",\n                    \"net\": \"SWDIO\",\n                    \"props\": {\n                        \"Pin Number\": \"34\"\n                    }\n                },\n                \"35\": {\n                    \"name\": \"VSS_2\",\n                    \"number\": \"35\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"35\"\n                    }\n                },\n                \"36\": {\n                    \"name\": \"VDD_2\",\n                    \"number\": \"36\",\n                    \"net\": \"+3V3\",\n                    \"props\": {\n                        \"Pin Number\": \"36\"\n                    }\n                },\n                \"37\": {\n                    \"name\": \"PA14\",\n                    \"number\": \"37\",\n                    \"net\": \"SWCLK\",\n                    \"props\": {\n                        \"Pin Number\": \"37\"\n                    }\n                },\n                \"38\": {\n                    \"name\": \"PA15\",\n                    \"number\": \"38\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"38\"\n                    }\n                },\n                \"39\": {\n                    \"name\": \"PB3\",\n                    \"number\": \"39\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"39\"\n                    }\n                },\n                \"40\": {\n                    \"name\": \"PB4\",\n                    \"number\": \"40\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"40\"\n                    }\n                },\n                \"41\": {\n                    \"name\": \"PB5\",\n                    \"number\": \"41\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"41\"\n                    }\n                },\n                \"42\": {\n                    \"name\": \"PB6\",\n                    \"number\": \"42\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"42\"\n                    }\n                },\n                \"43\": {\n                    \"name\": \"PB7\",\n                    \"number\": \"43\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"43\"\n                    }\n                },\n                \"44\": {\n                    \"name\": \"BOOT0\",\n                    \"number\": \"44\",\n                    \"net\": \"BOOT0\",\n                    \"props\": {\n                        \"Pin Number\": \"44\"\n                    }\n                },\n                \"45\": {\n                    \"name\": \"PB8\",\n                    \"number\": \"45\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"45\"\n                    }\n                },\n                \"46\": {\n                    \"name\": \"PB9\",\n                    \"number\": \"46\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"46\"\n                    }\n                },\n                \"47\": {\n                    \"name\": \"VSS_3\",\n                    \"number\": \"47\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"47\"\n                    }\n                },\n                \"48\": {\n                    \"name\": \"VDD_3\",\n                    \"number\": \"48\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"48\"\n                    }\n                }\n            }\n        },\n        \"11f7f3bd70e84a76\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Name\": \"={Manufacturer Part}\",\n                \"Designator\": \"U2\",\n                \"Symbol\": \"9211bd354d1373a5\",\n                \"Device\": \"51bd6d9f2a0ae379\",\n                \"Unique ID\": \"11f7f3bd70e84a76\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Part\": \"pid8a0e77bacb214e\",\n                \"Manufacturer\": \"Advanced Monolithic Systems\",\n                \"Manufacturer Part\": \"AMS1117-3.3\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Supplier\": \"LCSC\",\n                \"Footprint\": \"948ec4e6d03dca35\",\n                \"3D Model\": \"925194bf9823436183a3e0b978a8d076|0819f05c4eef4c71ace90d822a990e87\",\n                \"3D Model Title\": \"SOT-223-4P_L6.5-W3.5-H1.6-LS7.0-P2.30\",\n                \"3D Model Transform\": \"279.89794,255.905,0,180,0,0,-3.9385,-0.0005,0\",\n                \"Output Configuration\": \"\",\n                \"Voltage - Supply\": \"\",\n                \"Output Voltage\": \"\",\n                \"Output Current\": \"\",\n                \"Power Supply Rejection Ratio (PSRR)\": \"\",\n                \"Voltage Dropout\": \"\",\n                \"standby current\": \"\",\n                \"Noise\": \"\",\n                \"Features\": \"\",\n                \"Operating Temperature\": \"\",\n                \"Output Type\": \"\",\n                \"Number of Outputs\": \"\",\n                \"Description\": \"\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I128\",\n                \"DeviceName\": \"AMS1117-3.3_C6186\",\n                \"FootprintName\": \"SOT-223-3_L6.5-W3.4-P2.30-LS7.0-BR\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"GND\",\n                    \"number\": \"1\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"VOUT\",\n                    \"number\": \"2\",\n                    \"net\": \"+3V3\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                },\n                \"3\": {\n                    \"name\": \"VIN\",\n                    \"number\": \"3\",\n                    \"net\": \"VIN_5V\",\n                    \"props\": {\n                        \"Pin Number\": \"3\"\n                    }\n                },\n                \"4\": {\n                    \"name\": \"VOUT\",\n                    \"number\": \"4\",\n                    \"net\": \"+3V3\",\n                    \"props\": {\n                        \"Pin Number\": \"4\"\n                    }\n                }\n            }\n        },\n        \"b24fb6d5da630f3f\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Symbol\": \"a33f8481b014dfc6\",\n                \"Designator\": \"U3\",\n                \"Device\": \"a9861b4f1c461fb7\",\n                \"Unique ID\": \"b24fb6d5da630f3f\",\n                \"Footprint\": \"fedb62c5393b88f9\",\n                \"Name\": \"={Manufacturer Part}\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I129\",\n                \"Manufacturer\": \"\",\n                \"Manufacturer Part\": \"micro-b usb母座\",\n                \"Supplier\": \"LCSC\",\n                \"Supplier Part\": \"MICRO-B USB母座.1\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Description\": \"\",\n                \"DeviceName\": \"micro-b usb母座\",\n                \"FootprintName\": \"MICRO-USB_C9900039549\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"VCC\",\n                    \"number\": \"1\",\n                    \"net\": \"VIN_5V\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"D-\",\n                    \"number\": \"2\",\n                    \"net\": \"USB_DM\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                },\n                \"3\": {\n                    \"name\": \"D+\",\n                    \"number\": \"3\",\n                    \"net\": \"USB_DP\",\n                    \"props\": {\n                        \"Pin Number\": \"3\"\n                    }\n                },\n                \"4\": {\n                    \"name\": \"ID\",\n                    \"number\": \"4\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"4\"\n                    }\n                },\n                \"5\": {\n                    \"name\": \"GND\",\n                    \"number\": \"5\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"5\"\n                    }\n                },\n                \"6\": {\n                    \"name\": \"GND\",\n                    \"number\": \"6\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"6\"\n                    }\n                },\n                \"7\": {\n                    \"name\": \"GND\",\n                    \"number\": \"7\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"7\"\n                    }\n                }\n            }\n        },\n        \"4c0d3f8efe6aba8d\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Symbol\": \"1a2df41bce7acde7\",\n                \"Designator\": \"P1\",\n                \"Device\": \"4add3a12be148268\",\n                \"Unique ID\": \"4c0d3f8efe6aba8d\",\n                \"Footprint\": \"a6f587a7b745254e\",\n                \"Name\": \"={Manufacturer Part}\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I130\",\n                \"Manufacturer\": \"\",\n                \"Manufacturer Part\": \"HEADER_1*4P_XH2.54_卧式\",\n                \"Supplier\": \"LCSC\",\n                \"Supplier Part\": \"HEADER_1*4P_XH2.54_卧式.1\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Description\": \"\",\n                \"3D Model\": \"d6c429cf28314298a2074cefd68172f0|0819f05c4eef4c71ace90d822a990e87\",\n                \"3D Model Title\": \"HDR-TH_4P-P2.54-M-WI-1X4P\",\n                \"3D Model Transform\": \"399.999,417.322,0,180,0,0,0,-196.85,-118.11\",\n                \"DeviceName\": \"HEADER_1*4P_XH2.54_卧式\",\n                \"FootprintName\": \"HDR-TH_4P-P2.54-H-M-W11.0\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"1\",\n                    \"number\": \"1\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"2\",\n                    \"number\": \"2\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                },\n                \"3\": {\n                    \"name\": \"3\",\n                    \"number\": \"3\",\n                    \"net\": \"SWDIO\",\n                    \"props\": {\n                        \"Pin Number\": \"3\"\n                    }\n                },\n                \"4\": {\n                    \"name\": \"4\",\n                    \"number\": \"4\",\n                    \"net\": \"SWCLK\",\n                    \"props\": {\n                        \"Pin Number\": \"4\"\n                    }\n                }\n            }\n        },\n        \"dfbb533d889f0137\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Symbol\": \"416ef450d83ba869\",\n                \"Designator\": \"X1\",\n                \"Device\": \"5d6727ff294c4d6f\",\n                \"Unique ID\": \"dfbb533d889f0137\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Part\": \"X49SM8MSD2SC.1\",\n                \"Manufacturer\": \"YXC(扬兴晶振)\",\n                \"Manufacturer Part\": \"X49SM8MSD2SC\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Supplier\": \"LCSC\",\n                \"Footprint\": \"5ebaa2956328332b\",\n                \"3D Model\": \"6f569b91267b44029b8615eb5c810fba|0819f05c4eef4c71ace90d822a990e87\",\n                \"3D Model Title\": \"HC-49S_L11.4-W1.8-H3.0-LS12.7\",\n                \"3D Model Transform\": \"499.999,188.976,0,180,0,0,0.002,-0.002,0\",\n                \"Type\": \"\",\n                \"Value\": \"\",\n                \"Normal temperature Frequency Tolerance\": \"\",\n                \"Load Capacitance\": \"\",\n                \"Frequency Stability\": \"\",\n                \"Equivalent Series Resistance(ESR)\": \"\",\n                \"Operating Temperature\": \"\",\n                \"Name\": \"={Value}\",\n                \"Description\": \"\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I143\",\n                \"DeviceName\": \"X49SM8MSD2SC\",\n                \"FootprintName\": \"CRYSTAL-SMD_L11.5-W4.8-LS12.7\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"OSC1\",\n                    \"number\": \"1\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"OSC2\",\n                    \"number\": \"2\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                }\n            }\n        },\n        \"93e89c696736b461\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Symbol\": \"1300cd498d35a311\",\n                \"Designator\": \"C1\",\n                \"Device\": \"a107254db0b14b86\",\n                \"Unique ID\": \"93e89c696736b461\",\n                \"Footprint\": \"4bf97a7d7dd7fe69\",\n                \"Name\": \"={Value}\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I158\",\n                \"Manufacturer\": \"muRata(村田)\",\n                \"Manufacturer Part\": \"GCM1885C1H220JA16D\",\n                \"Supplier\": \"LCSC\",\n                \"Supplier Part\": \"GCM1885C1H220JA16D.1\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Value\": \"\",\n                \"Tolerance\": \"\",\n                \"Voltage Rating\": \"\",\n                \"Temperature Coefficient\": \"\",\n                \"Description\": \"\",\n                \"3D Model\": \"ac125912035d415993ca9572d50418b1|0819f05c4eef4c71ace90d822a990e87\",\n                \"3D Model Title\": \"C0603_L1.6-W0.8-H0.8\",\n                \"3D Model Transform\": \"62.992,31.496,0,0,0,0,0,0,0\",\n                \"DeviceName\": \"GCM1885C1H220JA16D\",\n                \"FootprintName\": \"C0603\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"1\",\n                    \"number\": \"1\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"2\",\n                    \"number\": \"2\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                }\n            }\n        },\n        \"50549916c64d12a7\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Symbol\": \"38e50f27cc600c3d\",\n                \"Designator\": \"C2\",\n                \"Device\": \"932a8759d7a257db\",\n                \"Unique ID\": \"50549916c64d12a7\",\n                \"Footprint\": \"2c2d8657bbcc8a50\",\n                \"Name\": \"={Value}\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I164\",\n                \"Manufacturer\": \"muRata(村田)\",\n                \"Manufacturer Part\": \"GRM21BR61H106KE43L\",\n                \"Supplier\": \"LCSC\",\n                \"Supplier Part\": \"GRM21BR61H106KE43L.1\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Value\": \"\",\n                \"Tolerance\": \"\",\n                \"Voltage Rating\": \"\",\n                \"Temperature Coefficient\": \"\",\n                \"Description\": \"\",\n                \"3D Model\": \"1ba041120af144c991958decab20d241|0819f05c4eef4c71ace90d822a990e87\",\n                \"3D Model Title\": \"C0805_L2.0-W1.3-H1.3\",\n                \"3D Model Transform\": \"78.74,51.181,0,0,0,0,0,0.0005,0\",\n                \"DeviceName\": \"GRM21BR61H106KE43L\",\n                \"FootprintName\": \"C0805\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"1\",\n                    \"number\": \"1\",\n                    \"net\": \"VIN_5V\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"2\",\n                    \"number\": \"2\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                }\n            }\n        },\n        \"b23b530fe031dd68\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Name\": \"={Value}\",\n                \"Designator\": \"C3\",\n                \"Symbol\": \"cac7a3871f99dcab\",\n                \"Device\": \"622a73c6c4a5ff4e\",\n                \"Unique ID\": \"b23b530fe031dd68\",\n                \"Footprint\": \"4bf97a7d7dd7fe69\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I173\",\n                \"Manufacturer\": \"YAGEO(国巨)\",\n                \"Manufacturer Part\": \"CC0603KRX7R9BB104\",\n                \"Supplier\": \"LCSC\",\n                \"Supplier Part\": \"CC0603KRX7R9BB104.1\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Value\": \"\",\n                \"Tolerance\": \"\",\n                \"Voltage Rating\": \"\",\n                \"Temperature Coefficient\": \"\",\n                \"Description\": \"\",\n                \"3D Model\": \"ac125912035d415993ca9572d50418b1|0819f05c4eef4c71ace90d822a990e87\",\n                \"3D Model Title\": \"C0603_L1.6-W0.8-H0.8\",\n                \"3D Model Transform\": \"62.992,31.496,0,0,0,0,0,0,0\",\n                \"DeviceName\": \"CC0603KRX7R9BB104\",\n                \"FootprintName\": \"C0603\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"1\",\n                    \"number\": \"1\",\n                    \"net\": \"+3V3\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"2\",\n                    \"number\": \"2\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                }\n            }\n        },\n        \"1b3f703a62f709ed\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Name\": \"={Value}\",\n                \"Designator\": \"C4\",\n                \"Symbol\": \"cac7a3871f99dcab\",\n                \"Device\": \"622a73c6c4a5ff4e\",\n                \"Unique ID\": \"1b3f703a62f709ed\",\n                \"Footprint\": \"4bf97a7d7dd7fe69\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I174\",\n                \"Manufacturer\": \"YAGEO(国巨)\",\n                \"Manufacturer Part\": \"CC0603KRX7R9BB104\",\n                \"Supplier\": \"LCSC\",\n                \"Supplier Part\": \"CC0603KRX7R9BB104.1\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Value\": \"\",\n                \"Tolerance\": \"\",\n                \"Voltage Rating\": \"\",\n                \"Temperature Coefficient\": \"\",\n                \"Description\": \"\",\n                \"3D Model\": \"ac125912035d415993ca9572d50418b1|0819f05c4eef4c71ace90d822a990e87\",\n                \"3D Model Title\": \"C0603_L1.6-W0.8-H0.8\",\n                \"3D Model Transform\": \"62.992,31.496,0,0,0,0,0,0,0\",\n                \"DeviceName\": \"CC0603KRX7R9BB104\",\n                \"FootprintName\": \"C0603\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"1\",\n                    \"number\": \"1\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"2\",\n                    \"number\": \"2\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                }\n            }\n        },\n        \"975e5acb0b4de03c\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Name\": \"={Value}\",\n                \"Designator\": \"C5\",\n                \"Symbol\": \"cac7a3871f99dcab\",\n                \"Device\": \"622a73c6c4a5ff4e\",\n                \"Unique ID\": \"975e5acb0b4de03c\",\n                \"Footprint\": \"4bf97a7d7dd7fe69\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I175\",\n                \"Manufacturer\": \"YAGEO(国巨)\",\n                \"Manufacturer Part\": \"CC0603KRX7R9BB104\",\n                \"Supplier\": \"LCSC\",\n                \"Supplier Part\": \"CC0603KRX7R9BB104.1\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Value\": \"\",\n                \"Tolerance\": \"\",\n                \"Voltage Rating\": \"\",\n                \"Temperature Coefficient\": \"\",\n                \"Description\": \"\",\n                \"3D Model\": \"ac125912035d415993ca9572d50418b1|0819f05c4eef4c71ace90d822a990e87\",\n                \"3D Model Title\": \"C0603_L1.6-W0.8-H0.8\",\n                \"3D Model Transform\": \"62.992,31.496,0,0,0,0,0,0,0\",\n                \"DeviceName\": \"CC0603KRX7R9BB104\",\n                \"FootprintName\": \"C0603\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"1\",\n                    \"number\": \"1\",\n                    \"net\": \"+3V3\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"2\",\n                    \"number\": \"2\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                }\n            }\n        },\n        \"83875dcfacb5b2ed\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Symbol\": \"73a0268dfef8ec59\",\n                \"Designator\": \"C6\",\n                \"Device\": \"247fb4a69473848e\",\n                \"Unique ID\": \"83875dcfacb5b2ed\",\n                \"Footprint\": \"4bf97a7d7dd7fe69\",\n                \"Name\": \"={Value}\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I176\",\n                \"Manufacturer\": \"SAMSUNG(三星)\",\n                \"Manufacturer Part\": \"CL10A105KB8NNNC\",\n                \"Supplier\": \"LCSC\",\n                \"Supplier Part\": \"CL10A105KB8NNNC.1\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Value\": \"\",\n                \"Tolerance\": \"\",\n                \"Voltage Rating\": \"\",\n                \"Temperature Coefficient\": \"\",\n                \"Description\": \"\",\n                \"3D Model\": \"ac125912035d415993ca9572d50418b1|0819f05c4eef4c71ace90d822a990e87\",\n                \"3D Model Title\": \"C0603_L1.6-W0.8-H0.8\",\n                \"3D Model Transform\": \"62.992,31.496,0,0,0,0,0,0,0\",\n                \"DeviceName\": \"CL10A105KB8NNNC\",\n                \"FootprintName\": \"C0603\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"1\",\n                    \"number\": \"1\",\n                    \"net\": \"VIN_5V\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"2\",\n                    \"number\": \"2\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                }\n            }\n        },\n        \"cd825af31014f412\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Symbol\": \"c8b8db0b73bbbcad\",\n                \"Designator\": \"R1\",\n                \"Device\": \"72d00ad079cf7074\",\n                \"Unique ID\": \"cd825af31014f412\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Part\": \"0603WAF1002T5E.1\",\n                \"Manufacturer\": \"UNI-ROYAL(厚声)\",\n                \"Manufacturer Part\": \"0603WAF1002T5E\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Supplier\": \"LCSC\",\n                \"Footprint\": \"c9ac509cc4f1d81e\",\n                \"3D Model\": \"fc143cca1e79419f9cd78b61e9279f08|0819f05c4eef4c71ace90d822a990e87\",\n                \"3D Model Title\": \"R0603\",\n                \"3D Model Transform\": \"31.8897,63.7794,0,90,0,0,0,0,0\",\n                \"Type\": \"\",\n                \"Value\": \"\",\n                \"Tolerance\": \"\",\n                \"Power(Watts)\": \"\",\n                \"Voltage-Supply(Max)\": \"\",\n                \"Temperature Coefficient\": \"\",\n                \"Operating Temperature\": \"\",\n                \"Name\": \"={Value}\",\n                \"Description\": \"\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I177\",\n                \"DeviceName\": \"0603WAF1002T5E\",\n                \"FootprintName\": \"R0603\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"1\",\n                    \"number\": \"1\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"2\",\n                    \"number\": \"2\",\n                    \"net\": \"NRST\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                }\n            }\n        },\n        \"35ea633ed8b4c161\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Symbol\": \"c8b8db0b73bbbcad\",\n                \"Designator\": \"R2\",\n                \"Device\": \"72d00ad079cf7074\",\n                \"Unique ID\": \"35ea633ed8b4c161\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Part\": \"0603WAF1002T5E.1\",\n                \"Manufacturer\": \"UNI-ROYAL(厚声)\",\n                \"Manufacturer Part\": \"0603WAF1002T5E\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Supplier\": \"LCSC\",\n                \"Footprint\": \"c9ac509cc4f1d81e\",\n                \"3D Model\": \"fc143cca1e79419f9cd78b61e9279f08|0819f05c4eef4c71ace90d822a990e87\",\n                \"3D Model Title\": \"R0603\",\n                \"3D Model Transform\": \"31.8897,63.7794,0,90,0,0,0,0,0\",\n                \"Type\": \"\",\n                \"Value\": \"\",\n                \"Tolerance\": \"\",\n                \"Power(Watts)\": \"\",\n                \"Voltage-Supply(Max)\": \"\",\n                \"Temperature Coefficient\": \"\",\n                \"Operating Temperature\": \"\",\n                \"Name\": \"={Value}\",\n                \"Description\": \"\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I178\",\n                \"DeviceName\": \"0603WAF1002T5E\",\n                \"FootprintName\": \"R0603\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"1\",\n                    \"number\": \"1\",\n                    \"net\": \"BOOT0\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"2\",\n                    \"number\": \"2\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                }\n            }\n        },\n        \"d3437af99ba8533b\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Symbol\": \"fbf64844fea29e2f\",\n                \"Designator\": \"SW1\",\n                \"Device\": \"f39e53044a4c8cc5\",\n                \"Unique ID\": \"d3437af99ba8533b\",\n                \"Footprint\": \"8e40ec9c87fc76c6\",\n                \"Name\": \"={Manufacturer Part}\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I179\",\n                \"Manufacturer\": \"\",\n                \"Manufacturer Part\": \"4pinTACTPCBTHTPushButton\",\n                \"Supplier\": \"LCSC\",\n                \"Supplier Part\": \"4PINTACTPCBTHTPUSHBUTTON.1\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Description\": \"\",\n                \"3D Model\": \"1b0b665a8f7c4b589fd3e9e1e1215681|0819f05c4eef4c71ace90d822a990e87\",\n                \"3D Model Title\": \"SW-SMD_4P-L6.0-W6.0-P4.50-LS10.0_TL3301EF160QG\",\n                \"3D Model Transform\": \"393.7,236.22,0,0,0,0,0,0,0\",\n                \"DeviceName\": \"4pinTACTPCBTHTPushButton\",\n                \"FootprintName\": \"SW-SMD_4P-L6.0-W6.0-P4.50-LS10.0_TL3301EF160QG\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"1\",\n                    \"number\": \"1\",\n                    \"net\": \"NRST\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"2\",\n                    \"number\": \"2\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                },\n                \"3\": {\n                    \"name\": \"3\",\n                    \"number\": \"3\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"3\"\n                    }\n                },\n                \"4\": {\n                    \"name\": \"4\",\n                    \"number\": \"4\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"4\"\n                    }\n                }\n            }\n        },\n        \"885626a7440618d3\": {\n            \"props\": {\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Symbol\": \"97de0baa17fa9dba\",\n                \"Designator\": \"P2\",\n                \"Device\": \"8ef2c1f8c1f824d6\",\n                \"Unique ID\": \"885626a7440618d3\",\n                \"Footprint\": \"1a972c1d0ba54296\",\n                \"Name\": \"={Manufacturer Part}\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$1I180\",\n                \"Manufacturer\": \"\",\n                \"Manufacturer Part\": \"H254-1X4P-PA4-PS5-PB8-L17MM\",\n                \"Supplier\": \"LCSC\",\n                \"Supplier Part\": \"H254-1X4P-PA4-PS5-PB8-L17MM.1\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Description\": \"\",\n                \"DeviceName\": \"H254-1X4P-PA4-PS5-PB8-L17MM\",\n                \"FootprintName\": \"HDR-TH_4P-P2.54-V-M_H254-1X4P\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"1\",\n                    \"number\": \"1\",\n                    \"net\": \"+3V3\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"2\",\n                    \"number\": \"2\",\n                    \"net\": \"GND\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                },\n                \"3\": {\n                    \"name\": \"3\",\n                    \"number\": \"3\",\n                    \"net\": \"SWDIO\",\n                    \"props\": {\n                        \"Pin Number\": \"3\"\n                    }\n                },\n                \"4\": {\n                    \"name\": \"4\",\n                    \"number\": \"4\",\n                    \"net\": \"SWCLK\",\n                    \"props\": {\n                        \"Pin Number\": \"4\"\n                    }\n                }\n            }\n        },\n        \"371d9d971e2bbf62\": {\n            \"props\": {\n                \"Unique ID\": \"371d9d971e2bbf62\",\n                \"Add into BOM\": \"yes\",\n                \"Convert to PCB\": \"yes\",\n                \"Symbol\": \"b6470622a8ae3703\",\n                \"Designator\": \"U901\",\n                \"Device\": \"b6ce5dc26facc13d\",\n                \"LCSC Part Name\": \"\",\n                \"Supplier Part\": \"STM32F103C8T6.1\",\n                \"Manufacturer\": \"ST(意法半导体)\",\n                \"Manufacturer Part\": \"STM32F103C8T6\",\n                \"Supplier Footprint\": \"\",\n                \"JLCPCB Part Class\": \"\",\n                \"Datasheet\": \"\",\n                \"Supplier\": \"LCSC\",\n                \"Footprint\": \"a6a1412ce8ec3f56\",\n                \"3D Model\": \"093be70396ff421eb2cdb946d5311efc|0819f05c4eef4c71ace90d822a990e87\",\n                \"3D Model Title\": \"LQFP-48_L7.0-W7.0-H1.4-LS9.0-P0.50\",\n                \"3D Model Transform\": \"354.331,354.331,0,0,0,0,0,0,0\",\n                \"CPU Core\": \"\",\n                \"CPU Maximum Speed\": \"\",\n                \"Core Size\": \"\",\n                \"Program Storage Size\": \"\",\n                \"Program Memory Type\": \"\",\n                \"RAM Size\": \"\",\n                \"EEPROM\": \"\",\n                \"Number of I/O\": \"\",\n                \"ADC (Bit)\": \"\",\n                \"Oscillator Type\": \"\",\n                \"Voltage - Supply\": \"\",\n                \"Operating Temperature\": \"\",\n                \"Name\": \"={Manufacturer Part}\",\n                \"Description\": \"\",\n                \"Reuse Block\": \"\",\n                \"Group ID\": \"\",\n                \"Channel ID\": \"$3I2\",\n                \"DeviceName\": \"STM32F103C8T6\",\n                \"FootprintName\": \"LQFP-48_L7.0-W7.0-P0.50-LS9.0-BL\"\n            },\n            \"pinInfoMap\": {\n                \"1\": {\n                    \"name\": \"VBAT\",\n                    \"number\": \"1\",\n                    \"net\": \"ROWS_PROBE_1_LONG_NET_NAME\",\n                    \"props\": {\n                        \"Pin Number\": \"1\"\n                    }\n                },\n                \"2\": {\n                    \"name\": \"PC13-TAMPER-RTC\",\n                    \"number\": \"2\",\n                    \"net\": \"ROWS_PROBE_2_LONG_NET_NAME\",\n                    \"props\": {\n                        \"Pin Number\": \"2\"\n                    }\n                },\n                \"3\": {\n                    \"name\": \"PC14-OSC32_IN\",\n                    \"number\": \"3\",\n                    \"net\": \"ROWS_PROBE_3_LONG_NET_NAME\",\n                    \"props\": {\n                        \"Pin Number\": \"3\"\n                    }\n                },\n                \"4\": {\n                    \"name\": \"PC15-OSC32_OUT\",\n                    \"number\": \"4\",\n                    \"net\": \"ROWS_PROBE_4_LONG_NET_NAME\",\n                    \"props\": {\n                        \"Pin Number\": \"4\"\n                    }\n                },\n                \"5\": {\n                    \"name\": \"PD0-OSC_IN\",\n                    \"number\": \"5\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"5\"\n                    }\n                },\n                \"6\": {\n                    \"name\": \"PD1-OSC_OUT\",\n                    \"number\": \"6\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"6\"\n                    }\n                },\n                \"7\": {\n                    \"name\": \"NRST\",\n                    \"number\": \"7\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"7\"\n                    }\n                },\n                \"8\": {\n                    \"name\": \"VSSA\",\n                    \"number\": \"8\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"8\"\n                    }\n                },\n                \"9\": {\n                    \"name\": \"VDDA\",\n                    \"number\": \"9\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"9\"\n                    }\n                },\n                \"10\": {\n                    \"name\": \"PA0-WKUP\",\n                    \"number\": \"10\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"10\"\n                    }\n                },\n                \"11\": {\n                    \"name\": \"PA1\",\n                    \"number\": \"11\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"11\"\n                    }\n                },\n                \"12\": {\n                    \"name\": \"PA2\",\n                    \"number\": \"12\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"12\"\n                    }\n                },\n                \"13\": {\n                    \"name\": \"PA3\",\n                    \"number\": \"13\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"13\"\n                    }\n                },\n                \"14\": {\n                    \"name\": \"PA4\",\n                    \"number\": \"14\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"14\"\n                    }\n                },\n                \"15\": {\n                    \"name\": \"PA5\",\n                    \"number\": \"15\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"15\"\n                    }\n                },\n                \"16\": {\n                    \"name\": \"PA6\",\n                    \"number\": \"16\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"16\"\n                    }\n                },\n                \"17\": {\n                    \"name\": \"PA7\",\n                    \"number\": \"17\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"17\"\n                    }\n                },\n                \"18\": {\n                    \"name\": \"PB0\",\n                    \"number\": \"18\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"18\"\n                    }\n                },\n                \"19\": {\n                    \"name\": \"PB1\",\n                    \"number\": \"19\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"19\"\n                    }\n                },\n                \"20\": {\n                    \"name\": \"PB2\",\n                    \"number\": \"20\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"20\"\n                    }\n                },\n                \"21\": {\n                    \"name\": \"PB10\",\n                    \"number\": \"21\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"21\"\n                    }\n                },\n                \"22\": {\n                    \"name\": \"PB11\",\n                    \"number\": \"22\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"22\"\n                    }\n                },\n                \"23\": {\n                    \"name\": \"VSS_1\",\n                    \"number\": \"23\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"23\"\n                    }\n                },\n                \"24\": {\n                    \"name\": \"VDD_1\",\n                    \"number\": \"24\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"24\"\n                    }\n                },\n                \"25\": {\n                    \"name\": \"PB12\",\n                    \"number\": \"25\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"25\"\n                    }\n                },\n                \"26\": {\n                    \"name\": \"PB13\",\n                    \"number\": \"26\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"26\"\n                    }\n                },\n                \"27\": {\n                    \"name\": \"PB14\",\n                    \"number\": \"27\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"27\"\n                    }\n                },\n                \"28\": {\n                    \"name\": \"PB15\",\n                    \"number\": \"28\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"28\"\n                    }\n                },\n                \"29\": {\n                    \"name\": \"PA8\",\n                    \"number\": \"29\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"29\"\n                    }\n                },\n                \"30\": {\n                    \"name\": \"PA9\",\n                    \"number\": \"30\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"30\"\n                    }\n                },\n                \"31\": {\n                    \"name\": \"PA10\",\n                    \"number\": \"31\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"31\"\n                    }\n                },\n                \"32\": {\n                    \"name\": \"PA11\",\n                    \"number\": \"32\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"32\"\n                    }\n                },\n                \"33\": {\n                    \"name\": \"PA12\",\n                    \"number\": \"33\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"33\"\n                    }\n                },\n                \"34\": {\n                    \"name\": \"PA13\",\n                    \"number\": \"34\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"34\"\n                    }\n                },\n                \"35\": {\n                    \"name\": \"VSS_2\",\n                    \"number\": \"35\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"35\"\n                    }\n                },\n                \"36\": {\n                    \"name\": \"VDD_2\",\n                    \"number\": \"36\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"36\"\n                    }\n                },\n                \"37\": {\n                    \"name\": \"PA14\",\n                    \"number\": \"37\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"37\"\n                    }\n                },\n                \"38\": {\n                    \"name\": \"PA15\",\n                    \"number\": \"38\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"38\"\n                    }\n                },\n                \"39\": {\n                    \"name\": \"PB3\",\n                    \"number\": \"39\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"39\"\n                    }\n                },\n                \"40\": {\n                    \"name\": \"PB4\",\n                    \"number\": \"40\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"40\"\n                    }\n                },\n                \"41\": {\n                    \"name\": \"PB5\",\n                    \"number\": \"41\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"41\"\n                    }\n                },\n                \"42\": {\n                    \"name\": \"PB6\",\n                    \"number\": \"42\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"42\"\n                    }\n                },\n                \"43\": {\n                    \"name\": \"PB7\",\n                    \"number\": \"43\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"43\"\n                    }\n                },\n                \"44\": {\n                    \"name\": \"BOOT0\",\n                    \"number\": \"44\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"44\"\n                    }\n                },\n                \"45\": {\n                    \"name\": \"PB8\",\n                    \"number\": \"45\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"45\"\n                    }\n                },\n                \"46\": {\n                    \"name\": \"PB9\",\n                    \"number\": \"46\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"46\"\n                    }\n                },\n                \"47\": {\n                    \"name\": \"VSS_3\",\n                    \"number\": \"47\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"47\"\n                    }\n                },\n                \"48\": {\n                    \"name\": \"VDD_3\",\n                    \"number\": \"48\",\n                    \"net\": \"\",\n                    \"props\": {\n                        \"Pin Number\": \"48\"\n                    }\n                }\n            }\n        }\n    },\n    \"designRule\": {\n        \"trackPhysics\": {\n            \"copperThickness1oz\": {\n                \"name\": \"copperThickness1oz\",\n                \"isDefault\": true,\n                \"unit\": \"mm\",\n                \"strokeValue\": {\n                    \"common\": {\n                        \"min\": 0.127,\n                        \"max\": 2.54,\n                        \"default\": 0.254\n                    }\n                }\n            },\n            \"copperThickness2oz\": {\n                \"name\": \"copperThickness2oz\",\n                \"isDefault\": false,\n                \"unit\": \"mm\",\n                \"strokeValue\": {\n                    \"common\": {\n                        \"min\": 0.203,\n                        \"max\": 2.54,\n                        \"default\": 0.254\n                    }\n                }\n            }\n        },\n        \"netRule\": {\n            \"ROWS_PROBE_1_LONG_NET_NAME\": {\n                \"net\": \"ROWS_PROBE_1_LONG_NET_NAME\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            },\n            \"ROWS_PROBE_2_LONG_NET_NAME\": {\n                \"net\": \"ROWS_PROBE_2_LONG_NET_NAME\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            },\n            \"ROWS_PROBE_3_LONG_NET_NAME\": {\n                \"net\": \"ROWS_PROBE_3_LONG_NET_NAME\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            },\n            \"ROWS_PROBE_4_LONG_NET_NAME\": {\n                \"net\": \"ROWS_PROBE_4_LONG_NET_NAME\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            },\n            \"+3V3\": {\n                \"net\": \"+3V3\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            },\n            \"GND\": {\n                \"net\": \"GND\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            },\n            \"NRST\": {\n                \"net\": \"NRST\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            },\n            \"HSE_IN\": {\n                \"net\": \"HSE_IN\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            },\n            \"HSE_OUT\": {\n                \"net\": \"HSE_OUT\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            },\n            \"BOOT0\": {\n                \"net\": \"BOOT0\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            },\n            \"SWDIO\": {\n                \"net\": \"SWDIO\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            },\n            \"SWCLK\": {\n                \"net\": \"SWCLK\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            },\n            \"USB_DM\": {\n                \"net\": \"USB_DM\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            },\n            \"USB_DP\": {\n                \"net\": \"USB_DP\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            },\n            \"VIN_5V\": {\n                \"net\": \"VIN_5V\",\n                \"ruleMap\": {\n                    \"TrackPhysics\": \"\"\n                }\n            }\n        }\n    },\n    \"differentialPair\": {},\n    \"netClass\": {},\n    \"equalLengthNetGroup\": {}\n}"
+  },
+  "wires": [
+    {
+      "async": true,
+      "primitiveType": "Wire",
+      "line": [
+        495,
+        615,
+        515,
+        615,
+        495,
+        625,
+        495,
+        615,
+        304,
+        625,
+        495,
+        625
+      ],
+      "net": "ROWS_PROBE_1_LONG_NET_NAME",
+      "color": null,
+      "lineWidth": null,
+      "lineType": null,
+      "primitiveId": "377a8b2778202269"
+    },
+    {
+      "async": true,
+      "primitiveType": "Wire",
+      "line": [
+        304,
+        605,
+        515,
+        605
+      ],
+      "net": "ROWS_PROBE_2_LONG_NET_NAME",
+      "color": null,
+      "lineWidth": null,
+      "lineType": null,
+      "primitiveId": "486ee9408edc5817"
+    },
+    {
+      "async": true,
+      "primitiveType": "Wire",
+      "line": [
+        485,
+        595,
+        515,
+        595,
+        485,
+        585,
+        485,
+        595,
+        304,
+        585,
+        485,
+        585
+      ],
+      "net": "ROWS_PROBE_3_LONG_NET_NAME",
+      "color": null,
+      "lineWidth": null,
+      "lineType": null,
+      "primitiveId": "b3193435a0a22527"
+    },
+    {
+      "async": true,
+      "primitiveType": "Wire",
+      "line": [
+        495,
+        585,
+        515,
+        585,
+        495,
+        565,
+        495,
+        585,
+        304,
+        565,
+        495,
+        565
+      ],
+      "net": "ROWS_PROBE_4_LONG_NET_NAME",
+      "color": null,
+      "lineWidth": null,
+      "lineType": null,
+      "primitiveId": "155edf36f9b938d8"
+    }
+  ],
+  "actualNets": {
+    "1": {
+      "name": "VBAT",
+      "number": "1",
+      "net": "ROWS_PROBE_1_LONG_NET_NAME",
+      "props": {
+        "Pin Number": "1"
+      }
+    },
+    "2": {
+      "name": "PC13-TAMPER-RTC",
+      "number": "2",
+      "net": "ROWS_PROBE_2_LONG_NET_NAME",
+      "props": {
+        "Pin Number": "2"
+      }
+    },
+    "3": {
+      "name": "PC14-OSC32_IN",
+      "number": "3",
+      "net": "ROWS_PROBE_3_LONG_NET_NAME",
+      "props": {
+        "Pin Number": "3"
+      }
+    },
+    "4": {
+      "name": "PC15-OSC32_OUT",
+      "number": "4",
+      "net": "ROWS_PROBE_4_LONG_NET_NAME",
+      "props": {
+        "Pin Number": "4"
+      }
+    },
+    "5": {
+      "name": "PD0-OSC_IN",
+      "number": "5",
+      "net": "",
+      "props": {
+        "Pin Number": "5"
+      }
+    },
+    "6": {
+      "name": "PD1-OSC_OUT",
+      "number": "6",
+      "net": "",
+      "props": {
+        "Pin Number": "6"
+      }
+    },
+    "7": {
+      "name": "NRST",
+      "number": "7",
+      "net": "",
+      "props": {
+        "Pin Number": "7"
+      }
+    },
+    "8": {
+      "name": "VSSA",
+      "number": "8",
+      "net": "",
+      "props": {
+        "Pin Number": "8"
+      }
+    },
+    "9": {
+      "name": "VDDA",
+      "number": "9",
+      "net": "",
+      "props": {
+        "Pin Number": "9"
+      }
+    },
+    "10": {
+      "name": "PA0-WKUP",
+      "number": "10",
+      "net": "",
+      "props": {
+        "Pin Number": "10"
+      }
+    },
+    "11": {
+      "name": "PA1",
+      "number": "11",
+      "net": "",
+      "props": {
+        "Pin Number": "11"
+      }
+    },
+    "12": {
+      "name": "PA2",
+      "number": "12",
+      "net": "",
+      "props": {
+        "Pin Number": "12"
+      }
+    },
+    "13": {
+      "name": "PA3",
+      "number": "13",
+      "net": "",
+      "props": {
+        "Pin Number": "13"
+      }
+    },
+    "14": {
+      "name": "PA4",
+      "number": "14",
+      "net": "",
+      "props": {
+        "Pin Number": "14"
+      }
+    },
+    "15": {
+      "name": "PA5",
+      "number": "15",
+      "net": "",
+      "props": {
+        "Pin Number": "15"
+      }
+    },
+    "16": {
+      "name": "PA6",
+      "number": "16",
+      "net": "",
+      "props": {
+        "Pin Number": "16"
+      }
+    },
+    "17": {
+      "name": "PA7",
+      "number": "17",
+      "net": "",
+      "props": {
+        "Pin Number": "17"
+      }
+    },
+    "18": {
+      "name": "PB0",
+      "number": "18",
+      "net": "",
+      "props": {
+        "Pin Number": "18"
+      }
+    },
+    "19": {
+      "name": "PB1",
+      "number": "19",
+      "net": "",
+      "props": {
+        "Pin Number": "19"
+      }
+    },
+    "20": {
+      "name": "PB2",
+      "number": "20",
+      "net": "",
+      "props": {
+        "Pin Number": "20"
+      }
+    },
+    "21": {
+      "name": "PB10",
+      "number": "21",
+      "net": "",
+      "props": {
+        "Pin Number": "21"
+      }
+    },
+    "22": {
+      "name": "PB11",
+      "number": "22",
+      "net": "",
+      "props": {
+        "Pin Number": "22"
+      }
+    },
+    "23": {
+      "name": "VSS_1",
+      "number": "23",
+      "net": "",
+      "props": {
+        "Pin Number": "23"
+      }
+    },
+    "24": {
+      "name": "VDD_1",
+      "number": "24",
+      "net": "",
+      "props": {
+        "Pin Number": "24"
+      }
+    },
+    "25": {
+      "name": "PB12",
+      "number": "25",
+      "net": "",
+      "props": {
+        "Pin Number": "25"
+      }
+    },
+    "26": {
+      "name": "PB13",
+      "number": "26",
+      "net": "",
+      "props": {
+        "Pin Number": "26"
+      }
+    },
+    "27": {
+      "name": "PB14",
+      "number": "27",
+      "net": "",
+      "props": {
+        "Pin Number": "27"
+      }
+    },
+    "28": {
+      "name": "PB15",
+      "number": "28",
+      "net": "",
+      "props": {
+        "Pin Number": "28"
+      }
+    },
+    "29": {
+      "name": "PA8",
+      "number": "29",
+      "net": "",
+      "props": {
+        "Pin Number": "29"
+      }
+    },
+    "30": {
+      "name": "PA9",
+      "number": "30",
+      "net": "",
+      "props": {
+        "Pin Number": "30"
+      }
+    },
+    "31": {
+      "name": "PA10",
+      "number": "31",
+      "net": "",
+      "props": {
+        "Pin Number": "31"
+      }
+    },
+    "32": {
+      "name": "PA11",
+      "number": "32",
+      "net": "",
+      "props": {
+        "Pin Number": "32"
+      }
+    },
+    "33": {
+      "name": "PA12",
+      "number": "33",
+      "net": "",
+      "props": {
+        "Pin Number": "33"
+      }
+    },
+    "34": {
+      "name": "PA13",
+      "number": "34",
+      "net": "",
+      "props": {
+        "Pin Number": "34"
+      }
+    },
+    "35": {
+      "name": "VSS_2",
+      "number": "35",
+      "net": "",
+      "props": {
+        "Pin Number": "35"
+      }
+    },
+    "36": {
+      "name": "VDD_2",
+      "number": "36",
+      "net": "",
+      "props": {
+        "Pin Number": "36"
+      }
+    },
+    "37": {
+      "name": "PA14",
+      "number": "37",
+      "net": "",
+      "props": {
+        "Pin Number": "37"
+      }
+    },
+    "38": {
+      "name": "PA15",
+      "number": "38",
+      "net": "",
+      "props": {
+        "Pin Number": "38"
+      }
+    },
+    "39": {
+      "name": "PB3",
+      "number": "39",
+      "net": "",
+      "props": {
+        "Pin Number": "39"
+      }
+    },
+    "40": {
+      "name": "PB4",
+      "number": "40",
+      "net": "",
+      "props": {
+        "Pin Number": "40"
+      }
+    },
+    "41": {
+      "name": "PB5",
+      "number": "41",
+      "net": "",
+      "props": {
+        "Pin Number": "41"
+      }
+    },
+    "42": {
+      "name": "PB6",
+      "number": "42",
+      "net": "",
+      "props": {
+        "Pin Number": "42"
+      }
+    },
+    "43": {
+      "name": "PB7",
+      "number": "43",
+      "net": "",
+      "props": {
+        "Pin Number": "43"
+      }
+    },
+    "44": {
+      "name": "BOOT0",
+      "number": "44",
+      "net": "",
+      "props": {
+        "Pin Number": "44"
+      }
+    },
+    "45": {
+      "name": "PB8",
+      "number": "45",
+      "net": "",
+      "props": {
+        "Pin Number": "45"
+      }
+    },
+    "46": {
+      "name": "PB9",
+      "number": "46",
+      "net": "",
+      "props": {
+        "Pin Number": "46"
+      }
+    },
+    "47": {
+      "name": "VSS_3",
+      "number": "47",
+      "net": "",
+      "props": {
+        "Pin Number": "47"
+      }
+    },
+    "48": {
+      "name": "VDD_3",
+      "number": "48",
+      "net": "",
+      "props": {
+        "Pin Number": "48"
+      }
+    }
+  },
+  "connectionConfirmed": true,
+  "cleanedUp": true
+}

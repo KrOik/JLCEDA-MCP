@@ -9,7 +9,8 @@
  * ------------------------------------------------------------------------
  */
 import * as extensionConfig from '../extension.json';
-import { startBridgeRuntime } from './runtime/bridge-runtime';
+import { startBridgeRuntime, stopBridgeRuntime } from './runtime/bridge-runtime';
+export { checkHotUpdate, getHotUpdateStatus, rollbackHotUpdate } from './runtime/bridge-runtime';
 
 /**
  * 激活 Bridge 扩展。
@@ -21,6 +22,10 @@ import { startBridgeRuntime } from './runtime/bridge-runtime';
 export function activate(status?: 'onStartupFinished', arg?: string): void {
 	// 扩展启动后自动拉起桥接轮询进程。
 	startBridgeRuntime();
+}
+
+export function deactivate(): void {
+	stopBridgeRuntime();
 }
 
 /**

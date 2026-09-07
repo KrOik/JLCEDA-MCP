@@ -16,21 +16,8 @@ import { getConfiguredMcpUrl, getMcpServerUrlChangedTopic } from '../bridge/conf
 import { toBridgeProtocolError } from '../bridge/protocol.ts';
 import { BridgeLogDispatchPipeline } from '../logging/log-dispatch.ts';
 import { bridgeLogPipeline } from '../logging/log.ts';
-import { handleApiIndexTask } from '../mcp/api-index-handler.ts';
-import { handleApiSearchTask } from '../mcp/api-search-handler.ts';
-import {
-	handleComponentPlaceCheckTask,
-	handleComponentPlaceCloseTask,
-	handleComponentPlaceStartTask,
-	handleComponentPlaceTask,
-} from '../mcp/component-place-handler.ts';
-import { handleComponentSelectTask } from '../mcp/component-select-handler.ts';
-import { handleEdaContextTask } from '../mcp/context-handler.ts';
-import { handleApiInvokeTask } from '../mcp/invoke-handler.ts';
-import { handlePcbConstraintSnapshotTask } from '../mcp/pcb-constraint-handler.ts';
-import { handlePcbGeometryAnalyzeTask, handlePcbSnapshotTask } from '../mcp/pcb-geometry-handler.ts';
-import { handleSchematicReadTask } from '../mcp/schematic-read-handler.ts';
-import { handleSchematicReviewTask } from '../mcp/schematic-review-handler.ts';
+import * as bundledTaskModule from './task-module.ts';
+import { HotUpdateManager } from './hot-update.ts';
 import { BridgeStateManager } from '../state/state-manager.ts';
 import { BridgeStatusReporter } from '../state/status-reporter.ts';
 import { safeCall, toSafeErrorMessage, toSerializableAsync } from '../utils.ts';
@@ -40,22 +27,7 @@ const RECONNECT_INTERVAL_MS = 1200;
 const CONTEXT_SYNC_INTERVAL_MS = 1000;
 const CONNECT_SUCCESS_TOAST_TIMER_SECONDS = 3;
 
-const BRIDGE_TASK_HANDLERS: Record<string, (payload: unknown) => Promise<unknown>> = {
-	'/bridge/jlceda/api/index': handleApiIndexTask,
-	'/bridge/jlceda/api/search': handleApiSearchTask,
-	'/bridge/jlceda/api/invoke': handleApiInvokeTask,
-	'/bridge/jlceda/component/place/check': handleComponentPlaceCheckTask,
-	'/bridge/jlceda/component/place/close': handleComponentPlaceCloseTask,
-	'/bridge/jlceda/component/place/start': handleComponentPlaceStartTask,
-	'/bridge/jlceda/component/place': handleComponentPlaceTask,
-	'/bridge/jlceda/component/select': handleComponentSelectTask,
-	'/bridge/jlceda/context': handleEdaContextTask,
-	'/bridge/jlceda/pcb/constraint/snapshot': handlePcbConstraintSnapshotTask,
-	'/bridge/jlceda/pcb/geometry/analyze': handlePcbGeometryAnalyzeTask,
-	'/bridge/jlceda/pcb/snapshot': handlePcbSnapshotTask,
-	'/bridge/jlceda/schematic/read': handleSchematicReadTask,
-	'/bridge/jlceda/schematic/review': handleSchematicReviewTask,
-};
+const hotUpdate = new HotUpdateManager(bundledTaskModule, () => taskExecuting);
 
 let started = false;
 let connecting = false;
@@ -65,6 +37,7 @@ let reconnectTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
 let contextSyncTimer: ReturnType<typeof globalThis.setInterval> | undefined;
 let configSubscription: ISYS_MessageBusTask | null = null;
 let taskChain: Promise<void> = Promise.resolve();
+let taskExecuting = false;
 let currentRole: BridgeRole = 'standby';
 let currentLeaseTerm = 0;
 let currentActiveClientId = '';
@@ -198,7 +171,14 @@ function applyRole(message: BridgeServerRoleMessage): void {
 
 // 调度任务执行并回传结果。
 function enqueueTask(task: BridgeTaskEnvelope, currentTransport: BridgeTransport): void {
+	if (taskExecuting) {
+		currentTransport.completeTask(task.requestId, task.leaseTerm, undefined, { code: 'BRIDGE_BUSY', message: '此前 EDA 调用仍未结束，本次未执行' });
+		return;
+	}
+	taskExecuting = true;
+	currentTransport.setExecutingTask(true);
 	taskChain = taskChain.then(async () => {
+		hotUpdate.current.setExecutionDeadline(task.deadlineAt);
 		const taskStartedAt = Date.now();
 		const queueDelayMs = Math.max(0, taskStartedAt - task.createdAt);
 		writeRuntimeTaskLog('info', 'bridge.task.received', '桥接任务开始执行', `开始处理 ${task.path}`, task, {
@@ -223,7 +203,7 @@ function enqueueTask(task: BridgeTaskEnvelope, currentTransport: BridgeTransport
 			return;
 		}
 
-		const handler = BRIDGE_TASK_HANDLERS[task.path];
+		const handler = hotUpdate.current.handlers[task.path];
 		if (!handler) {
 			writeRuntimeTaskLog('warning', 'bridge.task.rejected.unsupported_path', '桥接任务路径不支持', `${BRIDGE_STATUS_TEXT.runtime.taskPathUnsupportedPrefix}${task.path}`, task, {}, 'bridge_task_path_unsupported');
 			currentTransport.completeTask(task.requestId, task.leaseTerm, undefined, {
@@ -237,7 +217,23 @@ function enqueueTask(task: BridgeTaskEnvelope, currentTransport: BridgeTransport
 		let handlerElapsedMs = 0;
 		try {
 			const handlerStartedAt = Date.now();
+			if (task.deadlineAt && Date.now() >= task.deadlineAt)
+				throw new Error('TASK_EXPIRED: 排队任务已过期，未执行');
+			const rowsStatus = task.path === '/bridge/jlceda/schematic/place-rows' && (task.payload as { action?: string })?.action === 'status';
+			if (task.targetDocumentUuid && !rowsStatus) {
+				const document = await eda.dmt_SelectControl.getCurrentDocumentInfo();
+				if (document?.uuid !== task.targetDocumentUuid)
+					throw new Error('PAGE_CHANGE_DECLARATION_REQUIRED: 目标页面已切换；请重新显式声明 targetClientId 和 targetDocumentUuid，未执行');
+				const expectedType = task.path.includes('/pcb/')
+					? 3
+					: task.path.includes('/schematic/') || task.path.includes('/component/place') ? 1 : undefined;
+				if (expectedType !== undefined && document.documentType !== expectedType)
+					throw new Error('DOCUMENT_TYPE_MISMATCH: 原理图/PCB 类型不匹配');
+			}
+			hotUpdate.current.setOwnershipGuard?.(() => started && transport === currentTransport && currentRole === 'active' && currentLeaseTerm === task.leaseTerm);
 			const handlerResult = await handler(task.payload);
+			if (task.path === '/bridge/jlceda/context' && handlerResult && typeof handlerResult === 'object')
+				Object.assign(handlerResult, { hotUpdate: { ...hotUpdate.status } });
 			handlerElapsedMs = Math.max(0, Date.now() - handlerStartedAt);
 			const serializeStartedAt = Date.now();
 			result = await toSerializableAsync(handlerResult);
@@ -266,6 +262,10 @@ function enqueueTask(task: BridgeTaskEnvelope, currentTransport: BridgeTransport
 	}).catch((error: unknown) => {
 		const message = toSafeErrorMessage(error);
 		writeRuntimeWarningLog('bridge.task.failed', BRIDGE_STATUS_TEXT.runtime.taskFailedSummary, message, message, 'bridge_task_failed');
+	}).finally(() => {
+		taskExecuting = false;
+		currentTransport.setExecutingTask(false);
+		hotUpdate.current.setExecutionDeadline(undefined);
 	});
 }
 
@@ -311,6 +311,10 @@ async function ensureConnected(): Promise<void> {
 
 		transport = instance;
 		bridgeLogDispatchPipeline.flushToTransport(transport);
+		// 先将当前页面身份写入 transport，再向服务端声明 ready。否则首次
+		// context-sync 早于 transport 创建时，会出现“连接已就绪但无文档
+		// 上下文”的短暂（甚至持续）状态，安全路由会正确拒绝该连接。
+		await isEditablePage();
 		// 只有运行时确认握手完成并接管实例后，才通知服务端允许调度任务。
 		transport.reportReady();
 		showConnectSuccessToast();
@@ -371,6 +375,10 @@ async function isEditablePage(): Promise<boolean> {
 		safeCall(() => eda.dmt_Schematic.getCurrentSchematicPageInfo()),
 		safeCall(() => eda.dmt_Pcb.getCurrentPcbInfo()),
 	]);
+	const document = await safeCall(() => eda.dmt_SelectControl.getCurrentDocumentInfo());
+	if (document && transport) {
+		transport.updateContext({ documentUuid: document.uuid, documentType: document.documentType === 1 ? 'schematic' : document.documentType === 3 ? 'pcb' : 'other', title: document.documentType === 1 ? schPageInfo?.name ?? document.uuid : pcbInfo?.name ?? document.uuid, backgroundJob: hotUpdate.current.getBackgroundState?.() });
+	}
 	return schPageInfo != null || pcbInfo != null;
 }
 
@@ -414,6 +422,7 @@ export function startBridgeRuntime(): void {
 	}
 
 	started = true;
+	hotUpdate.start();
 	bridgeLogPipeline.setListener((logEntry) => {
 		enqueueBridgeLog(logEntry);
 	});
@@ -428,3 +437,21 @@ export function startBridgeRuntime(): void {
 		// 页面类型检测失败时跳过初次连接，由周期同步接管。
 	});
 }
+
+/** Release timers and sockets on extension unload; late async callbacks cannot reconnect. */
+export function stopBridgeRuntime(): void {
+	started = false;
+	hotUpdate.stop();
+	configSubscription?.cancel();
+	configSubscription = null;
+	clearReconnectTimer();
+	clearContextSyncTimer();
+	stopTransport();
+	currentRole = 'standby';
+	currentLeaseTerm = 0;
+	currentActiveClientId = '';
+}
+
+export function getHotUpdateStatus(): unknown { return { ...hotUpdate.status }; }
+export async function checkHotUpdate(): Promise<void> { await hotUpdate.check(); }
+export function rollbackHotUpdate(): boolean { return hotUpdate.rollback(); }

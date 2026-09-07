@@ -90,15 +90,7 @@ function main() {
 	const rootBuildDirectory = path.join(__dirname, '../../build');
 	fs.ensureDirSync(rootBuildDirectory);
 
-	// 仅清理 bridge 自身历史构建产物，避免影响其他扩展包。
-	const bridgePackagePrefix = `${extensionConfig.name}`;
-	for (const fileName of fs.readdirSync(rootBuildDirectory, { encoding: 'utf-8' })) {
-		if (!fileName.startsWith(bridgePackagePrefix) || !fileName.endsWith('.eext')) {
-			continue;
-		}
-
-		fs.removeSync(path.join(rootBuildDirectory, fileName));
-	}
+	// Preserve previous versions so a loader update can be rolled back.
 
 	zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true, compression: 'DEFLATE', compressionOptions: { level: 9 } }).pipe(
 		fs.createWriteStream(path.join(rootBuildDirectory, `${extensionConfig.name}-${extensionConfig.version}.eext`)),

@@ -300,6 +300,32 @@ export function activate(context: vscode.ExtensionContext): void {
   const hostRuntimeBridge = new HostRuntimeBridge(createHostRuntimeIpcEndpoint(sessionId, storageDirectoryPath));
   hostRuntimeBridge.start();
   context.subscriptions.push(hostRuntimeBridge);
+  // The sidebar observes the shared host; it does not own or restart that host.
+  let polling = false;
+  const statusTimer = setInterval(() => {
+    if (polling) return;
+    polling = true;
+    const config = configStore.getConfig();
+    const httpPort = configStore.getHttpPort() || 7655;
+    void (async () => {
+      let errorMessage = '';
+      let clientIds: string[] = [];
+      try {
+        const response = await fetch(`http://127.0.0.1:${httpPort}/status`, { signal: AbortSignal.timeout(1500) });
+        const status = await response.json() as { service?: string; bridgePort?: number; clientIds?: string[] };
+        if (status.service !== 'jlceda-mcp-standalone' || status.bridgePort !== config.port) throw new Error('端口被其他服务占用或配置不匹配');
+        clientIds = status.clientIds ?? [];
+      } catch (error) { errorMessage = error instanceof Error ? error.message : String(error); }
+      hostRuntimeBridge.updateStandaloneSnapshot({
+        host: '127.0.0.1', port: config.port, httpPort,
+        runtimeStatus: errorMessage ? 'error' : 'running',
+        runtimeMessage: errorMessage || `共享独立服务运行中；诊断入口 http://127.0.0.1:${httpPort}/status`,
+        bridgeClientCount: clientIds.length, bridgeClientIds: clientIds,
+        lastErrorMessage: errorMessage, lastDisconnect: null, updatedAt: new Date().toISOString(),
+      });
+    })().finally(() => { polling = false; });
+  }, 2000);
+  context.subscriptions.push(new vscode.Disposable(() => clearInterval(statusTimer)));
   updateDebugSwitch(readDebugSwitchFromConfig());
   hostRuntimeBridge.updateSettings(configStore.getExposeRawApiTools(), configStore.getAgentInstructions());
   context.subscriptions.push(configStore);

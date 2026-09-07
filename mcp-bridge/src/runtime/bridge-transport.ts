@@ -31,7 +31,7 @@ const HANDSHAKE_TIMEOUT_MS = 5000;
 // 客户端发送心跳包的时间间隔。
 const HEARTBEAT_INTERVAL_MS = 1000;
 // 服务端无活动超时阈值。
-const SERVER_IDLE_TIMEOUT_MS = 5000;
+const SERVER_IDLE_TIMEOUT_MS = 45000;
 // 检查服务端无活动状态的轮询间隔。
 const SERVER_IDLE_CHECK_INTERVAL_MS = 500;
 const BRIDGE_STATUS_TEXT = BridgeStateManager.text;
@@ -101,6 +101,19 @@ export class BridgeTransport {
 	private welcomed = false;
 	private lostNotified = false;
 	private lastServerActivityAt = 0;
+	private lastIdleTickAt = 0;
+	private context: { documentUuid: string; documentType: string; title: string; backgroundJob?: { jobId: string; state: string; pending?: string } } | undefined;
+	private executingTask = false;
+
+	public setExecutingTask(value: boolean): void {
+		this.executingTask = value;
+		if (!value)
+			this.lastServerActivityAt = Date.now();
+	}
+
+	public updateContext(context: NonNullable<BridgeTransport['context']>): void {
+		this.context = context;
+	}
 
 	public constructor(
 		private readonly bridgeWebSocketUrl: string,
@@ -206,6 +219,8 @@ export class BridgeTransport {
 
 	// 建立底层连接后发送握手并启动心跳。
 	private async handleConnected(): Promise<void> {
+		if (this.closed)
+			return;
 		// WebSocket 已建立，停止连接建立超时，启动应用层握手超时。
 		this.clearOpenTimer();
 		this.startConnectTimer();
@@ -220,8 +235,14 @@ export class BridgeTransport {
 
 	// 处理服务端消息。
 	private async handleMessage(event: MessageEvent<any>): Promise<void> {
+		if (this.closed)
+			return;
 		try {
 			const message = await parseServerMessage(event.data);
+			if (this.closed)
+				return;
+			if ('clientId' in message && message.clientId !== this.clientId)
+				return;
 			this.lastServerActivityAt = Date.now();
 
 			if (message.type === 'bridge/welcome') {
@@ -270,6 +291,8 @@ export class BridgeTransport {
 					payload: message.payload,
 					createdAt: message.createdAt,
 					leaseTerm: message.leaseTerm,
+					deadlineAt: message.deadlineAt,
+					targetDocumentUuid: message.targetDocumentUuid,
 				});
 				return;
 			}
@@ -339,6 +362,7 @@ export class BridgeTransport {
 			try {
 				this.sendMessage({
 					type: 'bridge/heartbeat',
+					context: this.context,
 					clientId: this.clientId,
 					sentAt: Date.now(),
 				});
@@ -361,10 +385,25 @@ export class BridgeTransport {
 	private startIdleMonitor(): void {
 		this.stopIdleMonitor();
 		this.lastServerActivityAt = Date.now();
+		this.lastIdleTickAt = Date.now();
 		this.idleCheckTimer = globalThis.setInterval(() => {
 			if (this.closed) {
 				return;
 			}
+			const now = Date.now();
+			const paused = now - this.lastIdleTickAt > 5000;
+			this.lastIdleTickAt = now;
+			if (paused) {
+				// Let queued ACKs run after suspension; do not close a healthy minimized page.
+				this.lastServerActivityAt = now;
+				try { this.sendMessage({ type: 'bridge/heartbeat', clientId: this.clientId, sentAt: now, context: this.context }); }
+				catch (error) { this.fail(toSafeErrorMessage(error), error); }
+				return;
+			}
+			// A synchronous EDA call may starve heartbeats. The broker deadline
+			// reports uncertainty; do not discard the socket needed for its late result.
+			if (this.executingTask)
+				return;
 			if (Date.now() - this.lastServerActivityAt <= SERVER_IDLE_TIMEOUT_MS) {
 				return;
 			}

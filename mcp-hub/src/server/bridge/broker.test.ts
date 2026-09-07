@@ -160,7 +160,7 @@ describe('bridge broker', () => {
 		});
 	});
 
-	it('returns a wait-active-peer timeout result when no ready bridge client exists', async () => {
+	it('returns offline immediately when no bridge client exists', async () => {
 		const broker = await loadFreshBroker();
 
 		const result = await broker.enqueueBridgeRequest('/bridge/jlceda/context', { scope: 'sch' }, 25) as {
@@ -170,11 +170,10 @@ describe('bridge broker', () => {
 		};
 
 		expect(result).toMatchObject({
-			timeout: true,
-			timeoutType: 'wait_active_peer',
-			path: '/bridge/jlceda/context',
+			ok: false,
+			errorCode: 'BRIDGE_OFFLINE',
 		});
-		expect(broker.getBridgeStatus()).toEqual({
+		expect(broker.getBridgeStatus()).toMatchObject({
 			connectedClients: 0,
 			pendingRequests: 0,
 			clientIds: [],
@@ -218,17 +217,35 @@ describe('bridge broker', () => {
 			return message.type === 'bridge/role' && message.role === 'standby';
 		});
 
-		const firstResultPromise = broker.enqueueBridgeRequest('/bridge/test/echo', { seq: 1 }, 500);
+		await expect(broker.enqueueBridgeRequest('/bridge/test/echo', {}, 500)).resolves.toMatchObject({ errorCode: 'TARGET_REQUIRED' });
+		clientA.send({ type: 'bridge/heartbeat', clientId: 'client-a', sentAt: Date.now(), context: { documentUuid: 'same-page', documentType: 'schematic', title: 'P1' } });
+		clientB.send({ type: 'bridge/heartbeat', clientId: 'client-b', sentAt: Date.now(), context: { documentUuid: 'same-page', documentType: 'schematic', title: 'P1' } });
+		await clientA.waitForMessage((message): message is Record<string, unknown> => message.type === 'bridge/heartbeat-ack');
+		await clientB.waitForMessage((message): message is Record<string, unknown> => message.type === 'bridge/heartbeat-ack');
+		const inferredResultPromise = broker.enqueueBridgeRequest('/bridge/test/echo', { seq: 'inferred' }, 500);
+		const inferredTask = await clientA.waitForMessage((message): message is { type: string; requestId: string; leaseTerm: number; payload: { seq: string }; targetDocumentUuid: string } => {
+			return message.type === 'bridge/task' && (message.payload as { seq?: string }).seq === 'inferred';
+		});
+		expect(inferredTask.targetDocumentUuid).toBe('same-page');
+		clientA.send({ type: 'bridge/result', clientId: 'client-a', requestId: inferredTask.requestId, leaseTerm: inferredTask.leaseTerm, result: { handledBy: 'inferred-active' } });
+		await expect(inferredResultPromise).resolves.toEqual({ handledBy: 'inferred-active' });
+		clientB.send({ type: 'bridge/heartbeat', clientId: 'client-b', sentAt: Date.now(), context: { documentUuid: 'other-page', documentType: 'schematic', title: 'P2' } });
+		await waitFor(() => broker.getBridgeStatus().clients.find(client => client.clientId === 'client-b')?.context?.documentUuid === 'other-page' ? true : undefined);
+		await expect(broker.enqueueBridgeRequest('/bridge/test/echo', {}, 500)).resolves.toMatchObject({ errorCode: 'PAGE_CHANGE_DECLARATION_REQUIRED' });
+		const { bridgeRequestContext } = await import('./request-context');
+		const firstResultPromise = bridgeRequestContext.run({ targetClientId: 'client-a' },
+			() => broker.enqueueBridgeRequest('/bridge/test/echo', { seq: 1 }, 500));
 		const firstTask = await clientA.waitForMessage((message): message is {
 			type: 'bridge/task';
 			requestId: string;
 			leaseTerm: number;
 			payload: { seq: number };
 		} => {
-			return message.type === 'bridge/task';
+			return message.type === 'bridge/task' && (message.payload as { seq?: number }).seq === 1;
 		});
 
 		expect(firstTask.payload).toEqual({ seq: 1 });
+		await expect(broker.enqueueBridgeRequest('/bridge/test/echo', {}, 500)).resolves.toMatchObject({ errorCode: 'BRIDGE_BUSY' });
 		clientA.send({
 			type: 'bridge/result',
 			clientId: 'client-a',
@@ -267,7 +284,7 @@ describe('bridge broker', () => {
 		});
 
 		await expect(secondResultPromise).resolves.toEqual({ handledBy: 'client-b' });
-		expect(broker.getBridgeStatus()).toEqual({
+		expect(broker.getBridgeStatus()).toMatchObject({
 			connectedClients: 1,
 			pendingRequests: 0,
 			clientIds: ['client-b'],
@@ -313,6 +330,7 @@ describe('bridge broker', () => {
 			timeoutType: 'wait_result',
 		});
 		expect(timeoutResult.message).toContain('/bridge/test/slow');
+		await expect(broker.enqueueBridgeRequest('/bridge/test/slow', {}, 60)).resolves.toMatchObject({ errorCode: 'EXECUTION_UNCERTAIN' });
 		expect(broker.getBridgeStatus().pendingRequests).toBe(0);
 	});
 

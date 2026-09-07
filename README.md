@@ -1,19 +1,31 @@
 ﻿# JLCEDA MCP
 
-JLCEDA MCP 是一套面向嘉立创 EDA 的本地 MCP 双扩展方案，由 mcp-hub 和 mcp-bridge 组成。接入后，你可以直接在 Copilot、Cursor Chat 中检查原理图、分析电路、辅助设计电路方案，并让 AI 在嘉立创 EDA 中完成相关操作。
+JLCEDA MCP 将 AI agent 与嘉立创 EDA 连接起来。服务可独立于 VS Code 后台运行，多个 MCP 客户端共用一个服务进程；器件选型、坐标放置和引脚 NET 配置由 AI 决策，并返回执行与回读确认结果。
+
+完整安装、迁移、页面路由、防碰撞和超时恢复说明见 [AI 执行闭环指南](docs/agent-execution.md)。
+
+```powershell
+cd mcp-hub
+npm install
+npm run build:standalone
+npm run service:start
+npm run service:status
+```
+
+独立分发目录：`build/standalone/`。HTTP MCP：`http://127.0.0.1:7655/mcp`；stdio 统一使用 `node <绝对路径>/scripts/service.mjs stdio`。需 Node.js 22+。
 
 ## 整体链路
 
 ```
 嘉立创 EDA（mcp-bridge）
     ↕ WebSocket 桥接
-VS Code / Cursor（mcp-hub）
+共享独立 Node.js 服务（VS Code / Cursor 为可选客户端）
     ↕ stdio/http MCP 协议
 MCP 客户端（Copilot / Cursor Chat / Claude Code / Codex 等）
 ```
 
 - **mcp-bridge**：EDA 侧扩展，建立到 mcp-hub 的 WebSocket 连接，负责让 AI 在嘉立创 EDA 中读取当前图纸信息并执行相关操作。
-- **mcp-hub**：VS Code/Cursor 侧扩展，通过 stdio/http MCP 协议将多项 MCP 工具能力暴露给 AI 助手，并托管桥接 WebSocket 服务接收 Bridge 连接。
+- **mcp-hub**：共享独立 MCP 服务与可选 VS Code/Cursor 客户端。stdio 代理复用服务，客户端关闭后后台服务继续运行。
 
 ## 可用工具
 
@@ -26,8 +38,11 @@ MCP 客户端（Copilot / Cursor Chat / Claude Code / Codex 等）
 | `pcb_snapshot`     | 读取当前 PCB 页面归一化后的几何关系快照，返回图层、走线、过孔、覆铜、fill、region、image、object、实际覆铜填充区域、器件、焊盘与板框信息     |
 | `pcb_geometry_analyze` | 分析当前 PCB 的几何关系，返回规范化 `relations`、`features` 与证据字段，支持路由拓扑、参考面连续性、换层回流过孔距离、平面投影 loop area proxy 与 trace/object 空间关系等事实型分析 |
 | `pcb_constraint_snapshot` | 读取当前 PCB 的第二层约束与结构上下文快照，返回规则配置、网络规则、差分对、等长组、网络类以及更细的 pad/via 结构细节 |
-| `component_select` | 在 EDA 系统库中搜索候选器件，并在 VS Code / Cursor 侧边栏中由用户确认具体型号                |
-| `component_place`  | 按顺序启动器件交互放置流程，在侧边栏中提示当前进度并等待用户完成放置                         |
+| `component_select` | 搜索商城字段候选，提供型号/料号/封装/库存过滤和匹配依据，由 AI 决策 |
+| `component_place` | 坐标/网格自动放置，检查包围盒、引脚及导线间距，回读确认图元位置 |
+| `pin_net_configure` | 按精确引脚号配置 NET 标签，检查引脚粘连、既有网络和标签重叠 |
+| `bridge_status` | 查询所有 EDA 页面身份、就绪状态、隔离状态和最近执行结果 |
+| `document_focus` | 打开并激活明确的 EDA 文档，回读确认当前 UUID |
 
 **透传 EDA API 工具（可选）**
 
@@ -42,17 +57,16 @@ MCP 客户端（Copilot / Cursor Chat / Claude Code / Codex 等）
 
 ## 交互使用说明
 
-1. 当 AI 需要先确认器件型号时，会在 VS Code / Cursor 侧边栏弹出器件选型面板，由用户手动确认具体器件。
-2. 当 AI 需要在原理图中放置器件时，会在侧边栏弹出交互放置面板，按顺序提示当前应放置的器件。
-3. 在器件选型或器件放置过程中，如果点击取消或跳过，只会跳过当前器件，AI 会继续处理后续器件，不会重试当前项。
-4. 电源符号和地符号不会由 AI 自动放置，需由用户在嘉立创 EDA 中手动添加。
-5. 如果启用了“打开 EDA 时关闭侧边栏”，那么打开 EDA 后，以及器件选型或器件放置完成后，侧边栏都会自动收起。
+1. 先用 `bridge_status` 识别目标客户端和原理图/PCB 文档，多页面时逐请求指定 `targetClientId` 与 `targetDocumentUuid`。
+2. `component_select` 返回候选，由 AI 根据需求选择；`component_place` 直接执行，无侧边栏和鼠标放置等待。
+3. `pin_net_configure` 可创建 VCC/GND 等网络标签。创建后须回读网表/DRC，不将 API 返回成功等同于电气正确。
+4. 忙碌时明确返回未执行；超时标记结果未知并隔离，不自动重复写操作。防碰撞失败返回具体冲突，供 AI 调整布局。
 
 ## 安装
 
-**服务端**和**客户端**两个扩展都需要安装。
+安装 EDA Bridge 与独立服务即可。VS Code/Cursor 扩展可选。
 
-> 初次安装时，先确认 VS Code/Cursor 与嘉立创 EDA 两侧扩展都已安装，再检查聊天工具的 MCP 服务配置是否正确。
+> 初次安装或从社区版迁移，请按 [统一入口说明](docs/agent-execution.md) 配置，避免继续登记多个旧版服务入口。
 
 ### mcp-hub（VS Code / Cursor）
 
@@ -69,11 +83,11 @@ MCP 客户端（Copilot / Cursor Chat / Claude Code / Codex 等）
 
 ## 注意事项
 
-1. 两个扩展必须同时安装，单独安装任意一侧均无法使用在线调用功能。
+1. 独立服务必须与 EDA Bridge 配套使用，不要求 VS Code 常驻。
 2. 如果修改了服务端监听端口，需在 EDA Bridge 设置页同步更新桥接地址。
-3. 首次发起聊天后服务才会启动，且仅在原理图或 PCB 页面可连接。
-4. 多页面同时连接时，只有活动角色页面执行任务，其余页面处于待命状态，属正常现象。若当前 EDA 页面与活动客户端不一致，请关闭其他 EDA 页面后刷新当前页。
-5. 状态异常时，先重载 VS Code/Cursor，再重启嘉立创 EDA。
+3. 服务可提前后台启动；Bridge 在原理图或 PCB 页面保持连接和心跳。
+4. 多页面不会默默选一个执行：必须明确目标，错页或类型不符会拒绝。
+5. 状态异常先查 `bridge_status` 或 `service:status`。单次 EDA API 无法通用强制取消，结果未知时需先核对 EDA 状态。
 
 ---
 

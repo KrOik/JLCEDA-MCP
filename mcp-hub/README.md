@@ -1,4 +1,8 @@
-﻿# JLCEDA MCP Hub
+﻿# 独立服务与 AI 执行模式更新
+
+当前推荐入口为 `scripts/service.mjs start|status|stop|stdio`，多个客户端共用独立后台服务，不再由每个编辑器窗口各自占用端口。选型与放置改由 AI 决策，新增页面定位、NET 配置、防碰撞、回读确认和超时隔离。下面保留历史扩展说明；涉及侧边栏选型/鼠标放置和 runtime 独占进程的旧描述，以 [执行闭环指南](../docs/agent-execution.md) 为准。
+
+# JLCEDA MCP Hub
 
 本扩展为嘉立创 EDA **AI 设计助手** 的 MCP 版，支持双协议连接（stdio / http），在 VS Code / Cursor 内的 MCP 客户端（Copilot / Cursor Chat / Claude Code / Codex 等）中提供嘉立创 EDA 工具调用能力，配合嘉立创 EDA 侧的 **MCP Bridge** 扩展使用。
 
@@ -96,3 +100,4 @@
 | 库                                                              | 版本   | 许可证 | 项目地址                                      |
 | --------------------------------------------------------------- | ------ | ------ | --------------------------------------------- |
 | [OverlayScrollbars](https://github.com/KingSora/OverlayScrollbars) | 2.14.0 | MIT    | https://github.com/KingSora/OverlayScrollbars |
+本地修复（2026-09-07）：选型支持 `{"keyword":"100nF 0603"}` 或 `{"queries":[{"keyword":"100nF 0603"}]}`（也兼容字符串数组）。参数错误返回 `INVALID_ARGUMENT` 和具体字段，无搜索执行；放置可传 `designator` 保留目标位号。

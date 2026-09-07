@@ -11,18 +11,8 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { DEBUG_SWITCH } from '../../debug';
-import { createHostRuntimeIpcEndpoint } from '../../ipc/host-runtime-endpoint';
 import type { ServerConfig } from '../../state/status';
 
-const STORAGE_DIRECTORY_FLAG = '--storage-directory';
-const SESSION_ID_FLAG = '--session-id';
-const EXTENSION_VERSION_FLAG = '--extension-version';
-const DEBUG_ENABLE_SYSTEM_LOG_FLAG = '--enable-system-log';
-const DEBUG_ENABLE_CONNECTION_LIST_FLAG = '--enable-connection-list';
-const HOST_IPC_ENDPOINT_FLAG = '--host-ipc-endpoint';
-const EXPOSE_RAW_API_TOOLS_FLAG = '--expose-raw-api-tools';
-const AGENT_INSTRUCTIONS_FLAG = '--agent-instructions';
 
 // Cursor 侧注册使用的 MCP 服务名称。
 export const JLC_MCP_SERVER_NAME = 'chengbin.jlceda-mcp-hub';
@@ -43,7 +33,7 @@ function getRuntimeCommand(): string {
 
 // 获取 MCP stdio 运行时入口脚本绝对路径。
 function getRuntimeScriptPath(extensionPath: string): string {
-  return path.join(extensionPath, 'out', 'server', 'runtime.js');
+  return path.join(extensionPath, 'scripts', 'service.mjs');
 }
 
 // 统一构造 stdio 运行时启动参数。
@@ -58,31 +48,11 @@ function getRuntimeArgs(
   agentInstructions: string,
 ): string[] {
   const args = [
-    getRuntimeScriptPath(extensionPath),
-    STORAGE_DIRECTORY_FLAG,
-    storageDirectoryPath,
-    SESSION_ID_FLAG,
-    sessionId,
-    '--host',
-    config.host,
-    '--port',
-    String(config.port),
-    HOST_IPC_ENDPOINT_FLAG,
-    createHostRuntimeIpcEndpoint(sessionId, storageDirectoryPath),
-    EXTENSION_VERSION_FLAG,
-    extensionVersion,
-    DEBUG_ENABLE_SYSTEM_LOG_FLAG,
-    String(DEBUG_SWITCH.enableSystemLog),
-    DEBUG_ENABLE_CONNECTION_LIST_FLAG,
-    String(DEBUG_SWITCH.enableConnectionList),
-    EXPOSE_RAW_API_TOOLS_FLAG,
-    exposeRawApiTools ? '1' : '0',
-    AGENT_INSTRUCTIONS_FLAG,
-    Buffer.from(agentInstructions, 'utf8').toString('base64'),
+    getRuntimeScriptPath(extensionPath), 'stdio', '--port', String(config.port),
+    '--http-port', String(httpPort || 7655),
   ];
-  if (httpPort > 0) {
-    args.push('--http-port', String(httpPort));
-  }
+  if (exposeRawApiTools) args.push('--expose-raw-api-tools');
+  if (agentInstructions) args.push('--agent-instructions', Buffer.from(agentInstructions, 'utf8').toString('base64'));
   return args;
 }
 
@@ -108,7 +78,7 @@ export function createVscodeStdioServerDefinition(
     '嘉立创 EDA',
     getRuntimeCommand(),
     getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, httpPort, exposeRawApiTools, agentInstructions),
-    {},
+    { ELECTRON_RUN_AS_NODE: '1' },
     version
   );
   definition.cwd = vscode.Uri.file(extensionPath);
@@ -138,7 +108,7 @@ export function createCursorStdioServerConfig(
     server: {
       command: getRuntimeCommand(),
       args: getRuntimeArgs(extensionPath, storageDirectoryPath, sessionId, config, version, httpPort, exposeRawApiTools, agentInstructions),
-      env: {}
+      env: { ELECTRON_RUN_AS_NODE: '1' }
     }
   };
 }

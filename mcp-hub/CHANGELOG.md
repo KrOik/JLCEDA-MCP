@@ -1,3 +1,14 @@
+## Unreleased
+
+- component_place 支持引脚 NET 映射；默认真实导线引出，符号可选且外移，失败直接 Escape Hatch。
+- 服务端原生 WebSocket ping/pong 保活，容忍后台页面 JS 心跳节流，保留执行未决保护。
+
+- 明确批量写入恢复索引与分阶段设计验收指引，避免失败后整批重放或将标签创建误报为整板完成。
+
+- 独立服务和单实例复用代理，支持后台启动、状态查询、停止及独立分发。
+- AI 自主选型/坐标放置/NET 配置；新增 bridge_status、document_focus 与逐请求页面绑定。
+- 忙碌快速返回、截止时间、超时隔离、迟到结果回收；修复心跳重建 peer 导致状态丢失的竞态。
+
 ## [1.5.5] - 2026-04-21
 
 ### 新增
@@ -227,3 +238,16 @@
 
 - 内置嘉立创 EDA 操作系统指令，AI 连接时自动获取。
 - 支持在 VS Code 设置中自定义补充指令，保存后立即生效。
+# 本地修复 2026-09-07
+
+- component_select 参数问题返回 INVALID_ARGUMENT、executed=false、批次字段位置和示例，避免不透明的 -32000 返回；兼容字符串查询数组。
+- component_place 工具声明增加 designator；提示词明确查询格式与可恢复碰撞的继续处理方式。
+## [1.6.0] - 2026-09-07
+
+- 新增 schematic_place_rows start/status 工具及候选型号传递。
+- 保留后台任务进度，保护跨客户端写入权，后台排版期间拒绝正常停服。
+- 更新 Agent 指引：新设计优先分类行，按 operationId 查询而不重复创建。
+## [1.7.0] - 2026-09-07
+
+- feat: routing=staircase 默认启用 netLabelPlacement=outer，扩展工具 schema 与 Agent 指引。
+- 提供分类行/续行/分页及实际网表连接验收的完整能力入口。

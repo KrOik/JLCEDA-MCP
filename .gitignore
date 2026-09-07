@@ -1,4 +1,5 @@
 .omx/
+.omc/
 references/easyeda/
 references/*
 node_modules/
@@ -6,6 +7,13 @@ out/
 dist/
 build/
 docs/
+!docs/
+docs/*
+!docs/README.md
+!docs/frontier-painpoints-spec-2026-05-11.md
+!docs/core-painpoints-development-plan-2026-05-11.md
+!docs/agent-execution.md
+!docs/mcp-product-review-2026-09-06.md
 .worktrees/
 .claude/
 graphify-out/
@@ -13,3 +21,10 @@ graphify-out/
 *.vsix
 *.eext
 *.tsbuildinfo
+
+
+# E2E automation runtime artifacts
+.e2e/
+
+## Content-addressed local OTA releases (published by config/publish-ota.mjs).
+mcp-hub/ota/

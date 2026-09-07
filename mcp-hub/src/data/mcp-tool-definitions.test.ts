@@ -5,6 +5,7 @@ import definitions from './mcp-tool-definitions.json';
 describe('mcp-tool-definitions contract', () => {
 	it('contains exactly the expected public tool names', () => {
 		expect(definitions.map(item => item.name)).toEqual([
+			'schematic_place_rows',
 			'api_index',
 			'api_search',
 			'api_invoke',
@@ -12,11 +13,16 @@ describe('mcp-tool-definitions contract', () => {
 			'schematic_read',
 			'schematic_locate',
 			'schematic_review',
+			'schematic_relayout',
 			'pcb_snapshot',
 			'pcb_geometry_analyze',
 			'pcb_constraint_snapshot',
 			'component_select',
 			'component_place',
+			'pin_net_configure',
+			'bridge_status',
+			'result_read',
+			'document_focus',
 		]);
 	});
 
@@ -26,8 +32,9 @@ describe('mcp-tool-definitions contract', () => {
 		expect(byName.get('api_search')?.inputSchema.required).toEqual(['query']);
 		expect(byName.get('api_invoke')?.inputSchema.required).toEqual(['apiFullName']);
 		expect(byName.get('schematic_locate')?.inputSchema.required).toEqual(['query']);
-		expect(byName.get('component_select')?.inputSchema.required).toEqual(['keyword']);
+		expect(byName.get('component_select')?.inputSchema.oneOf).toHaveLength(2);
 		expect(byName.get('component_place')?.inputSchema.required).toEqual(['components']);
+		expect((byName.get('schematic_relayout')?.inputSchema.properties?.apply as Record<string, unknown>).default).toBe(false);
 	});
 
 	it('keeps timeout and paging bounds aligned with runtime expectations', () => {
@@ -39,7 +46,7 @@ describe('mcp-tool-definitions contract', () => {
 		const pcbConstraintTimeout = byName.get('pcb_constraint_snapshot')?.inputSchema.properties?.timeoutMs as Record<string, unknown>;
 		const schematicLocateLimit = byName.get('schematic_locate')?.inputSchema.properties?.limit as Record<string, unknown>;
 		const componentSelectLimit = byName.get('component_select')?.inputSchema.properties?.limit as Record<string, unknown>;
-		const componentPlaceTimeout = byName.get('component_place')?.inputSchema.properties?.timeoutSeconds as Record<string, unknown>;
+		const componentPlaceBatch = byName.get('component_place')?.inputSchema.properties?.components as Record<string, unknown>;
 
 		expect(apiSearchLimit.minimum).toBe(1);
 		expect(apiSearchLimit.maximum).toBe(50);
@@ -55,8 +62,8 @@ describe('mcp-tool-definitions contract', () => {
 		expect(schematicLocateLimit.maximum).toBe(12);
 		expect(componentSelectLimit.minimum).toBe(2);
 		expect(componentSelectLimit.maximum).toBe(20);
-		expect(componentPlaceTimeout.minimum).toBe(30);
-		expect(componentPlaceTimeout.maximum).toBe(180);
+		expect(componentPlaceBatch.minItems).toBe(1);
+		expect(componentPlaceBatch.maxItems).toBe(50);
 	});
 
 	it('exposes the refined pcb geometry analysis modes', () => {

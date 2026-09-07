@@ -22,6 +22,17 @@ function installEdaMock(searchImpl?: ReturnType<typeof vi.fn>): EdaMock {
 }
 
 describe('handleComponentSelectTask', () => {
+	it('reports Retry-After on 429 without retrying the upstream request', async () => {
+		const search = vi.fn().mockRejectedValue({ response: { status: 429, headers: { 'retry-after': '120' } } });
+		installEdaMock(search);
+		expect(await handleComponentSelectTask({ keyword: 'MCU' })).toEqual({ ok: false, errorCode: 'RATE_LIMITED', retryAfterMs: 120000 });
+		expect(search).toHaveBeenCalledTimes(1);
+	});
+	it('does not misclassify an SDK 429 response as no search results', async () => {
+		const search = vi.fn().mockResolvedValue({ code: 429, message: 'Too Many Requests' });
+		installEdaMock(search);
+		expect(await handleComponentSelectTask({ keyword: 'MCU' })).toMatchObject({ errorCode: 'RATE_LIMITED' });
+	});
 	beforeEach(() => {
 		vi.restoreAllMocks();
 		installEdaMock();
